@@ -32,69 +32,120 @@ export const useAuth = () => {
   return context;
 };
 
-// Mock users for demonstration
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Admin Usuario',
-    email: 'admin@iesrfa.edu',
-    role: 'admin',
-  },
-  {
-    id: '2',
-    name: 'Docente Evaluado',
-    email: 'docente@iesrfa.edu',
-    role: 'evaluated',
-  },
-  {
-    id: '3',
-    name: 'Estudiante',
-    email: 'estudiante@iesrfa.edu',
-    role: 'student',
-  },
-];
+// API URL
+const API_URL = 'http://localhost:5000/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
+  // Función para mapear roles de la API a tipos UserRole
+  const mapRole = (role: string): UserRole => {
+    switch(role) {
+      case 'Administrador':
+        return 'admin';
+      case 'Evaluador':
+        return 'evaluator';
+      case 'Evaluado':
+        return 'evaluated';
+      case 'Estudiante':
+        return 'student';
+      case 'Validador':
+        return 'validator';
+      default:
+        return 'guest';
+    }
+  };
+
   useEffect(() => {
     // Check if user is stored in localStorage (simulating persistence)
-    const storedUser = localStorage.getItem('iesrfa_user');
-    if (storedUser) {
+    const token = localStorage.getItem('iesrfa_token');
+    if (token) {
       try {
-        setUser(JSON.parse(storedUser));
+        // Verificar el token y obtener la información del usuario
+        fetchUserInfo(token);
       } catch (error) {
         console.error('Error parsing stored user:', error);
-        localStorage.removeItem('iesrfa_user');
+        localStorage.removeItem('iesrfa_token');
+        setIsLoading(false);
       }
+    } else {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   }, []);
+
+  const fetchUserInfo = async (token: string) => {
+    try {
+      const response = await fetch(`${API_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error('Token inválido');
+      }
+
+      const data = await response.json();
+      
+      if (data.success && data.user) {
+        setUser({
+          id: data.user.id.toString(),
+          name: data.user.name,
+          email: data.user.email,
+          role: mapRole(data.user.role)
+        });
+      } else {
+        localStorage.removeItem('iesrfa_token');
+      }
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+      localStorage.removeItem('iesrfa_token');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Integramos con la API real
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
       
-      // Find user with matching email (in a real app, this would be an API request)
-      const foundUser = mockUsers.find(u => u.email === email);
+      if (!response.ok) {
+        toast.error(data.message || 'Credenciales incorrectas');
+        setIsLoading(false);
+        return;
+      }
       
-      if (foundUser) {
-        // In a real app, you'd validate the password here too
-        setUser(foundUser);
-        localStorage.setItem('iesrfa_user', JSON.stringify(foundUser));
-        toast.success(`Bienvenido, ${foundUser.name}`);
+      if (data.success && data.user && data.token) {
+        const mappedUser = {
+          id: data.user.id.toString(),
+          name: data.user.name,
+          email: data.user.email,
+          role: mapRole(data.user.role)
+        };
+        
+        setUser(mappedUser);
+        localStorage.setItem('iesrfa_token', data.token);
+        toast.success(`Bienvenido, ${mappedUser.name}`);
         navigate('/dashboard');
       } else {
-        toast.error('Credenciales incorrectas. Por favor intente nuevamente.');
+        toast.error('Error al iniciar sesión');
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Error al iniciar sesión. Por favor intente nuevamente.');
+      toast.error('Error al conectar con el servidor');
     } finally {
       setIsLoading(false);
     }
@@ -104,31 +155,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Check if user already exists (in a real app, this would be an API request)
-      if (mockUsers.some(u => u.email === email)) {
-        toast.error('Este correo electrónico ya está registrado.');
-        return;
-      }
-      
-      // In a real app, this would create a new user in the database
-      const newUser: User = {
-        id: `${mockUsers.length + 1}`,
-        name,
-        email,
-        role: 'evaluated', // Default role
-      };
-      
-      // This would be saved to the database in a real app
-      mockUsers.push(newUser);
-      
-      toast.success('Usuario registrado exitosamente. Por favor inicie sesión.');
+      // En un escenario real, aquí se haría la petición al API
+      toast.info('Funcionalidad de registro no implementada en la API actual');
       navigate('/login');
     } catch (error) {
       console.error('Registration error:', error);
-      toast.error('Error al registrar usuario. Por favor intente nuevamente.');
+      toast.error('Error al registrar usuario');
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +168,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('iesrfa_user');
+    localStorage.removeItem('iesrfa_token');
     toast.info('Sesión cerrada');
     navigate('/login');
   };

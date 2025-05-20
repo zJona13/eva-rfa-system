@@ -1,3 +1,4 @@
+
 CREATE DATABASE IF NOT EXISTS EvaluacionDesempeno;
 USE EvaluacionDesempeno;
 
@@ -151,5 +152,5 @@ INSERT INTO TIPO_USUARIO (nombre) VALUES
 ('Developer');
 
 INSERT INTO USUARIO (nombre, correo, contrasena, vigencia, idTipoUsu) VALUES
-('Jonatan Ching', 'jching@iesrfa.edu', 'tiadmin45', 1, 5);
+('Jonatan Ching', 'jching@iesrfa.edu', 'tiadmin45', 1, 5),
 ('Roger Zavaleta', 'rzavaleta@iesrfa.edu', 'tiadmin45', 1, 5);
