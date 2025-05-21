@@ -19,9 +19,6 @@ const Results = () => {
           <Button variant="outline" onClick={() => toast.info('Descargar PDF')} className="gap-1">
             <DownloadIcon className="h-4 w-4" /> PDF
           </Button>
-          <Button variant="outline" onClick={() => toast.info('Descargar Excel')} className="gap-1">
-            <DownloadIcon className="h-4 w-4" /> Excel
-          </Button>
         </div>
       </div>
 

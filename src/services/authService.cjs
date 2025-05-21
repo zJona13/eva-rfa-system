@@ -1,5 +1,5 @@
 
-const { pool } = require('../utils/dbConnection');
+const { pool } = require('../utils/dbConnection.cjs');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 

@@ -1,5 +1,5 @@
 
-const { pool } = require('../utils/dbConnection');
+const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todos los roles
 const getAllRoles = async () => {

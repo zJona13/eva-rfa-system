@@ -1,9 +1,9 @@
 
 const express = require('express');
 const cors = require('cors');
-const { testConnection } = require('./utils/dbConnection');
-const authService = require('./services/authService');
-const roleService = require('./services/roleService');
+const { testConnection } = require('./utils/dbConnection.cjs');
+const authService = require('./services/authService.cjs');
+const roleService = require('./services/roleService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
