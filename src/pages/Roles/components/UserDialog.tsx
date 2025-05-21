@@ -85,7 +85,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
     onSubmit({
       ...values,
       id: userData?.id,
-      roleId: parseInt(values.roleId)
+      roleId: Number(values.roleId),
     });
   };
 
