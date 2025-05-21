@@ -86,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
           </nav>
 
           <div className="p-4 border-t text-center text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} IES RFA - Sistema de Evaluación
+            &copy; {new Date().getFullYear()} IES RFA - Sistema de Evaluación del Personal
           </div>
         </div>
       </aside>
