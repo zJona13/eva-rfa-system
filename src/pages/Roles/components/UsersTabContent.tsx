@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -43,10 +42,10 @@ interface UsersTabContentProps {
   roles: Role[];
 }
 
-// Servicios API
+// Servicios API - Updated port from 5000 to 3306
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('token');
-  const response = await fetch('http://localhost:5000/api/users', {
+  const response = await fetch('http://localhost:3306/api/users', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -72,7 +71,7 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
 
 const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('token');
-  const response = await fetch(`http://localhost:5000/api/users/${userData.id}`, {
+  const response = await fetch(`http://localhost:3306/api/users/${userData.id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -98,7 +97,7 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
 
 const deleteUser = async (id: number): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('token');
-  const response = await fetch(`http://localhost:5000/api/users/${id}`, {
+  const response = await fetch(`http://localhost:3306/api/users/${id}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`

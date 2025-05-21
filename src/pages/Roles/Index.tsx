@@ -31,10 +31,10 @@ interface User {
   roleId: number;
 }
 
-// Servicios API
+// Servicios API - Updated port from 5000 to 3306
 const fetchRoles = async (): Promise<Role[]> => {
   const token = localStorage.getItem('token');
-  const response = await fetch('http://localhost:5000/api/roles', {
+  const response = await fetch('http://localhost:3306/api/roles', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -50,7 +50,7 @@ const fetchRoles = async (): Promise<Role[]> => {
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
   const token = localStorage.getItem('token');
-  const response = await fetch('http://localhost:5000/api/tiposcolaborador', {
+  const response = await fetch('http://localhost:3306/api/tiposcolaborador', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -66,7 +66,7 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
 
 const fetchUsers = async (): Promise<User[]> => {
   const token = localStorage.getItem('token');
-  const response = await fetch('http://localhost:5000/api/users', {
+  const response = await fetch('http://localhost:3306/api/users', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
