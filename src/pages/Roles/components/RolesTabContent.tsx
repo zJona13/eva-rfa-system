@@ -226,11 +226,9 @@ const RolesTabContent: React.FC<RolesTabContentProps> = ({ roles, isLoading, sea
                   <TableRow key={role.id}>
                     <TableCell>{role.id}</TableCell>
                     <TableCell className="font-medium">
-                      <div className="flex items-center gap-2">
-                        <Badge variant={role.name === "Administrador" ? "destructive" : "default"}>
-                          {role.name}
-                        </Badge>
-                      </div>
+                      <Badge variant={role.name === "Administrador" ? "destructive" : "default"}>
+                        {role.name}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-2">

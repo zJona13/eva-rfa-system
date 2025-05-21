@@ -190,6 +190,7 @@ const Roles = () => {
             users={users}
             isLoading={usersLoading}
             searchQuery={searchQuery}
+            roles={roles}
           />
         </TabsContent>
       </Tabs>
