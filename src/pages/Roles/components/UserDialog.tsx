@@ -1,131 +1,108 @@
 
-import { useState, useEffect } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle 
-} from '@/components/ui/dialog';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue
-} from '@/components/ui/select';
+import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Form, FormField, FormItem, FormLabel, FormControl, FormMessage } from '@/components/ui/form';
+import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 
+// Types for the form
+const userFormSchema = z.object({
+  name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
+  email: z.string().email({ message: 'Debe ser un correo electrónico válido' }),
+  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }).optional(),
+  confirmPassword: z.string().optional(),
+  roleId: z.string().min(1, { message: 'Seleccione un rol' }),
+  active: z.boolean().default(true),
+}).refine(data => !data.password || data.password === data.confirmPassword, {
+  message: "Las contraseñas no coinciden",
+  path: ["confirmPassword"],
+});
+
+export type UserFormValues = z.infer<typeof userFormSchema>;
+
+// Types for the component props
 interface Role {
   id: number;
   name: string;
 }
 
-interface User {
-  id: number;
-  name: string;
-  email: string;
-  active: boolean;
-  roleId: number;
-}
-
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user: User | null;
+  userData?: {
+    id?: number;
+    name?: string;
+    email?: string;
+    roleId?: number;
+    active?: boolean;
+  } | null;
   roles: Role[];
-  onSave: (userData: UserFormValues) => void;
+  onSubmit: (values: UserFormValues & { id?: number }) => void;
+  isSubmitting: boolean;
 }
 
-// Esquema de validación con Zod
-const userSchema = z.object({
-  name: z.string().min(3, { message: 'El nombre debe tener al menos 3 caracteres' }),
-  email: z.string().email({ message: 'Correo electrónico inválido' }),
-  password: z.string().optional(),
-  confirmPassword: z.string().optional(),
-  active: z.boolean().default(true),
-  roleId: z.number().positive({ message: 'Debe seleccionar un rol' })
-}).refine((data) => {
-  // Si se proporciona una contraseña, confirmPassword debe coincidir
-  if (data.password && data.confirmPassword) {
-    return data.password === data.confirmPassword;
-  }
-  // Si es un usuario nuevo (sin contraseña existente), ambas contraseñas son obligatorias
-  if (!data.id && (!data.password || !data.confirmPassword)) {
-    return false;
-  }
-  return true;
-}, {
-  message: 'Las contraseñas no coinciden',
-  path: ['confirmPassword']
-});
-
-type UserFormValues = z.infer<typeof userSchema>;
-
-const UserDialog = ({ open, onOpenChange, user, roles, onSave }: UserDialogProps) => {
-  const isEditing = !!user;
-  
+const UserDialog: React.FC<UserDialogProps> = ({
+  open,
+  onOpenChange,
+  userData,
+  roles,
+  onSubmit,
+  isSubmitting
+}) => {
   const form = useForm<UserFormValues>({
-    resolver: zodResolver(userSchema),
+    resolver: zodResolver(userFormSchema),
     defaultValues: {
-      name: '',
-      email: '',
+      name: userData?.name || '',
+      email: userData?.email || '',
       password: '',
       confirmPassword: '',
-      active: true,
-      roleId: 0
-    }
+      roleId: userData?.roleId ? String(userData.roleId) : '',
+      active: userData?.active !== undefined ? userData.active : true,
+    },
   });
-  
-  // Cuando el usuario cambia, actualiza el formulario
-  useEffect(() => {
-    if (user) {
-      form.reset({
-        name: user.name,
-        email: user.email,
-        password: '',
-        confirmPassword: '',
-        active: user.active,
-        roleId: user.roleId
-      });
-    } else {
-      form.reset({
-        name: '',
-        email: '',
-        password: '',
-        confirmPassword: '',
-        active: true,
-        roleId: 0
-      });
-    }
-  }, [user, form]);
-  
-  const onSubmit = (values: UserFormValues) => {
-    onSave(values);
+
+  const handleSubmit = (values: UserFormValues) => {
+    onSubmit({
+      ...values,
+      id: userData?.id,
+      roleId: parseInt(values.roleId)
+    });
   };
 
+  const isNewUser = !userData?.id;
+  const title = isNewUser ? 'Crear Nuevo Usuario' : 'Editar Usuario';
+  const description = isNewUser 
+    ? 'Complete la información para crear un nuevo usuario en el sistema.' 
+    : 'Modifique la información del usuario seleccionado.';
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? 'Editar Usuario' : 'Crear Nuevo Usuario'}</DialogTitle>
-          <DialogDescription>
-            {isEditing 
-              ? 'Modifique la información del usuario seleccionado.' 
-              : 'Complete la información para crear un nuevo usuario en el sistema.'}
-          </DialogDescription>
+          <DialogTitle>{title}</DialogTitle>
+          <DialogDescription>{description}</DialogDescription>
         </DialogHeader>
-        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
             <FormField
               control={form.control}
               name="name"
@@ -133,68 +110,68 @@ const UserDialog = ({ open, onOpenChange, user, roles, onSave }: UserDialogProps
                 <FormItem>
                   <FormLabel>Nombre</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ingrese el nombre completo" {...field} />
+                    <Input placeholder="Nombre del usuario" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
               name="email"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Correo electrónico</FormLabel>
+                  <FormLabel>Correo Electrónico</FormLabel>
                   <FormControl>
-                    <Input type="email" placeholder="correo@ejemplo.com" {...field} />
+                    <Input type="email" placeholder="correo@example.com" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
             />
-            
-            <div className="grid gap-4 grid-cols-2">
-              <FormField
-                control={form.control}
-                name="password"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>{isEditing ? 'Nueva contraseña (opcional)' : 'Contraseña'}</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="confirmPassword"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Confirmar contraseña</FormLabel>
-                    <FormControl>
-                      <Input type="password" placeholder="••••••••" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
+            <FormField
+              control={form.control}
+              name="password"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{isNewUser ? 'Contraseña' : 'Nueva Contraseña (opcional)'}</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      placeholder={isNewUser ? 'Contraseña' : 'Deje en blanco para mantener la actual'} 
+                      {...field} 
+                      required={isNewUser}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="confirmPassword"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Confirmar Contraseña</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="password" 
+                      placeholder="Confirme la contraseña" 
+                      {...field} 
+                      required={isNewUser || !!form.watch('password')}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
             <FormField
               control={form.control}
               name="roleId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Rol</FormLabel>
-                  <Select
-                    onValueChange={(value) => field.onChange(parseInt(value))}
-                    defaultValue={field.value ? String(field.value) : undefined}
-                    value={field.value ? String(field.value) : undefined}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccione un rol" />
@@ -212,17 +189,16 @@ const UserDialog = ({ open, onOpenChange, user, roles, onSave }: UserDialogProps
                 </FormItem>
               )}
             />
-            
             <FormField
               control={form.control}
               name="active"
               render={({ field }) => (
-                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-3 shadow-sm">
+                <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
                   <div className="space-y-0.5">
-                    <FormLabel>Usuario activo</FormLabel>
-                    <p className="text-sm text-muted-foreground">
-                      Un usuario inactivo no podrá iniciar sesión en el sistema
-                    </p>
+                    <FormLabel className="text-base">Usuario Activo</FormLabel>
+                    <FormDescription>
+                      Determina si el usuario puede iniciar sesión en el sistema
+                    </FormDescription>
                   </div>
                   <FormControl>
                     <Switch
@@ -233,13 +209,12 @@ const UserDialog = ({ open, onOpenChange, user, roles, onSave }: UserDialogProps
                 </FormItem>
               )}
             />
-
             <DialogFooter>
-              <Button variant="outline" type="button" onClick={() => onOpenChange(false)}>
+              <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
                 Cancelar
               </Button>
-              <Button type="submit">
-                {isEditing ? 'Actualizar' : 'Crear Usuario'}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Guardando...' : isNewUser ? 'Crear' : 'Actualizar'}
               </Button>
             </DialogFooter>
           </form>
