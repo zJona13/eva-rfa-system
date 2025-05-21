@@ -85,12 +85,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
     onSubmit({
       ...values,
       id: userData?.id,
-<<<<<<< HEAD
       roleId: Number(values.roleId),
-=======
-      // Convert roleId to number before submitting
-      roleId: values.roleId // Type is now explicitly string from the form values
->>>>>>> fe25ac230d721ef5ab7205a13d063ad25d07b050
     });
   };
 
