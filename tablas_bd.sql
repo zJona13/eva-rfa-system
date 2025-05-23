@@ -22,7 +22,6 @@ CREATE TABLE TIPO_REPORTE (
     nombre VARCHAR(100) NOT NULL,
     descripcion VARCHAR(255)
 );
---analizarlo 
 
 CREATE TABLE CRITERIOS (
     idCriterio INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
@@ -148,23 +147,15 @@ CREATE TABLE NOTIFICACION (
     FOREIGN KEY (idIncidencia) REFERENCES INCIDENCIA(idIncidencia)
 );
 
--- Datos iniciales
 INSERT INTO TIPO_USUARIO (nombre) VALUES
 ('Administrador'), ('Docente'), ('Evaluador'), ('Estudiante');
 
--- Inserciones de usuarios (asegúrate de tener un colaborador creado si asignas idColaborador)
 INSERT INTO USUARIO (nombre, correo, contrasena, vigencia, idTipoUsu) VALUES
 ('Jonatan Ching', 'jching@iesrfa.edu', '123456', 1, 1),
 ('Roger Zavaleta', 'rzavaleta@iesrfa.edu', '123456', 1, 1);
 
 INSERT INTO TIPO_COLABORADOR (nombre) VALUES
 ('Jefe de TI'), ('Docente'), ('Jefe de Carrera de Mecanica de Produccion'), ('Director');
-
-INSERT INTO COLABORADOR (
-    nombres, apePat, apeMat, fechaNacimiento, direccion,
-    telefono, dni, estado, idTipoColab, idContrato
-)
-VALUES ('Carlos', 'Ramirez', 'Lopez', '1985-07-12', 'Av. Libertad 123', '987654321', '12345678', 1, 2, 1);
 
 INSERT INTO TIPO_CONTRATO (nombre) VALUES ('Tiempo Parcial'); 
 
