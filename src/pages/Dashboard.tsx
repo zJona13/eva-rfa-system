@@ -25,10 +25,13 @@ const Dashboard = () => {
     return 'Buenas noches';
   };
 
+  // Use collaborator name if available, otherwise use user name
+  const displayName = user?.colaboradorName || user?.name;
+
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, {user?.name}</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, {displayName}</h1>
         <p className="text-muted-foreground mt-2">
           Bienvenido al Sistema Integral de Evaluación del Personal IES RFA.
         </p>

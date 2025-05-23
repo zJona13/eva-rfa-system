@@ -11,6 +11,8 @@ export interface User {
   name: string;
   email: string;
   role: UserRole;
+  colaboradorId?: number | null;
+  colaboradorName?: string | null;
 }
 
 interface AuthContextType {
@@ -33,7 +35,7 @@ export const useAuth = () => {
 };
 
 // API URL
-const API_URL = 'http://localhost:3306/api'; // Updated port from 5000 to 3306
+const API_URL = 'http://localhost:3306/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -94,7 +96,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: data.user.id.toString(),
           name: data.user.name,
           email: data.user.email,
-          role: mapRole(data.user.role)
+          role: mapRole(data.user.role),
+          colaboradorId: data.user.colaboradorId,
+          colaboradorName: data.user.colaboradorName
         });
       } else {
         localStorage.removeItem('iesrfa_token');
@@ -133,12 +137,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           id: data.user.id.toString(),
           name: data.user.name,
           email: data.user.email,
-          role: mapRole(data.user.role)
+          role: mapRole(data.user.role),
+          colaboradorId: data.user.colaboradorId,
+          colaboradorName: data.user.colaboradorName
         };
         
         setUser(mappedUser);
         localStorage.setItem('iesrfa_token', data.token);
-        toast.success(`Bienvenido, ${mappedUser.name}`);
+        
+        // Mostrar nombre del colaborador si está disponible
+        const displayName = mappedUser.colaboradorName || mappedUser.name;
+        toast.success(`Bienvenido, ${displayName}`);
         navigate('/dashboard');
       } else {
         toast.error('Error al iniciar sesión');
