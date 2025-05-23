@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todos los colaboradores con información relacionada
@@ -11,7 +10,7 @@ const getAllColaboradores = async () => {
       c.direccion as address, c.telefono as phone, c.dni, 
       c.estado as active, tc.idTipoColab as roleId, tc.nombre as roleName,
       co.idContrato as contractId, co.fechaInicio as startDate, 
-      co.fechaFin as endDate, co.modalidad as modality, 
+      co.fechaFin as endDate, 
       co.estado as contractActive, tco.idTipoContrato as contractTypeId,
       tco.nombre as contractType
       FROM COLABORADOR c
@@ -54,21 +53,22 @@ const createColaborador = async (colaboradorData) => {
   const connection = await pool.getConnection();
   
   try {
+    console.log('Creating colaborador with data:', colaboradorData);
     await connection.beginTransaction();
     
     // Primero creamos el contrato
     const [contratoResult] = await connection.execute(
-      'INSERT INTO CONTRATO (fechaInicio, fechaFin, estado, modalidad, idTipoContrato) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO CONTRATO (fechaInicio, fechaFin, estado, idTipoContrato) VALUES (?, ?, ?, ?)',
       [
         colaboradorData.startDate, 
         colaboradorData.endDate, 
         colaboradorData.contractActive ? 1 : 0, 
-        colaboradorData.modality, 
         colaboradorData.contractTypeId
       ]
     );
     
     const contratoId = contratoResult.insertId;
+    console.log('Contract created with ID:', contratoId);
     
     // Luego creamos el colaborador
     const [colaboradorResult] = await connection.execute(
@@ -87,6 +87,7 @@ const createColaborador = async (colaboradorData) => {
       ]
     );
     
+    console.log('Colaborador created with ID:', colaboradorResult.insertId);
     await connection.commit();
     
     return {
@@ -125,12 +126,11 @@ const updateColaborador = async (colaboradorId, colaboradorData) => {
     
     // Actualizamos el contrato
     await connection.execute(
-      'UPDATE CONTRATO SET fechaInicio = ?, fechaFin = ?, estado = ?, modalidad = ?, idTipoContrato = ? WHERE idContrato = ?',
+      'UPDATE CONTRATO SET fechaInicio = ?, fechaFin = ?, estado = ?, idTipoContrato = ? WHERE idContrato = ?',
       [
         colaboradorData.startDate, 
         colaboradorData.endDate, 
         colaboradorData.contractActive ? 1 : 0, 
-        colaboradorData.modality, 
         colaboradorData.contractTypeId,
         contratoId
       ]

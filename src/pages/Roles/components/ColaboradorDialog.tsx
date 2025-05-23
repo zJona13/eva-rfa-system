@@ -47,7 +47,6 @@ interface Colaborador {
   roleId: number;
   startDate: string;
   endDate: string;
-  modality: string;
   contractActive: boolean;
   contractTypeId: number;
 }
@@ -74,7 +73,6 @@ const colaboradorSchema = z.object({
   roleId: z.number().positive({ message: 'Debe seleccionar un tipo de colaborador' }),
   startDate: z.string(),
   endDate: z.string(),
-  modality: z.string().min(3, { message: 'La modalidad debe tener al menos 3 caracteres' }),
   contractActive: z.boolean().default(true),
   contractTypeId: z.number().positive({ message: 'Debe seleccionar un tipo de contrato' }),
 });
@@ -105,7 +103,6 @@ const ColaboradorDialog = ({
       roleId: 0,
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-      modality: '',
       contractActive: true,
       contractTypeId: 0
     }
@@ -126,7 +123,6 @@ const ColaboradorDialog = ({
         roleId: colaborador.roleId,
         startDate: colaborador.startDate,
         endDate: colaborador.endDate,
-        modality: colaborador.modality,
         contractActive: colaborador.contractActive,
         contractTypeId: colaborador.contractTypeId
       });
@@ -143,7 +139,6 @@ const ColaboradorDialog = ({
         roleId: 0,
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
-        modality: '',
         contractActive: true,
         contractTypeId: 0
       });
@@ -358,20 +353,6 @@ const ColaboradorDialog = ({
               </div>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="modality"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Modalidad</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Ej: Servicios Profesionales" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                
                 <FormField
                   control={form.control}
                   name="contractTypeId"

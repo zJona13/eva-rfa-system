@@ -347,15 +347,15 @@ app.get('/api/colaboradores', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.get('/api/tiposcontrato', authenticateRequest, async (req, res) => {
-  const result = await colaboradorService.getAllTiposContrato();
+// app.get('/api/tiposcontrato', authenticateRequest, async (req, res) => {
+//   const result = await colaboradorService.getAllTiposContrato();
   
-  if (!result.success) {
-    return res.status(500).json({ message: result.message });
-  }
+//   if (!result.success) {
+//     return res.status(500).json({ message: result.message });
+//   }
   
-  res.json(result);
-});
+//   res.json(result);
+// });
 
 app.post('/api/colaboradores', authenticateRequest, async (req, res) => {
   const colaboradorData = req.body;
@@ -364,7 +364,24 @@ app.post('/api/colaboradores', authenticateRequest, async (req, res) => {
     return res.status(400).json({ message: 'Faltan campos requeridos para crear el colaborador' });
   }
   
-  const result = await colaboradorService.createColaborador(colaboradorData);
+  // Validar y normalizar los datos antes de enviarlos al servicio
+  const normalizedData = {
+    nombres: colaboradorData.nombres,
+    apePat: colaboradorData.apePat,
+    apeMat: colaboradorData.apeMat || null,
+    birthDate: colaboradorData.birthDate,
+    address: colaboradorData.address || null,
+    phone: colaboradorData.phone,
+    dni: colaboradorData.dni,
+    active: colaboradorData.active !== undefined ? colaboradorData.active : true,
+    roleId: colaboradorData.roleId,
+    startDate: colaboradorData.startDate,
+    endDate: colaboradorData.endDate,
+    contractActive: colaboradorData.contractActive !== undefined ? colaboradorData.contractActive : true,
+    contractTypeId: colaboradorData.contractTypeId
+  };
+  
+  const result = await colaboradorService.createColaborador(normalizedData);
   
   if (!result.success) {
     return res.status(500).json({ message: result.message });
@@ -381,7 +398,24 @@ app.put('/api/colaboradores/:id', authenticateRequest, async (req, res) => {
     return res.status(400).json({ message: 'Faltan campos requeridos para actualizar el colaborador' });
   }
   
-  const result = await colaboradorService.updateColaborador(id, colaboradorData);
+  // Validar y normalizar los datos antes de enviarlos al servicio
+  const normalizedData = {
+    nombres: colaboradorData.nombres,
+    apePat: colaboradorData.apePat,
+    apeMat: colaboradorData.apeMat || null,
+    birthDate: colaboradorData.birthDate,
+    address: colaboradorData.address || null,
+    phone: colaboradorData.phone,
+    dni: colaboradorData.dni,
+    active: colaboradorData.active !== undefined ? colaboradorData.active : true,
+    roleId: colaboradorData.roleId,
+    startDate: colaboradorData.startDate,
+    endDate: colaboradorData.endDate,
+    contractActive: colaboradorData.contractActive !== undefined ? colaboradorData.contractActive : true,
+    contractTypeId: colaboradorData.contractTypeId
+  };
+  
+  const result = await colaboradorService.updateColaborador(id, normalizedData);
   
   if (!result.success) {
     return res.status(result.message === 'Colaborador no encontrado' ? 404 : 500).json({ message: result.message });

@@ -37,7 +37,6 @@ interface Colaborador {
   contractId: number;
   startDate: string;
   endDate: string;
-  modality: string;
   contractActive: boolean;
   contractTypeId: number;
   contractType: string;
