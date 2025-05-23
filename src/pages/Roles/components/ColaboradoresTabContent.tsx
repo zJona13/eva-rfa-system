@@ -249,7 +249,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
                       </div>
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
-                      <Badge variant={colaborador.active && colaborador.contractActive ? "success" : "destructive"} className="text-xs">
+                      <Badge variant={colaborador.active && colaborador.contractActive ? "default" : "destructive"} className={`text-xs ${colaborador.active && colaborador.contractActive ? "bg-green-500 hover:bg-green-600" : ""}`}>
                         {colaborador.active && colaborador.contractActive ? "Activo" : "Inactivo"}
                       </Badge>
                     </TableCell>

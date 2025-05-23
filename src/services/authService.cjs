@@ -20,8 +20,9 @@ const login = async (correo, contrasena) => {
 
     const user = rows[0];
     
-    // En producción, usaríamos bcrypt.compare para comparar contraseñas
-    const passwordIsValid = user.contrasena === contrasena;
+    // Verificar la contraseña usando bcrypt
+    // Compara la contraseña proporcionada con la hash almacenada
+    const passwordIsValid = await bcrypt.compare(contrasena, user.contrasena);
 
     if (!passwordIsValid) {
       return { success: false, message: 'Contraseña incorrecta' };
