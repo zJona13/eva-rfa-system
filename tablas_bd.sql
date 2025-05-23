@@ -23,6 +23,7 @@ CREATE TABLE TIPO_REPORTE (
     nombre VARCHAR(100),
     descripcion VARCHAR(255)
 );
+--analizarlo 
 
 CREATE TABLE CRITERIOS (
     idCriterio INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
