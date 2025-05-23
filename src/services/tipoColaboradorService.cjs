@@ -38,10 +38,14 @@ const createTipoColaborador = async (nombre) => {
 // Actualizar un tipo de colaborador
 const updateTipoColaborador = async (id, nombre) => {
   try {
-    await pool.execute(
+    const [result] = await pool.execute(
       'UPDATE TIPO_COLABORADOR SET nombre = ? WHERE idTipoColab = ?',
       [nombre, id]
     );
+    
+    if (result.affectedRows === 0) {
+      return { success: false, message: 'Tipo de colaborador no encontrado' };
+    }
     
     return {
       success: true,
@@ -56,23 +60,24 @@ const updateTipoColaborador = async (id, nombre) => {
 // Eliminar un tipo de colaborador
 const deleteTipoColaborador = async (id) => {
   try {
-    // Verificar si el tipo de colaborador está siendo utilizado
+    // Comprobar si hay colaboradores asignados a este tipo
     const [colaboradores] = await pool.execute(
-      'SELECT idColaborador FROM COLABORADOR WHERE idTipoColab = ?',
+      'SELECT COUNT(*) as count FROM COLABORADOR WHERE idTipoColab = ?',
       [id]
     );
     
-    if (colaboradores.length > 0) {
-      return { 
-        success: false, 
-        message: 'No se puede eliminar el tipo de colaborador porque está siendo utilizado por uno o más colaboradores' 
-      };
+    if (colaboradores[0].count > 0) {
+      return { success: false, message: 'No se puede eliminar el tipo de colaborador porque hay colaboradores asignados' };
     }
     
-    await pool.execute(
+    const [result] = await pool.execute(
       'DELETE FROM TIPO_COLABORADOR WHERE idTipoColab = ?',
       [id]
     );
+    
+    if (result.affectedRows === 0) {
+      return { success: false, message: 'Tipo de colaborador no encontrado' };
+    }
     
     return {
       success: true,
@@ -80,9 +85,6 @@ const deleteTipoColaborador = async (id) => {
     };
   } catch (error) {
     console.error('Error al eliminar tipo de colaborador:', error);
-    if (error.code === 'ER_ROW_IS_REFERENCED_2') {
-      return { success: false, message: 'No se puede eliminar el tipo de colaborador porque está siendo utilizado en otras tablas' };
-    }
     return { success: false, message: 'Error al eliminar el tipo de colaborador' };
   }
 };
