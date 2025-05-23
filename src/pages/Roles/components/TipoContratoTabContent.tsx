@@ -28,61 +28,82 @@ interface TipoContrato {
 
 // Servicios API
 const createTipoContrato = async (name: string): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/tiposcontrato', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ name })
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Error al crear tipo de contrato');
+  try {
+    const token = localStorage.getItem('iesrfa_token');
+    const response = await fetch('http://localhost:3306/api/tiposcontrato', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ name })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `Error ${response.status}: ${response.statusText}`
+      }));
+      throw new Error(errorData.message || 'Error al crear tipo de contrato');
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error creating tipo contrato:', error);
+    throw error;
   }
-  
-  return data;
 };
 
 const updateTipoContrato = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`http://localhost:3306/api/tiposcontrato/${id}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    },
-    body: JSON.stringify({ name })
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Error al actualizar tipo de contrato');
+  try {
+    const token = localStorage.getItem('iesrfa_token');
+    const response = await fetch(`http://localhost:3306/api/tiposcontrato/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify({ name })
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `Error ${response.status}: ${response.statusText}`
+      }));
+      throw new Error(errorData.message || 'Error al actualizar tipo de contrato');
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error updating tipo contrato:', error);
+    throw error;
   }
-  
-  return data;
 };
 
 const deleteTipoContrato = async (id: number): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`http://localhost:3306/api/tiposcontrato/${id}`, {
-    method: 'DELETE',
-    headers: {
-      'Authorization': `Bearer ${token}`
+  try {
+    const token = localStorage.getItem('iesrfa_token');
+    const response = await fetch(`http://localhost:3306/api/tiposcontrato/${id}`, {
+      method: 'DELETE',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({
+        message: `Error ${response.status}: ${response.statusText}`
+      }));
+      throw new Error(errorData.message || 'Error al eliminar tipo de contrato');
     }
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Error al eliminar tipo de contrato');
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error deleting tipo contrato:', error);
+    throw error;
   }
-  
-  return data;
 };
 
 interface TipoContratoTabContentProps {
