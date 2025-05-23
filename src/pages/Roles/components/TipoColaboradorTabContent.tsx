@@ -37,8 +37,8 @@ interface TipoColaborador {
 
 // Servicios API
 const createTipoColaborador = async (name: string): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('token');
-  const response = await fetch('http://localhost:5000/api/tiposcolaborador', {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/tiposcolaborador', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -57,8 +57,8 @@ const createTipoColaborador = async (name: string): Promise<{ success: boolean, 
 };
 
 const updateTipoColaborador = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`http://localhost:5000/api/tiposcolaborador/${id}`, {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch(`http://localhost:3306/api/tiposcolaborador/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -77,8 +77,8 @@ const updateTipoColaborador = async ({ id, name }: { id: number, name: string })
 };
 
 const deleteTipoColaborador = async (id: number): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('token');
-  const response = await fetch(`http://localhost:5000/api/tiposcolaborador/${id}`, {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch(`http://localhost:3306/api/tiposcolaborador/${id}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`
