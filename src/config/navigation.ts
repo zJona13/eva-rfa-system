@@ -7,7 +7,8 @@ import {
   CheckSquare, 
   ShieldCheck, 
   BarChart4, 
-  Home 
+  Home,
+  Settings 
 } from 'lucide-react';
 
 export interface NavItem {
@@ -53,9 +54,9 @@ export const navItems: NavItem[] = [
     roles: ['admin', 'evaluator'],
   },
   {
-    title: 'Roles y Permisos',
+    title: 'Mantenimientos',
     href: '/roles',
-    icon: Users,
+    icon: Settings,
     roles: ['admin'],
     badge: {
       text: 'Admin',
@@ -115,10 +116,10 @@ export const modulesData = [
   },
   {
     id: 5,
-    title: 'Administración de Roles',
-    description: 'Gestión de usuarios, roles y permisos',
+    title: 'Mantenimientos',
+    description: 'Gestión de usuarios, roles y parámetros del sistema',
     href: '/roles',
-    icon: Users,
+    icon: Settings,
     color: 'bg-ies-neutral-100 text-ies-neutral-700',
     roles: ['admin'],
   },

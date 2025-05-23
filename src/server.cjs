@@ -3,6 +3,7 @@ const cors = require('cors');
 const { testConnection } = require('./utils/dbConnection.cjs');
 const roleService = require('./services/roleService.cjs');
 const tipoColaboradorService = require('./services/tipoColaboradorService.cjs');
+const tipoContratoService = require('./services/tipoContratoService.cjs');
 const userService = require('./services/userService.cjs');
 const colaboradorService = require('./services/colaboradorService.cjs');
 const authService = require('./services/authService.cjs');
@@ -195,6 +196,61 @@ app.delete('/api/tiposcolaborador/:id', authenticateRequest, async (req, res) =>
   
   if (!result.success) {
     return res.status(result.message === 'Tipo de colaborador no encontrado' ? 404 : 400).json({ message: result.message });
+  }
+  
+  res.json(result);
+});
+
+// Rutas para gestión de tipos de contrato
+app.get('/api/tiposcontrato', authenticateRequest, async (req, res) => {
+  const result = await tipoContratoService.getAllTiposContrato();
+  
+  if (!result.success) {
+    return res.status(500).json({ message: result.message });
+  }
+  
+  res.json(result);
+});
+
+app.post('/api/tiposcontrato', authenticateRequest, async (req, res) => {
+  const { name } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ message: 'Nombre del tipo de contrato es requerido' });
+  }
+  
+  const result = await tipoContratoService.createTipoContrato(name);
+  
+  if (!result.success) {
+    return res.status(500).json({ message: result.message });
+  }
+  
+  res.status(201).json(result);
+});
+
+app.put('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
+  const { id } = req.params;
+  const { name } = req.body;
+  
+  if (!name) {
+    return res.status(400).json({ message: 'Nombre del tipo de contrato es requerido' });
+  }
+  
+  const result = await tipoContratoService.updateTipoContrato(id, name);
+  
+  if (!result.success) {
+    return res.status(result.message === 'Tipo de contrato no encontrado' ? 404 : 500).json({ message: result.message });
+  }
+  
+  res.json(result);
+});
+
+app.delete('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
+  const { id } = req.params;
+  const result = await tipoContratoService.deleteTipoContrato(id);
+  
+  if (!result.success) {
+    return res.status(result.message === 'Tipo de contrato no encontrado' ? 404 : 400).json({ message: result.message });
   }
   
   res.json(result);
