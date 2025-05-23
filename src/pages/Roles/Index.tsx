@@ -10,6 +10,7 @@ import { useQuery } from '@tanstack/react-query';
 import RolesTabContent from './components/RolesTabContent';
 import TipoColaboradorTabContent from './components/TipoColaboradorTabContent';
 import UsersTabContent from './components/UsersTabContent';
+import ColaboradoresTabContent from './components/ColaboradoresTabContent';
 
 // Tipos
 interface Role {
@@ -18,6 +19,11 @@ interface Role {
 }
 
 interface TipoColaborador {
+  id: number;
+  name: string;
+}
+
+interface TipoContrato {
   id: number;
   name: string;
 }
@@ -31,9 +37,31 @@ interface User {
   roleId: number;
 }
 
+interface Colaborador {
+  id: number;
+  fullName: string;
+  nombres: string;
+  apePat: string;
+  apeMat: string;
+  birthDate: string;
+  address: string;
+  phone: string;
+  dni: string;
+  active: boolean;
+  roleId: number;
+  roleName: string;
+  contractId: number;
+  startDate: string;
+  endDate: string;
+  modality: string;
+  contractActive: boolean;
+  contractTypeId: number;
+  contractType: string;
+}
+
 // Servicios API - Updated port from 5000 to 3306
 const fetchRoles = async (): Promise<Role[]> => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch('http://localhost:3306/api/roles', {
     headers: {
       'Authorization': `Bearer ${token}`
@@ -49,7 +77,7 @@ const fetchRoles = async (): Promise<Role[]> => {
 };
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch('http://localhost:3306/api/tiposcolaborador', {
     headers: {
       'Authorization': `Bearer ${token}`
@@ -64,8 +92,24 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
   return data.tiposColaborador;
 };
 
+const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/tiposcontrato', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar tipos de contrato');
+  }
+  
+  const data = await response.json();
+  return data.tiposContrato;
+};
+
 const fetchUsers = async (): Promise<User[]> => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch('http://localhost:3306/api/users', {
     headers: {
       'Authorization': `Bearer ${token}`
@@ -78,6 +122,22 @@ const fetchUsers = async (): Promise<User[]> => {
   
   const data = await response.json();
   return data.users;
+};
+
+const fetchColaboradores = async (): Promise<Colaborador[]> => {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/colaboradores', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar colaboradores');
+  }
+  
+  const data = await response.json();
+  return data.colaboradores;
 };
 
 // Componente principal
@@ -106,12 +166,30 @@ const Roles = () => {
   });
   
   const { 
+    data: tiposContrato = [], 
+    isLoading: tiposContratoLoading,
+    error: tiposContratoError
+  } = useQuery({
+    queryKey: ['tiposContrato'],
+    queryFn: fetchTiposContrato
+  });
+  
+  const { 
     data: users = [], 
     isLoading: usersLoading,
     error: usersError
   } = useQuery({
     queryKey: ['users'],
     queryFn: fetchUsers
+  });
+  
+  const { 
+    data: colaboradores = [], 
+    isLoading: colaboradoresLoading,
+    error: colaboradoresError
+  } = useQuery({
+    queryKey: ['colaboradores'],
+    queryFn: fetchColaboradores
   });
   
   // Manejo de errores
@@ -123,8 +201,16 @@ const Roles = () => {
     toast.error('Error al cargar los tipos de colaborador');
   }
   
+  if (tiposContratoError && activeTab === 'colaboradores') {
+    toast.error('Error al cargar los tipos de contrato');
+  }
+  
   if (usersError && activeTab === 'users') {
     toast.error('Error al cargar los usuarios');
+  }
+  
+  if (colaboradoresError && activeTab === 'colaboradores') {
+    toast.error('Error al cargar los colaboradores');
   }
 
   return (
@@ -150,6 +236,10 @@ const Roles = () => {
             <TabsTrigger value="users" className="flex items-center gap-1">
               <UserCog className="h-4 w-4" />
               <span>Usuarios</span>
+            </TabsTrigger>
+            <TabsTrigger value="colaboradores" className="flex items-center gap-1">
+              <UserSquare2 className="h-4 w-4" />
+              <span>Colaboradores</span>
             </TabsTrigger>
           </TabsList>
           
@@ -191,6 +281,17 @@ const Roles = () => {
             isLoading={usersLoading}
             searchQuery={searchQuery}
             roles={roles}
+          />
+        </TabsContent>
+        
+        {/* Tab de Colaboradores */}
+        <TabsContent value="colaboradores" className="space-y-4">
+          <ColaboradoresTabContent 
+            colaboradores={colaboradores}
+            isLoading={colaboradoresLoading}
+            searchQuery={searchQuery}
+            tiposColaborador={tiposColaborador}
+            tiposContrato={tiposContrato}
           />
         </TabsContent>
       </Tabs>

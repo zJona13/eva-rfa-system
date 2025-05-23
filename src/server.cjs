@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const { testConnection } = require('./utils/dbConnection.cjs');
@@ -6,9 +5,10 @@ const roleService = require('./services/roleService.cjs');
 const tipoColaboradorService = require('./services/tipoColaboradorService.cjs');
 const userService = require('./services/userService.cjs');
 const colaboradorService = require('./services/colaboradorService.cjs');
+const authService = require('./services/authService.cjs');
 
 const app = express();
-const PORT = process.env.PORT || 3306; // Changed from 5000 to 3306
+const PORT = process.env.PORT || 3306;
 
 // Middleware
 app.use(cors());
@@ -25,10 +25,19 @@ testConnection()
   });
 
 // Simple middleware for basic authentication (temporary placeholder)
-// Will be replaced with a more secure solution later
 const authenticateRequest = (req, res, next) => {
-  // For now, we'll allow all requests through without JWT token verification
-  // This will be replaced with proper authentication later
+  // Check for token in Authorization header
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
+  const token = authHeader.split(' ')[1];
+  // For now, just check if token is present
+  if (!token) {
+    return res.status(401).json({ message: 'No token provided' });
+  }
+
   next();
 };
 
@@ -40,38 +49,45 @@ app.post('/api/auth/login', async (req, res) => {
     return res.status(400).json({ message: 'Email y contraseña son requeridos' });
   }
   
-  // Using the roleService to validate the user credentials
-  // This is temporary until we implement proper authentication
   try {
-    // Simple mock login response until we implement the new authentication system
-    res.json({
-      success: true,
-      user: {
-        id: 1,
-        name: 'Usuario Temporal',
-        email: email,
-        role: 'Administrador'
-      },
-      token: 'temp-auth-token'
-    });
+    const result = await authService.login(email, password);
+    
+    if (!result.success) {
+      return res.status(401).json({ message: result.message });
+    }
+    
+    res.json(result);
   } catch (error) {
-    res.status(401).json({ message: 'Credenciales incorrectas' });
+    console.error('Error en login:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
-// Rutas protegidas - usando el nuevo middleware temporal
+// Rutas protegidas - usando el middleware temporal
 // Obtener información del usuario actual
 app.get('/api/auth/me', authenticateRequest, async (req, res) => {
-  // Temporal, hasta implementar nueva autenticación
-  res.json({
-    success: true,
-    user: {
-      id: 1,
-      name: 'Usuario Temporal',
-      email: 'admin@example.com',
-      role: 'Administrador'
+  const authHeader = req.headers.authorization;
+  const token = authHeader.split(' ')[1];
+  
+  try {
+    const tokenInfo = await authService.verifyToken(token);
+    
+    if (!tokenInfo.valid) {
+      return res.status(401).json({ message: tokenInfo.error });
     }
-  });
+    
+    const userId = tokenInfo.user.id;
+    const userInfo = await authService.getUserInfo(userId);
+    
+    if (!userInfo.success) {
+      return res.status(404).json({ message: userInfo.message });
+    }
+    
+    res.json(userInfo);
+  } catch (error) {
+    console.error('Error al verificar token:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
 // Rutas para gestión de roles de usuario
@@ -129,7 +145,7 @@ app.delete('/api/roles/:roleId', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-// Rutas para gestión de roles de colaborador
+// Rutas para gestión de tipos de colaborador
 app.get('/api/tiposcolaborador', authenticateRequest, async (req, res) => {
   const result = await tipoColaboradorService.getAllTiposColaborador();
   

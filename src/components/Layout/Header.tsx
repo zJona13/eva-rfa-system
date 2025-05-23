@@ -21,6 +21,10 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ isSidebarOpen, toggleSidebar }) => {
   const { user, logout } = useAuth();
   const [theme, setTheme] = React.useState<'light' | 'dark'>('light');
+  
+  // Use colaborador name if available, otherwise use user name
+  const displayName = user?.colaboradorName || user?.name;
+  const displayEmail = user?.email;
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -88,15 +92,15 @@ const Header: React.FC<HeaderProps> = ({ isSidebarOpen, toggleSidebar }) => {
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="p-1 focus-ring">
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src="" alt={user?.name || "Usuario"} />
-                  <AvatarFallback>{user?.name?.charAt(0) || "U"}</AvatarFallback>
+                  <AvatarImage src="" alt={displayName || "Usuario"} />
+                  <AvatarFallback>{displayName?.charAt(0) || "U"}</AvatarFallback>
                 </Avatar>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>
-                <div className="font-medium text-sm">{user?.name}</div>
-                <div className="text-xs text-muted-foreground">{user?.email}</div>
+                <div className="font-medium text-sm">{displayName}</div>
+                <div className="text-xs text-muted-foreground">{displayEmail}</div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem>
