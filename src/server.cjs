@@ -203,57 +203,82 @@ app.delete('/api/tiposcolaborador/:id', authenticateRequest, async (req, res) =>
 
 // Rutas para gestión de tipos de contrato
 app.get('/api/tiposcontrato', authenticateRequest, async (req, res) => {
-  const result = await tipoContratoService.getAllTiposContrato();
-  
-  if (!result.success) {
-    return res.status(500).json({ message: result.message });
+  try {
+    console.log('GET /api/tiposcontrato - Fetching all tipos contrato');
+    const result = await tipoContratoService.getAllTiposContrato();
+    
+    if (!result.success) {
+      return res.status(500).json({ message: result.message });
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error in GET /api/tiposcontrato:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
-  
-  res.json(result);
 });
 
 app.post('/api/tiposcontrato', authenticateRequest, async (req, res) => {
-  const { name } = req.body;
-  
-  if (!name) {
-    return res.status(400).json({ message: 'Nombre del tipo de contrato es requerido' });
+  try {
+    const { name } = req.body;
+    console.log('POST /api/tiposcontrato - Creating new tipo contrato:', name);
+    
+    if (!name) {
+      return res.status(400).json({ message: 'Nombre del tipo de contrato es requerido' });
+    }
+    
+    const result = await tipoContratoService.createTipoContrato(name);
+    
+    if (!result.success) {
+      return res.status(500).json({ message: result.message });
+    }
+    
+    res.status(201).json(result);
+  } catch (error) {
+    console.error('Error in POST /api/tiposcontrato:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
-  
-  const result = await tipoContratoService.createTipoContrato(name);
-  
-  if (!result.success) {
-    return res.status(500).json({ message: result.message });
-  }
-  
-  res.status(201).json(result);
 });
 
 app.put('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
-  const { id } = req.params;
-  const { name } = req.body;
-  
-  if (!name) {
-    return res.status(400).json({ message: 'Nombre del tipo de contrato es requerido' });
+  try {
+    const { id } = req.params;
+    const { name } = req.body;
+    console.log(`PUT /api/tiposcontrato/${id} - Updating tipo contrato:`, name);
+    
+    if (!name) {
+      return res.status(400).json({ message: 'Nombre del tipo de contrato es requerido' });
+    }
+    
+    const result = await tipoContratoService.updateTipoContrato(id, name);
+    
+    if (!result.success) {
+      return res.status(result.message === 'Tipo de contrato no encontrado' ? 404 : 500).json({ message: result.message });
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error(`Error in PUT /api/tiposcontrato/${req.params.id}:`, error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
-  
-  const result = await tipoContratoService.updateTipoContrato(id, name);
-  
-  if (!result.success) {
-    return res.status(result.message === 'Tipo de contrato no encontrado' ? 404 : 500).json({ message: result.message });
-  }
-  
-  res.json(result);
 });
 
 app.delete('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
-  const { id } = req.params;
-  const result = await tipoContratoService.deleteTipoContrato(id);
-  
-  if (!result.success) {
-    return res.status(result.message === 'Tipo de contrato no encontrado' ? 404 : 400).json({ message: result.message });
+  try {
+    const { id } = req.params;
+    console.log(`DELETE /api/tiposcontrato/${id} - Deleting tipo contrato`);
+    
+    const result = await tipoContratoService.deleteTipoContrato(id);
+    
+    if (!result.success) {
+      return res.status(result.message === 'Tipo de contrato no encontrado' ? 404 : 400).json({ message: result.message });
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error(`Error in DELETE /api/tiposcontrato/${req.params.id}:`, error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
-  
-  res.json(result);
 });
 
 // Rutas para gestión de usuarios

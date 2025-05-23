@@ -30,6 +30,7 @@ interface TipoContrato {
 const createTipoContrato = async (name: string): Promise<{ success: boolean, message: string }> => {
   try {
     const token = localStorage.getItem('iesrfa_token');
+    console.log('Creating tipo contrato with token:', token ? 'Token exists' : 'No token');
     const response = await fetch('http://localhost:3306/api/tiposcontrato', {
       method: 'POST',
       headers: {
@@ -38,6 +39,8 @@ const createTipoContrato = async (name: string): Promise<{ success: boolean, mes
       },
       body: JSON.stringify({ name })
     });
+    
+    console.log('Create response status:', response.status);
     
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({

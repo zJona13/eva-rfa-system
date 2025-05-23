@@ -4,7 +4,9 @@ const { pool } = require('../utils/dbConnection.cjs');
 // Obtener todos los tipos de contrato
 const getAllTiposContrato = async () => {
   try {
+    console.log('Executing getAllTiposContrato service function');
     const [rows] = await pool.execute('SELECT idTipoContrato as id, nombre as name FROM TIPO_CONTRATO');
+    console.log('Retrieved tipos contrato count:', rows.length);
     
     return {
       success: true,
@@ -19,10 +21,12 @@ const getAllTiposContrato = async () => {
 // Crear un nuevo tipo de contrato
 const createTipoContrato = async (name) => {
   try {
+    console.log('Executing createTipoContrato service function with name:', name);
     const [result] = await pool.execute(
       'INSERT INTO TIPO_CONTRATO (nombre) VALUES (?)',
       [name]
     );
+    console.log('Create result:', result);
     
     return {
       success: true,
@@ -38,6 +42,7 @@ const createTipoContrato = async (name) => {
 // Actualizar un tipo de contrato
 const updateTipoContrato = async (id, name) => {
   try {
+    console.log('Executing updateTipoContrato service function with id:', id, 'name:', name);
     const [result] = await pool.execute(
       'UPDATE TIPO_CONTRATO SET nombre = ? WHERE idTipoContrato = ?',
       [name, id]
@@ -60,6 +65,7 @@ const updateTipoContrato = async (id, name) => {
 // Eliminar un tipo de contrato
 const deleteTipoContrato = async (id) => {
   try {
+    console.log('Executing deleteTipoContrato service function with id:', id);
     // Verificar si el tipo de contrato está en uso en la tabla CONTRATO
     const [contratos] = await pool.execute(
       'SELECT COUNT(*) as count FROM CONTRATO WHERE idTipoContrato = ?',
