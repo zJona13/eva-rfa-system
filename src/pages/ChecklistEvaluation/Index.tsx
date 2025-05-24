@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import EvaluacionSupervisionForm from './EvaluacionSupervisionForm';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
@@ -28,6 +29,7 @@ const fetchEvaluacionesByEvaluador = async (userId: number) => {
 const ChecklistEvaluation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
 
   // Fetch evaluaciones realizadas por este evaluador
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -37,6 +39,10 @@ const ChecklistEvaluation = () => {
   });
 
   const evaluaciones = evaluacionesData?.evaluaciones || [];
+
+  if (showForm) {
+    return <EvaluacionSupervisionForm onCancel={() => setShowForm(false)} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -64,13 +70,18 @@ const ChecklistEvaluation = () => {
               <p className="text-muted-foreground">No has realizado evaluaciones aún.</p>
               <Button 
                 className="mt-4" 
-                onClick={() => window.location.href = '/nueva-evaluacion'}
+                onClick={() => setShowForm(true)}
               >
                 Realizar Primera Evaluación
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button onClick={() => setShowForm(true)}>
+                  Nueva Evaluación
+                </Button>
+              </div>
               {evaluaciones.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">

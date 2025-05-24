@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import AutoevaluacionForm from './AutoevaluacionForm';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
@@ -28,6 +29,7 @@ const fetchEvaluacionesByColaborador = async (colaboradorId: number) => {
 const SelfEvaluation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [showForm, setShowForm] = useState(false);
 
   // Fetch autoevaluaciones del usuario actual
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -38,6 +40,10 @@ const SelfEvaluation = () => {
 
   const evaluaciones = evaluacionesData?.evaluaciones || [];
   const autoevaluaciones = evaluaciones.filter((e: any) => e.type === 'Autoevaluación Docente');
+
+  if (showForm) {
+    return <AutoevaluacionForm onCancel={() => setShowForm(false)} />;
+  }
 
   return (
     <div className="space-y-6">
@@ -65,13 +71,18 @@ const SelfEvaluation = () => {
               <p className="text-muted-foreground">No has realizado autoevaluaciones aún.</p>
               <Button 
                 className="mt-4" 
-                onClick={() => window.location.href = '/nueva-autoevaluacion'}
+                onClick={() => setShowForm(true)}
               >
                 Realizar Primera Autoevaluación
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
+              <div className="flex justify-end">
+                <Button onClick={() => setShowForm(true)}>
+                  Nueva Autoevaluación
+                </Button>
+              </div>
               {autoevaluaciones.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">

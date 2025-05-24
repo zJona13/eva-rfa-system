@@ -1,245 +1,298 @@
 
 import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+import { ArrowLeft } from 'lucide-react';
 
-const formSchema = z.object({
-  profesor: z.string().min(1, 'Debe seleccionar un profesor'),
-  asignaturaModulo: z.string().min(1, 'Asignatura/Módulo es requerido'),
-  fecha: z.string().min(1, 'Fecha es requerida'),
-  valoroMas: z.string().optional(),
-  sugerencias: z.string().optional(),
-});
+const API_BASE_URL = 'http://localhost:3306/api';
 
-const subcriterios = [
-  // I. ORGANIZACIÓN DE LA ASIGNATURA (2 puntos)
-  { id: 'org_1', section: 'I. ORGANIZACIÓN DE LA ASIGNATURA', text: '1.1. El profesor/a deja claro desde el inicio cómo se desarrollará la asignatura (sílabo, cronograma).' },
-  { id: 'org_2', section: 'I. ORGANIZACIÓN DE LA ASIGNATURA', text: '1.2. Las clases siguen una estructura y planificación comprensible.' },
-  
-  // II. MATERIALES EDUCATIVOS (3 puntos)
-  { id: 'mat_1', section: 'II. MATERIALES EDUCATIVOS', text: '2.1. Los materiales que usa el/la profesor/a (presentaciones, lecturas, etc.) me ayudan a entender los temas.' },
-  { id: 'mat_2', section: 'II. MATERIALES EDUCATIVOS', text: '2.2. Los materiales son claros y están bien organizados en la plataforma del curso.' },
-  { id: 'mat_3', section: 'II. MATERIALES EDUCATIVOS', text: '2.3. El profesor/a proporciona guías o instrucciones claras para las tareas o trabajos fuera de clase.' },
-  
-  // III. DESARROLLO DE LAS CLASES Y ENSEÑANZA (10 puntos)
-  { id: 'des_1', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.1. El/La profesor/a es puntual y aprovecha bien el tiempo de la clase.' },
-  { id: 'des_2', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.2. El/La profesor/a explica los temas de forma que los entiendo.' },
-  { id: 'des_3', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.3. El/La profesor/a utiliza ejemplos o actividades que facilitan mi aprendizaje.' },
-  { id: 'des_4', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.4. El/La profesor/a fomenta mi participación en clase.' },
-  { id: 'des_5', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.5. Se promueve el trabajo en equipo y la colaboración entre compañeros.' },
-  { id: 'des_6', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.6. El/La profesor/a se expresa con claridad (voz, lenguaje).' },
-  { id: 'des_7', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.7. El/La profesor/a responde mis preguntas de manera clara y respetuosa.' },
-  { id: 'des_8', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.8. El/La profesor/a muestra entusiasmo por los temas que enseña.' },
-  { id: 'des_9', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.9. Siento un ambiente de respeto y confianza en sus clases.' },
-  { id: 'des_10', section: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA', text: '3.10. El/La profesor/a me anima a pensar por mí mismo/a y a ser crítico/a.' },
-  
-  // IV. EVALUACIÓN Y RETROALIMENTACIÓN (5 puntos)
-  { id: 'eval_1', section: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN', text: '4.1. Las evaluaciones (exámenes, trabajos) se relacionan con lo que se enseña en clase.' },
-  { id: 'eval_2', section: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN', text: '4.2. El/La profesor/a explica claramente cómo seremos evaluados.' },
-  { id: 'eval_3', section: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN', text: '4.3. Considero que la forma de evaluar del profesor/a es justa.' },
-  { id: 'eval_4', section: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN', text: '4.4. El/La profesor/a me da comentarios útiles (retroalimentación) sobre mis trabajos o mi desempeño.' },
-  { id: 'eval_5', section: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN', text: '4.5. El/La profesor/a entrega los resultados de las evaluaciones en un tiempo razonable.' },
-];
-
-interface EvaluacionEstudianteFormProps {
-  onSubmit: (data: any) => void;
-  colaboradores: any[];
-  isLoading?: boolean;
+interface Colaborador {
+  id: number;
+  fullName: string;
+  roleName: string;
 }
 
-const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onSubmit, colaboradores, isLoading = false }) => {
-  const [scores, setScores] = useState<Record<string, number>>({});
+interface Subcriterio {
+  idSubCriterio: number;
+  texto: string;
+  puntaje: number;
+  idCriterio: number;
+  criterioNombre: string;
+}
 
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      fecha: new Date().toISOString().split('T')[0],
+const fetchColaboradores = async () => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/colaboradores-para-evaluar`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
     },
   });
 
-  const handleScoreChange = (subcriterioId: string, score: number) => {
-    setScores(prev => ({
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+const fetchSubcriterios = async () => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/subcriterios`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+const createEvaluacion = async (evaluacionData: any) => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/evaluaciones`, {
+    method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(evaluacionData),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+interface EvaluacionEstudianteFormProps {
+  onCancel: () => void;
+}
+
+const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onCancel }) => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+  const form = useForm();
+  const [selectedColaborador, setSelectedColaborador] = useState<string>('');
+  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<number, number>>({});
+
+  // Fetch colaboradores
+  const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
+    queryKey: ['colaboradores-para-evaluar'],
+    queryFn: fetchColaboradores,
+  });
+
+  // Fetch subcriterios
+  const { data: subcriteriosData, isLoading: isLoadingSubcriterios } = useQuery({
+    queryKey: ['subcriterios'],
+    queryFn: fetchSubcriterios,
+  });
+
+  const createEvaluacionMutation = useMutation({
+    mutationFn: createEvaluacion,
+    onSuccess: () => {
+      toast.success('Evaluación creada exitosamente');
+      queryClient.invalidateQueries({ queryKey: ['evaluaciones-estudiante'] });
+      onCancel();
+    },
+    onError: (error: any) => {
+      toast.error(`Error al crear evaluación: ${error.message}`);
+    },
+  });
+
+  const colaboradores: Colaborador[] = colaboradoresData?.colaboradores || [];
+  const subcriterios: Subcriterio[] = subcriteriosData?.subcriterios || [];
+
+  // Agrupar subcriterios por criterio
+  const criteriosAgrupados = subcriterios.reduce((acc, subcriterio) => {
+    if (!acc[subcriterio.criterioNombre]) {
+      acc[subcriterio.criterioNombre] = [];
+    }
+    acc[subcriterio.criterioNombre].push(subcriterio);
+    return acc;
+  }, {} as Record<string, Subcriterio[]>);
+
+  const handleSubcriterioRating = (subcriterioId: number, rating: number) => {
+    setSubcriteriosRatings(prev => ({
       ...prev,
-      [subcriterioId]: score
+      [subcriterioId]: rating
     }));
   };
 
   const calculateTotalScore = () => {
-    return Object.values(scores).reduce((total, score) => total + score, 0);
+    return Object.values(subcriteriosRatings).reduce((sum, rating) => sum + rating, 0);
   };
 
-  const handleSubmit = (values: z.infer<typeof formSchema>) => {
-    const totalScore = calculateTotalScore();
-    
+  const onSubmit = (data: any) => {
+    if (!selectedColaborador) {
+      toast.error('Debe seleccionar un docente para evaluar');
+      return;
+    }
+
+    if (Object.keys(subcriteriosRatings).length !== subcriterios.length) {
+      toast.error('Debe calificar todos los subcriterios');
+      return;
+    }
+
+    const now = new Date();
     const evaluacionData = {
-      ...values,
-      evaluatedId: parseInt(values.profesor),
       type: 'Evaluación del Docente por el Estudiante',
-      score: totalScore,
-      subcriterios: Object.entries(scores).map(([id, puntaje]) => ({
-        idSubCriterio: id,
+      evaluatorId: user?.id,
+      evaluatedId: parseInt(selectedColaborador),
+      date: now.toISOString().split('T')[0],
+      time: now.toTimeString().split(' ')[0],
+      score: calculateTotalScore(),
+      comments: data.comentarios || null,
+      status: 'Completada',
+      subcriterios: Object.entries(subcriteriosRatings).map(([subcriterioId, puntaje]) => ({
+        idSubCriterio: parseInt(subcriterioId),
         puntajeObtenido: puntaje,
-        descripcion: subcriterios.find(s => s.id === id)?.text || ''
-      })),
-      time: new Date().toTimeString().split(' ')[0],
-      date: values.fecha,
-      comments: `Lo que más valoro: ${values.valoroMas || 'No especificado'}\n\nSugerencias: ${values.sugerencias || 'Ninguna'}`
+        descripcion: null
+      }))
     };
 
-    onSubmit(evaluacionData);
+    createEvaluacionMutation.mutate(evaluacionData);
   };
 
-  const groupedSubcriterios = subcriterios.reduce((acc, subcriterio) => {
-    if (!acc[subcriterio.section]) {
-      acc[subcriterio.section] = [];
-    }
-    acc[subcriterio.section].push(subcriterio);
-    return acc;
-  }, {} as Record<string, typeof subcriterios>);
+  if (isLoadingColaboradores || isLoadingSubcriterios) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle>EVALUACIÓN DEL DOCENTE POR EL ESTUDIANTE (Escala Modificada)</CardTitle>
-        <CardDescription>
-          Tu opinión es muy importante para ayudarnos a mejorar. Te pedimos que respondas con sinceridad. Esta evaluación es anónima.
-        </CardDescription>
-      </CardHeader>
-      
-      <CardContent className="space-y-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-            
-            {/* Información General */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="profesor"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Profesor(a) *</FormLabel>
-                    <FormControl>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar profesor(a)" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {colaboradores.map((colaborador) => (
-                            <SelectItem key={colaborador.id} value={colaborador.id.toString()}>
-                              {colaborador.fullName}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+    <div className="space-y-6">
+      <div className="flex items-center gap-4">
+        <Button variant="ghost" onClick={onCancel} className="p-2">
+          <ArrowLeft className="h-4 w-4" />
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Evaluación del Docente por el Estudiante</h1>
+          <p className="text-muted-foreground">Tu opinión es muy importante para ayudarnos a mejorar</p>
+        </div>
+      </div>
 
-              <FormField
-                control={form.control}
-                name="asignaturaModulo"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Asignatura/Módulo *</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Nombre de la asignatura o módulo" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="fecha"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Fecha *</FormLabel>
-                    <FormControl>
-                      <Input type="date" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
-            {/* Escala de Valoración */}
-            <div className="bg-muted p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">Escala de Valoración por Subcriterio:</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
-                <div><strong>1:</strong> Totalmente de Acuerdo / Siempre</div>
-                <div><strong>0.5:</strong> De Acuerdo Parcialmente / A Veces</div>
-                <div><strong>0:</strong> En Desacuerdo / Nunca</div>
-              </div>
-            </div>
-
-            {/* Criterios de Evaluación */}
-            <div className="space-y-6">
-              {Object.entries(groupedSubcriterios).map(([section, items]) => (
-                <div key={section} className="border rounded-lg p-4">
-                  <h3 className="font-semibold text-lg mb-4 text-primary">{section}</h3>
-                  <div className="space-y-4">
-                    {items.map((subcriterio) => (
-                      <div key={subcriterio.id} className="flex items-start gap-4 p-3 bg-muted/50 rounded">
-                        <div className="flex-1">
-                          <p className="text-sm">{subcriterio.text}</p>
-                        </div>
-                        <RadioGroup
-                          value={scores[subcriterio.id]?.toString() || ''}
-                          onValueChange={(value) => handleScoreChange(subcriterio.id, parseFloat(value))}
-                          className="flex gap-4"
-                        >
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="0" id={`${subcriterio.id}_0`} />
-                            <Label htmlFor={`${subcriterio.id}_0`}>0</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="0.5" id={`${subcriterio.id}_0.5`} />
-                            <Label htmlFor={`${subcriterio.id}_0.5`}>0.5</Label>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <RadioGroupItem value="1" id={`${subcriterio.id}_1`} />
-                            <Label htmlFor={`${subcriterio.id}_1`}>1</Label>
-                          </div>
-                        </RadioGroup>
-                      </div>
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Información de la Evaluación</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div>
+                <Label htmlFor="colaborador">Profesor/a a evaluar</Label>
+                <Select value={selectedColaborador} onValueChange={setSelectedColaborador}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un profesor/a" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colaboradores.map((colaborador) => (
+                      <SelectItem key={colaborador.id} value={colaborador.id.toString()}>
+                        {colaborador.fullName} - {colaborador.roleName}
+                      </SelectItem>
                     ))}
-                  </div>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label>Estudiante</Label>
+                  <Input value={user?.name || ''} disabled />
                 </div>
-              ))}
-            </div>
+                <div>
+                  <Label>Fecha</Label>
+                  <Input value={new Date().toLocaleDateString()} disabled />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
-            {/* Puntaje Total */}
-            <div className="bg-primary/10 p-4 rounded-lg">
-              <h3 className="font-semibold text-lg">PUNTAJE TOTAL OBTENIDO: {calculateTotalScore()}/20</h3>
-            </div>
+          {Object.entries(criteriosAgrupados).map(([criterioNombre, subcriteriosGrupo]) => (
+            <Card key={criterioNombre}>
+              <CardHeader>
+                <CardTitle className="text-lg">{criterioNombre}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {subcriteriosGrupo.map((subcriterio) => (
+                    <div key={subcriterio.idSubCriterio} className="space-y-2">
+                      <Label className="text-sm">{subcriterio.texto}</Label>
+                      <RadioGroup
+                        value={subcriteriosRatings[subcriterio.idSubCriterio]?.toString() || ''}
+                        onValueChange={(value) => handleSubcriterioRating(subcriterio.idSubCriterio, parseFloat(value))}
+                        className="flex gap-6"
+                      >
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="0" id={`${subcriterio.idSubCriterio}-0`} />
+                          <Label htmlFor={`${subcriterio.idSubCriterio}-0`} className="text-sm">
+                            0 - En Desacuerdo
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="0.5" id={`${subcriterio.idSubCriterio}-0.5`} />
+                          <Label htmlFor={`${subcriterio.idSubCriterio}-0.5`} className="text-sm">
+                            0.5 - De Acuerdo Parcialmente
+                          </Label>
+                        </div>
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="1" id={`${subcriterio.idSubCriterio}-1`} />
+                          <Label htmlFor={`${subcriterio.idSubCriterio}-1`} className="text-sm">
+                            1 - Totalmente de Acuerdo
+                          </Label>
+                        </div>
+                      </RadioGroup>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
 
-            {/* Comentarios Adicionales */}
-            <div className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Puntaje Total</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-center">
+                {calculateTotalScore()}/20
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Comentarios Adicionales</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <FormField
                 control={form.control}
-                name="valoroMas"
+                name="comentarios"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Lo que más valoro de este(a) profesor(a) es:</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Comparte lo que más aprecias de este profesor..."
+                      <Textarea
+                        placeholder="Escribe lo que más valoras..."
                         className="min-h-[80px]"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
@@ -254,30 +307,33 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onS
                   <FormItem>
                     <FormLabel>Sugerencias para que el/la profesor(a) pueda mejorar:</FormLabel>
                     <FormControl>
-                      <Textarea 
-                        placeholder="Comparte sugerencias constructivas para ayudar al profesor a mejorar..."
+                      <Textarea
+                        placeholder="Escribe tus sugerencias constructivas..."
                         className="min-h-[80px]"
-                        {...field} 
+                        {...field}
                       />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
               />
-            </div>
+            </CardContent>
+          </Card>
 
-            <div className="flex justify-end gap-4">
-              <Button type="button" variant="outline" onClick={() => form.reset()}>
-                Limpiar Formulario
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? 'Enviando...' : 'Enviar Evaluación'}
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </CardContent>
-    </Card>
+          <div className="flex gap-4">
+            <Button type="button" variant="outline" onClick={onCancel}>
+              Cancelar
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={createEvaluacionMutation.isPending || !selectedColaborador}
+            >
+              {createEvaluacionMutation.isPending ? 'Guardando...' : 'Enviar Evaluación'}
+            </Button>
+          </div>
+        </form>
+      </Form>
+    </div>
   );
 };
 
