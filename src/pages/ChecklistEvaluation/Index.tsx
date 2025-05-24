@@ -32,7 +32,7 @@ const ChecklistEvaluation = () => {
   // Fetch evaluaciones realizadas por este evaluador
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-evaluador', user?.id],
-    queryFn: () => fetchEvaluacionesByEvaluador(user?.id || 0),
+    queryFn: () => fetchEvaluacionesByEvaluador(Number(user?.id) || 0),
     enabled: !!user?.id,
   });
 
@@ -49,7 +49,7 @@ const ChecklistEvaluation = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Evaluaciones Realizadas</CardTitle>
+          <CardTitle>Mis Evaluaciones</CardTitle>
           <CardDescription>
             Historial de evaluaciones que has realizado
           </CardDescription>

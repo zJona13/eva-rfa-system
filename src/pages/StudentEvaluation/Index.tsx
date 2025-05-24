@@ -32,7 +32,7 @@ const StudentEvaluation = () => {
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-estudiante', user?.id],
-    queryFn: () => fetchEvaluacionesByEvaluador(user?.id || 0),
+    queryFn: () => fetchEvaluacionesByEvaluador(Number(user?.id) || 0),
     enabled: !!user?.id,
   });
 
@@ -50,7 +50,7 @@ const StudentEvaluation = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Evaluaciones Realizadas</CardTitle>
+          <CardTitle>Mis Evaluaciones</CardTitle>
           <CardDescription>
             Historial de evaluaciones que has realizado a docentes
           </CardDescription>
