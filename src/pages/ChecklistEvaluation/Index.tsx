@@ -3,48 +3,12 @@ import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import SupervisionForm from './SupervisionForm';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
 // API functions
-const fetchColaboradoresParaEvaluar = async () => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/colaboradores-para-evaluar`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const createEvaluacion = async (evaluacionData: any) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/evaluaciones`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(evaluacionData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
 const fetchEvaluacionesByEvaluador = async (userId: number) => {
   const token = localStorage.getItem('auth_token');
   const response = await fetch(`${API_BASE_URL}/evaluaciones/evaluador/${userId}`, {
@@ -62,15 +26,8 @@ const fetchEvaluacionesByEvaluador = async (userId: number) => {
 };
 
 const ChecklistEvaluation = () => {
-  const [activeTab, setActiveTab] = useState('nueva-evaluacion');
   const { user } = useAuth();
   const queryClient = useQueryClient();
-
-  // Fetch colaboradores para evaluar
-  const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
-    queryKey: ['colaboradores-para-evaluar'],
-    queryFn: fetchColaboradoresParaEvaluar,
-  });
 
   // Fetch evaluaciones realizadas por este evaluador
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -79,36 +36,6 @@ const ChecklistEvaluation = () => {
     enabled: !!user?.id,
   });
 
-  // Mutation para crear evaluación
-  const createEvaluacionMutation = useMutation({
-    mutationFn: createEvaluacion,
-    onSuccess: (data) => {
-      if (data.success) {
-        toast.success(data.message || 'Evaluación creada exitosamente');
-        queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
-        setActiveTab('mis-evaluaciones');
-      } else {
-        toast.error(data.message || 'Error al crear la evaluación');
-      }
-    },
-    onError: (error) => {
-      console.error('Error creating evaluacion:', error);
-      toast.error(`Error al crear la evaluación: ${error.message}`);
-    },
-  });
-
-  const handleSubmitEvaluacion = (evaluacionData: any) => {
-    const dataToSubmit = {
-      ...evaluacionData,
-      evaluatorId: user?.id,
-      status: 'Completada'
-    };
-    
-    console.log('Submitting evaluacion:', dataToSubmit);
-    createEvaluacionMutation.mutate(dataToSubmit);
-  };
-
-  const colaboradores = colaboradoresData?.colaboradores || [];
   const evaluaciones = evaluacionesData?.evaluaciones || [];
 
   return (
@@ -116,103 +43,70 @@ const ChecklistEvaluation = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Listas de Cotejo - Evaluación Docente</h1>
         <p className="text-muted-foreground mt-2">
-          Realice evaluaciones utilizando criterios predefinidos y escalas de valoración.
+          Consulta las evaluaciones que has realizado utilizando criterios predefinidos.
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="nueva-evaluacion">Nueva Evaluación</TabsTrigger>
-          <TabsTrigger value="mis-evaluaciones">Mis Evaluaciones</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="nueva-evaluacion" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Ficha de Supervisión de Aprendizaje</CardTitle>
-              <CardDescription>
-                Evalúe el desempeño del docente durante una sesión de aprendizaje
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingColaboradores ? (
-                <div className="flex items-center justify-center p-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                </div>
-              ) : (
-                <SupervisionForm
-                  onSubmit={handleSubmitEvaluacion}
-                  colaboradores={colaboradores}
-                  isLoading={createEvaluacionMutation.isPending}
-                />
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="mis-evaluaciones" className="space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Evaluaciones Realizadas</CardTitle>
-              <CardDescription>
-                Historial de evaluaciones que has realizado
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {isLoadingEvaluaciones ? (
-                <div className="flex items-center justify-center p-8">
-                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-                </div>
-              ) : evaluaciones.length === 0 ? (
-                <div className="text-center py-8">
-                  <p className="text-muted-foreground">No has realizado evaluaciones aún.</p>
-                  <Button 
-                    className="mt-4" 
-                    onClick={() => setActiveTab('nueva-evaluacion')}
-                  >
-                    Realizar Primera Evaluación
-                  </Button>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {evaluaciones.map((evaluacion: any) => (
-                    <div key={evaluacion.id} className="border rounded-lg p-4">
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h3 className="font-semibold">{evaluacion.type}</h3>
-                          <p className="text-sm text-muted-foreground">
-                            Evaluado: {evaluacion.evaluatedName}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Fecha: {new Date(evaluacion.date).toLocaleDateString()}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            Puntaje: {evaluacion.score}/20
-                          </p>
-                        </div>
-                        <div className="flex gap-2">
-                          <span className={`px-2 py-1 rounded text-xs ${
-                            evaluacion.status === 'Completada' 
-                              ? 'bg-green-100 text-green-800' 
-                              : 'bg-yellow-100 text-yellow-800'
-                          }`}>
-                            {evaluacion.status}
-                          </span>
-                        </div>
-                      </div>
-                      {evaluacion.comments && (
-                        <div className="mt-3 p-3 bg-muted rounded">
-                          <p className="text-sm"><strong>Comentarios:</strong> {evaluacion.comments}</p>
-                        </div>
-                      )}
+      <Card>
+        <CardHeader>
+          <CardTitle>Evaluaciones Realizadas</CardTitle>
+          <CardDescription>
+            Historial de evaluaciones que has realizado
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingEvaluaciones ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+            </div>
+          ) : evaluaciones.length === 0 ? (
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">No has realizado evaluaciones aún.</p>
+              <Button 
+                className="mt-4" 
+                onClick={() => window.location.href = '/nueva-evaluacion'}
+              >
+                Realizar Primera Evaluación
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {evaluaciones.map((evaluacion: any) => (
+                <div key={evaluacion.id} className="border rounded-lg p-4">
+                  <div className="flex justify-between items-start">
+                    <div>
+                      <h3 className="font-semibold">{evaluacion.type}</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Evaluado: {evaluacion.evaluatedName}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Fecha: {new Date(evaluacion.date).toLocaleDateString()}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        Puntaje: {evaluacion.score}/20
+                      </p>
                     </div>
-                  ))}
+                    <div className="flex gap-2">
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        evaluacion.status === 'Completada' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
+                      }`}>
+                        {evaluacion.status}
+                      </span>
+                    </div>
+                  </div>
+                  {evaluacion.comments && (
+                    <div className="mt-3 p-3 bg-muted rounded">
+                      <p className="text-sm"><strong>Comentarios:</strong> {evaluacion.comments}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 };

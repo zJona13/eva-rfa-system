@@ -8,6 +8,7 @@ const userService = require('./services/userService.cjs');
 const colaboradorService = require('./services/colaboradorService.cjs');
 const evaluacionService = require('./services/evaluacionService.cjs');
 const authService = require('./services/authService.cjs');
+const criteriosService = require('./services/criteriosService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -27,7 +28,7 @@ testConnection()
   });
 
 // Simple middleware for basic authentication (temporary placeholder)
-const authenticateRequest = (req, res, next) => {
+const authenticateToken = (req, res, next) => {
   // Check for token in Authorization header
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -67,7 +68,7 @@ app.post('/api/auth/login', async (req, res) => {
 
 // Rutas protegidas - usando el middleware temporal
 // Obtener información del usuario actual
-app.get('/api/auth/me', authenticateRequest, async (req, res) => {
+app.get('/api/auth/me', authenticateToken, async (req, res) => {
   const authHeader = req.headers.authorization;
   const token = authHeader.split(' ')[1];
   
@@ -93,7 +94,7 @@ app.get('/api/auth/me', authenticateRequest, async (req, res) => {
 });
 
 // Rutas para gestión de roles de usuario
-app.get('/api/roles', authenticateRequest, async (req, res) => {
+app.get('/api/roles', authenticateToken, async (req, res) => {
   const result = await roleService.getAllRoles();
   
   if (!result.success) {
@@ -103,7 +104,7 @@ app.get('/api/roles', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.post('/api/roles', authenticateRequest, async (req, res) => {
+app.post('/api/roles', authenticateToken, async (req, res) => {
   const { name } = req.body;
   
   if (!name) {
@@ -119,7 +120,7 @@ app.post('/api/roles', authenticateRequest, async (req, res) => {
   res.status(201).json(result);
 });
 
-app.put('/api/roles/:roleId', authenticateRequest, async (req, res) => {
+app.put('/api/roles/:roleId', authenticateToken, async (req, res) => {
   const { roleId } = req.params;
   const { name } = req.body;
   
@@ -136,7 +137,7 @@ app.put('/api/roles/:roleId', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/roles/:roleId', authenticateRequest, async (req, res) => {
+app.delete('/api/roles/:roleId', authenticateToken, async (req, res) => {
   const { roleId } = req.params;
   const result = await roleService.deleteRole(roleId);
   
@@ -148,7 +149,7 @@ app.delete('/api/roles/:roleId', authenticateRequest, async (req, res) => {
 });
 
 // Rutas para gestión de tipos de colaborador
-app.get('/api/tiposcolaborador', authenticateRequest, async (req, res) => {
+app.get('/api/tiposcolaborador', authenticateToken, async (req, res) => {
   const result = await tipoColaboradorService.getAllTiposColaborador();
   
   if (!result.success) {
@@ -158,7 +159,7 @@ app.get('/api/tiposcolaborador', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.post('/api/tiposcolaborador', authenticateRequest, async (req, res) => {
+app.post('/api/tiposcolaborador', authenticateToken, async (req, res) => {
   const { name } = req.body;
   
   if (!name) {
@@ -174,7 +175,7 @@ app.post('/api/tiposcolaborador', authenticateRequest, async (req, res) => {
   res.status(201).json(result);
 });
 
-app.put('/api/tiposcolaborador/:id', authenticateRequest, async (req, res) => {
+app.put('/api/tiposcolaborador/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   
@@ -191,7 +192,7 @@ app.put('/api/tiposcolaborador/:id', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/tiposcolaborador/:id', authenticateRequest, async (req, res) => {
+app.delete('/api/tiposcolaborador/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const result = await tipoColaboradorService.deleteTipoColaborador(id);
   
@@ -203,7 +204,7 @@ app.delete('/api/tiposcolaborador/:id', authenticateRequest, async (req, res) =>
 });
 
 // Rutas para gestión de tipos de contrato
-app.get('/api/tiposcontrato', authenticateRequest, async (req, res) => {
+app.get('/api/tiposcontrato', authenticateToken, async (req, res) => {
   try {
     console.log('GET /api/tiposcontrato - Fetching all tipos contrato');
     const result = await tipoContratoService.getAllTiposContrato();
@@ -219,7 +220,7 @@ app.get('/api/tiposcontrato', authenticateRequest, async (req, res) => {
   }
 });
 
-app.post('/api/tiposcontrato', authenticateRequest, async (req, res) => {
+app.post('/api/tiposcontrato', authenticateToken, async (req, res) => {
   try {
     const { name } = req.body;
     console.log('POST /api/tiposcontrato - Creating new tipo contrato:', name);
@@ -241,7 +242,7 @@ app.post('/api/tiposcontrato', authenticateRequest, async (req, res) => {
   }
 });
 
-app.put('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
+app.put('/api/tiposcontrato/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
@@ -264,7 +265,7 @@ app.put('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
   }
 });
 
-app.delete('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
+app.delete('/api/tiposcontrato/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`DELETE /api/tiposcontrato/${id} - Deleting tipo contrato`);
@@ -283,7 +284,7 @@ app.delete('/api/tiposcontrato/:id', authenticateRequest, async (req, res) => {
 });
 
 // Rutas para gestión de usuarios
-app.get('/api/users', authenticateRequest, async (req, res) => {
+app.get('/api/users', authenticateToken, async (req, res) => {
   const result = await userService.getAllUsers();
   
   if (!result.success) {
@@ -293,7 +294,7 @@ app.get('/api/users', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.post('/api/users', authenticateRequest, async (req, res) => {
+app.post('/api/users', authenticateToken, async (req, res) => {
   const { name, email, password, active, roleId } = req.body;
   
   if (!name || !email || !password || roleId === undefined) {
@@ -309,7 +310,7 @@ app.post('/api/users', authenticateRequest, async (req, res) => {
   res.status(201).json(result);
 });
 
-app.put('/api/users/:userId', authenticateRequest, async (req, res) => {
+app.put('/api/users/:userId', authenticateToken, async (req, res) => {
   const { userId } = req.params;
   const { name, email, password, active, roleId } = req.body;
   
@@ -326,7 +327,7 @@ app.put('/api/users/:userId', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/users/:userId', authenticateRequest, async (req, res) => {
+app.delete('/api/users/:userId', authenticateToken, async (req, res) => {
   const { userId } = req.params;
   const result = await userService.deleteUser(userId);
   
@@ -338,7 +339,7 @@ app.delete('/api/users/:userId', authenticateRequest, async (req, res) => {
 });
 
 // Rutas para gestión de colaboradores
-app.get('/api/colaboradores', authenticateRequest, async (req, res) => {
+app.get('/api/colaboradores', authenticateToken, async (req, res) => {
   const result = await colaboradorService.getAllColaboradores();
   
   if (!result.success) {
@@ -358,7 +359,7 @@ app.get('/api/colaboradores', authenticateRequest, async (req, res) => {
 //   res.json(result);
 // });
 
-app.post('/api/colaboradores', authenticateRequest, async (req, res) => {
+app.post('/api/colaboradores', authenticateToken, async (req, res) => {
   const colaboradorData = req.body;
   
   if (!colaboradorData.nombres || !colaboradorData.apePat || !colaboradorData.dni || !colaboradorData.roleId || !colaboradorData.contractTypeId) {
@@ -391,7 +392,7 @@ app.post('/api/colaboradores', authenticateRequest, async (req, res) => {
   res.status(201).json(result);
 });
 
-app.put('/api/colaboradores/:id', authenticateRequest, async (req, res) => {
+app.put('/api/colaboradores/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const colaboradorData = req.body;
   
@@ -425,7 +426,7 @@ app.put('/api/colaboradores/:id', authenticateRequest, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/colaboradores/:id', authenticateRequest, async (req, res) => {
+app.delete('/api/colaboradores/:id', authenticateToken, async (req, res) => {
   const { id } = req.params;
   const result = await colaboradorService.deleteColaborador(id);
   
@@ -437,7 +438,7 @@ app.delete('/api/colaboradores/:id', authenticateRequest, async (req, res) => {
 });
 
 // Rutas para gestión de evaluaciones
-app.get('/api/evaluaciones', authenticateRequest, async (req, res) => {
+app.get('/api/evaluaciones', authenticateToken, async (req, res) => {
   try {
     console.log('GET /api/evaluaciones - Fetching all evaluaciones');
     const result = await evaluacionService.getAllEvaluaciones();
@@ -453,7 +454,7 @@ app.get('/api/evaluaciones', authenticateRequest, async (req, res) => {
   }
 });
 
-app.get('/api/evaluaciones/evaluador/:userId', authenticateRequest, async (req, res) => {
+app.get('/api/evaluaciones/evaluador/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
     console.log(`GET /api/evaluaciones/evaluador/${userId} - Fetching evaluaciones by evaluador`);
@@ -471,7 +472,7 @@ app.get('/api/evaluaciones/evaluador/:userId', authenticateRequest, async (req, 
   }
 });
 
-app.get('/api/evaluaciones/colaborador/:colaboradorId', authenticateRequest, async (req, res) => {
+app.get('/api/evaluaciones/colaborador/:colaboradorId', authenticateToken, async (req, res) => {
   try {
     const { colaboradorId } = req.params;
     console.log(`GET /api/evaluaciones/colaborador/${colaboradorId} - Fetching evaluaciones by colaborador`);
@@ -489,7 +490,7 @@ app.get('/api/evaluaciones/colaborador/:colaboradorId', authenticateRequest, asy
   }
 });
 
-app.get('/api/colaboradores-para-evaluar', authenticateRequest, async (req, res) => {
+app.get('/api/colaboradores-para-evaluar', authenticateToken, async (req, res) => {
   try {
     console.log('GET /api/colaboradores-para-evaluar - Fetching colaboradores available for evaluation');
     const result = await evaluacionService.getColaboradoresParaEvaluar();
@@ -505,7 +506,7 @@ app.get('/api/colaboradores-para-evaluar', authenticateRequest, async (req, res)
   }
 });
 
-app.post('/api/evaluaciones', authenticateRequest, async (req, res) => {
+app.post('/api/evaluaciones', authenticateToken, async (req, res) => {
   try {
     const evaluacionData = req.body;
     console.log('POST /api/evaluaciones - Creating new evaluacion:', evaluacionData);
@@ -527,7 +528,7 @@ app.post('/api/evaluaciones', authenticateRequest, async (req, res) => {
   }
 });
 
-app.put('/api/evaluaciones/:id', authenticateRequest, async (req, res) => {
+app.put('/api/evaluaciones/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const evaluacionData = req.body;
@@ -550,7 +551,7 @@ app.put('/api/evaluaciones/:id', authenticateRequest, async (req, res) => {
   }
 });
 
-app.delete('/api/evaluaciones/:id', authenticateRequest, async (req, res) => {
+app.delete('/api/evaluaciones/:id', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`DELETE /api/evaluaciones/${id} - Deleting evaluacion`);
@@ -565,6 +566,44 @@ app.delete('/api/evaluaciones/:id', authenticateRequest, async (req, res) => {
   } catch (error) {
     console.error(`Error in DELETE /api/evaluaciones/${req.params.id}:`, error);
     res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// ========================
+// CRITERIOS ROUTES
+// ========================
+
+// Obtener todos los criterios
+app.get('/api/criterios', authenticateToken, async (req, res) => {
+  try {
+    const result = await criteriosService.getAllCriterios();
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/criterios:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+// Obtener subcriterios por criterio
+app.get('/api/criterios/:id/subcriterios', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await criteriosService.getSubcriteriosByCriterio(parseInt(id));
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/criterios/:id/subcriterios:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+// Obtener todos los subcriterios
+app.get('/api/subcriterios', authenticateToken, async (req, res) => {
+  try {
+    const result = await criteriosService.getAllSubcriterios();
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/subcriterios:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
