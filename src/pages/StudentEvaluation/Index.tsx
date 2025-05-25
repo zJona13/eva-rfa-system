@@ -39,7 +39,7 @@ const StudentEvaluation = () => {
   });
 
   const evaluaciones = evaluacionesData?.evaluaciones || [];
-  const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluación del Docente por el Estudiante');
+  const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluacion estudiante-docente');
 
   if (showForm) {
     return <EvaluacionEstudianteForm onCancel={() => setShowForm(false)} />;
@@ -56,7 +56,7 @@ const StudentEvaluation = () => {
 
       <Card>
         <CardHeader>
-          <CardTitle>Mis Evaluaciones</CardTitle>
+          <CardTitle>Mis Evaluaciones a Docentes</CardTitle>
           <CardDescription>
             Historial de evaluaciones que has realizado a docentes
           </CardDescription>

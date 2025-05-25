@@ -39,6 +39,7 @@ const ChecklistEvaluation = () => {
   });
 
   const evaluaciones = evaluacionesData?.evaluaciones || [];
+  const evaluacionesSupervision = evaluaciones.filter((e: any) => e.type === 'Evaluacion a Docente');
 
   if (showForm) {
     return <EvaluacionSupervisionForm onCancel={() => setShowForm(false)} />;
@@ -47,17 +48,17 @@ const ChecklistEvaluation = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Listas de Cotejo - Evaluación Docente</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Supervisión Docente</h1>
         <p className="text-muted-foreground mt-2">
-          Consulta las evaluaciones que has realizado utilizando criterios predefinidos.
+          Consulta las evaluaciones de supervisión que has realizado utilizando criterios predefinidos.
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Mis Evaluaciones</CardTitle>
+          <CardTitle>Mis Evaluaciones de Supervisión</CardTitle>
           <CardDescription>
-            Historial de evaluaciones que has realizado
+            Historial de evaluaciones de supervisión que has realizado
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -65,24 +66,24 @@ const ChecklistEvaluation = () => {
             <div className="flex items-center justify-center p-8">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
             </div>
-          ) : evaluaciones.length === 0 ? (
+          ) : evaluacionesSupervision.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No has realizado evaluaciones aún.</p>
+              <p className="text-muted-foreground">No has realizado evaluaciones de supervisión aún.</p>
               <Button 
                 className="mt-4" 
                 onClick={() => setShowForm(true)}
               >
-                Realizar Primera Evaluación
+                Realizar Primera Supervisión
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex justify-end">
                 <Button onClick={() => setShowForm(true)}>
-                  Nueva Evaluación
+                  Nueva Supervisión
                 </Button>
               </div>
-              {evaluaciones.map((evaluacion: any) => (
+              {evaluacionesSupervision.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>

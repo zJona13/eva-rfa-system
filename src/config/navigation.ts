@@ -48,7 +48,7 @@ export const navItems: NavItem[] = [
     roles: ['admin', 'evaluator', 'evaluated', 'student', 'validator'],
   },
   {
-    title: 'Listas de Cotejo',
+    title: 'Supervisión',
     href: '/checklist-evaluation',
     icon: CheckSquare,
     roles: ['admin', 'evaluator'],
@@ -107,8 +107,8 @@ export const modulesData = [
   },
   {
     id: 4,
-    title: 'Calificación con Lista de Cotejo',
-    description: 'Calificación mediante criterios predefinidos',
+    title: 'Supervisión Docente',
+    description: 'Evaluación mediante criterios predefinidos',
     href: '/checklist-evaluation',
     icon: CheckSquare,
     color: 'bg-ies-success-50 text-ies-success-500',

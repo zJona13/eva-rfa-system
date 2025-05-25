@@ -39,7 +39,7 @@ const SelfEvaluation = () => {
   });
 
   const evaluaciones = evaluacionesData?.evaluaciones || [];
-  const autoevaluaciones = evaluaciones.filter((e: any) => e.type === 'Autoevaluación Docente');
+  const autoevaluaciones = evaluaciones.filter((e: any) => e.type === 'Autoevaluacion');
 
   if (showForm) {
     return <AutoevaluacionForm onCancel={() => setShowForm(false)} />;
