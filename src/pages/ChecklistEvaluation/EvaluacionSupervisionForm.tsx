@@ -115,19 +115,14 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
 
     const now = new Date();
     const evaluacionData = {
-      type: 'Ficha de Supervisión de Aprendizaje',
+      type: 'Evaluacion a Docente',
       evaluatorId: user?.id,
       evaluatedId: parseInt(selectedColaborador),
       date: now.toISOString().split('T')[0],
       time: now.toTimeString().split(' ')[0],
       score: calculateTotalScore(),
       comments: data.comentarios || null,
-      status: 'Completada',
-      subcriterios: Object.entries(subcriteriosRatings).map(([subcriterioId, puntaje]) => ({
-        idSubCriterio: subcriterioId,
-        puntajeObtenido: puntaje,
-        descripcion: null
-      }))
+      status: 'Completada'
     };
 
     createEvaluacionMutation.mutate(evaluacionData);

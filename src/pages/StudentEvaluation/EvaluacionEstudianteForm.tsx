@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
@@ -78,7 +78,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
     mutationFn: createEvaluacion,
     onSuccess: () => {
       toast.success('Evaluación creada exitosamente');
-      queryClient.invalidateQueries({ queryKey: ['evaluaciones-estudiante'] });
+      queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
       onCancel();
     },
     onError: (error: any) => {
@@ -104,7 +104,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
 
   const onSubmit = (data: any) => {
     if (!selectedColaborador) {
-      toast.error('Debe seleccionar un docente para evaluar');
+      toast.error('Debe seleccionar un colaborador para evaluar');
       return;
     }
 
@@ -115,19 +115,14 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
 
     const now = new Date();
     const evaluacionData = {
-      type: 'Evaluación del Docente por el Estudiante',
+      type: 'Evaluacion estudiante-docente',
       evaluatorId: user?.id,
       evaluatedId: parseInt(selectedColaborador),
       date: now.toISOString().split('T')[0],
       time: now.toTimeString().split(' ')[0],
       score: calculateTotalScore(),
       comments: data.comentarios || null,
-      status: 'Completada',
-      subcriterios: Object.entries(subcriteriosRatings).map(([subcriterioId, puntaje]) => ({
-        idSubCriterio: subcriterioId,
-        puntajeObtenido: puntaje,
-        descripcion: null
-      }))
+      status: 'Completada'
     };
 
     createEvaluacionMutation.mutate(evaluacionData);
@@ -149,7 +144,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
         </Button>
         <div>
           <h1 className="text-2xl font-bold">Evaluación del Docente por el Estudiante</h1>
-          <p className="text-muted-foreground">Tu opinión es muy importante para ayudarnos a mejorar</p>
+          <p className="text-muted-foreground">Tu opinión es muy importante para ayudarnos a mejorar. Esta evaluación es anónima.</p>
         </div>
       </div>
 
@@ -178,12 +173,12 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Estudiante</Label>
-                  <Input value={user?.name || ''} disabled />
-                </div>
-                <div>
                   <Label>Fecha</Label>
                   <Input value={new Date().toLocaleDateString()} disabled />
+                </div>
+                <div>
+                  <Label>Asignatura/Módulo</Label>
+                  <Input placeholder="Nombre de la asignatura" {...form.register('asignatura')} />
                 </div>
               </div>
             </CardContent>
@@ -224,7 +219,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
                         <div className="flex items-center space-x-2">
                           <RadioGroupItem value="0.5" id={`${subcriterio.id}-0.5`} />
                           <Label htmlFor={`${subcriterio.id}-0.5`} className="text-sm">
-                            0.5 - De Acuerdo Parcialmente
+                            0.5 - Parcialmente de Acuerdo
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2">
@@ -262,10 +257,9 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
                 name="comentarios"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Comentarios sobre el profesor/a:</FormLabel>
                     <FormControl>
                       <Textarea
-                        placeholder="Lo que más valoro de este(a) profesor(a) es... / Sugerencias para que el/la profesor(a) pueda mejorar..."
+                        placeholder="Lo que más valoro de este(a) profesor(a) y sugerencias para mejorar..."
                         className="min-h-[100px]"
                         {...field}
                       />
@@ -285,7 +279,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
               type="submit" 
               disabled={createEvaluacionMutation.isPending || !selectedColaborador}
             >
-              {createEvaluacionMutation.isPending ? 'Guardando...' : 'Enviar Evaluación'}
+              {createEvaluacionMutation.isPending ? 'Guardando...' : 'Guardar Evaluación'}
             </Button>
           </div>
         </form>

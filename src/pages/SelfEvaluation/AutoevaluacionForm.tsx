@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,22 @@ import { ArrowLeft } from 'lucide-react';
 import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
 const API_BASE_URL = 'http://localhost:3306/api';
+
+const fetchColaboradorByUserId = async (userId: number) => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/colaborador-by-user/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 const createEvaluacion = async (evaluacionData: any) => {
   const token = localStorage.getItem('auth_token');
@@ -43,6 +59,13 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
   const queryClient = useQueryClient();
   const form = useForm();
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
+
+  // Fetch colaborador info by user ID
+  const { data: colaboradorData, isLoading: isLoadingColaborador } = useQuery({
+    queryKey: ['colaborador-by-user', user?.id],
+    queryFn: () => fetchColaboradorByUserId(user?.id || 0),
+    enabled: !!user?.id,
+  });
 
   const createEvaluacionMutation = useMutation({
     mutationFn: createEvaluacion,
@@ -76,25 +99,36 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
       return;
     }
 
+    const colaborador = colaboradorData?.colaborador;
+    if (!colaborador) {
+      toast.error('No se pudo obtener información del colaborador');
+      return;
+    }
+
     const now = new Date();
     const evaluacionData = {
-      type: 'Autoevaluación Docente',
+      type: 'Autoevaluacion',
       evaluatorId: user?.id,
-      evaluatedId: user?.colaboradorId,
+      evaluatedId: colaborador.id,
       date: now.toISOString().split('T')[0],
       time: now.toTimeString().split(' ')[0],
       score: calculateTotalScore(),
       comments: data.comentarios || null,
-      status: 'Completada',
-      subcriterios: Object.entries(subcriteriosRatings).map(([subcriterioId, puntaje]) => ({
-        idSubCriterio: subcriterioId,
-        puntajeObtenido: puntaje,
-        descripcion: null
-      }))
+      status: 'Completada'
     };
 
     createEvaluacionMutation.mutate(evaluacionData);
   };
+
+  if (isLoadingColaborador) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  const colaborador = colaboradorData?.colaborador;
 
   return (
     <div className="space-y-6">
@@ -118,7 +152,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Docente</Label>
-                  <Input value={user?.name || ''} disabled />
+                  <Input value={colaborador?.fullName || 'Cargando...'} disabled />
                 </div>
                 <div>
                   <Label>Fecha</Label>

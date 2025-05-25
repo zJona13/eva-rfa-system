@@ -636,6 +636,23 @@ app.get('/api/subcriterios', authenticateToken, async (req, res) => {
   }
 });
 
+// Agregar el nuevo endpoint para obtener colaborador por user ID
+app.get('/api/colaborador-by-user/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await evaluacionService.getColaboradorByUserId(userId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in /api/colaborador-by-user:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en el puerto ${PORT}`);
