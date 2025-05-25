@@ -219,7 +219,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
     console.log('Enviando datos:', values);
     setIsSubmitting(true);
     
-    // Preparar datos para envío
+    // Preparar datos para envío - convertir a números para la API
     const userData = {
       name: values.name,
       email: values.email,
@@ -245,13 +245,14 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
   };
 
   const toggleUserStatus = (user: User) => {
+    // Preparar datos como strings para el formulario
     const updatedUser = {
       id: user.id,
       name: user.name,
       email: user.email,
       active: !user.active,
-      roleId: user.roleId,
-      colaboradorId: user.colaboradorId
+      roleId: String(user.roleId),
+      colaboradorId: user.colaboradorId ? String(user.colaboradorId) : undefined
     };
     
     updateUserMutation.mutate(updatedUser);
