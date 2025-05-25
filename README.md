@@ -1,35 +1,40 @@
-```sh
+# 🚀 Proyecto Evaluación del Desempeño del Personal
+
+Este proyecto es una aplicación web construida con tecnologías modernas del ecosistema JavaScript, ideal para desarrollos rápidos y escalables.
+
+---
+
+## 🛠️ Instalación y ejecución
+
+```bash
+# Clona el repositorio
 git clone <YOUR_GIT_URL>
 
+# Ingresa al directorio del proyecto
 cd <YOUR_PROJECT_NAME>
 
-npm i
+# Instala las dependencias
+npm install
 
+# Ejecuta el servidor backend (si aplica)
 node src/server.cjs
 
+# Inicia el entorno de desarrollo
 npm run dev
-```
 
-## Credenciales de la bd
+## Conexión a la base de datos
 
-Cuenta:
+# Para conectarte a la base de datos, puedes usar cualquier gestor como DBeaver, MySQL Workbench o la línea de comandos.
+# Credenciales:
 
-https://freedb.tech/login.html
+Host: sql10.freesqldatabase.com
+User: sql10780136
+password: WhVIT2MEuc,
+database: sql10780136
 
-- User: iesrfa
-- Password: I3LackStarxX12
+## Tecnologías utilizadas
 
-Mysql(PhpAdmin):
-
-https://phpmyadmin.freedb.tech/
-
-- Servidor: sql.freedb.tech
-- Usuario: freedb_iesrfa
-- Contraseña: XeRx*8Q*cCU@A9V
-
-## What technologies are used for this project?
-
-This project is built with:
+#Este proyecto fue desarrollado utilizando:
 
 - Vite
 - TypeScript
