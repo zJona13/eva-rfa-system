@@ -49,10 +49,12 @@ const NotificacionesBadge = () => {
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
 
+  const userId = user?.id ? parseInt(user.id) : 0;
+
   const { data: notificacionesData } = useQuery({
-    queryKey: ['notificaciones', user?.id],
-    queryFn: () => fetchNotificaciones(user?.id || 0),
-    enabled: !!user?.id,
+    queryKey: ['notificaciones', userId],
+    queryFn: () => fetchNotificaciones(userId),
+    enabled: !!userId,
     refetchInterval: 30000, // Refetch cada 30 segundos
   });
 

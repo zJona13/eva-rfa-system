@@ -48,10 +48,12 @@ const Incidents = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const userId = user?.id ? parseInt(user.id) : 0;
+
   const { data: incidenciasData, isLoading } = useQuery({
-    queryKey: ['incidencias', user?.id],
-    queryFn: () => fetchIncidencias(user?.id || 0),
-    enabled: !!user?.id,
+    queryKey: ['incidencias', userId],
+    queryFn: () => fetchIncidencias(userId),
+    enabled: !!userId,
   });
 
   const updateEstadoMutation = useMutation({

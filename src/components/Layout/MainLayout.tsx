@@ -28,10 +28,7 @@ const MainLayout: React.FC = () => {
 
   return (
     <div className="min-h-screen">
-      <Header
-        isSidebarOpen={sidebarOpen}
-        toggleSidebar={() => setSidebarOpen(!sidebarOpen)}
-      />
+      <Header />
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
       <main className="pt-16 md:pl-72 min-h-screen">
         <div className="container mx-auto p-4 md:p-6 lg:p-8">
