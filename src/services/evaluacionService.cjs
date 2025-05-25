@@ -95,7 +95,7 @@ const createEvaluacion = async (evaluacionData) => {
         evaluacionData.score || 0,
         evaluacionData.comments || null,
         evaluacionData.type,
-        evaluacionData.status || 'Pendiente',
+        evaluacionData.status || 'Completada',
         evaluacionData.evaluatorId,
         evaluacionData.evaluatedId
       ]
@@ -103,16 +103,6 @@ const createEvaluacion = async (evaluacionData) => {
     
     const evaluacionId = evaluacionResult.insertId;
     console.log('Evaluacion created with ID:', evaluacionId);
-    
-    // Insertar los criterios evaluados si existen
-    if (evaluacionData.criterios && evaluacionData.criterios.length > 0) {
-      for (const criterio of evaluacionData.criterios) {
-        await connection.execute(
-          'INSERT INTO EVALUACION_CRITERIO (idEvaluacion, idCriterio, descripcion, puntaje) VALUES (?, ?, ?, ?)',
-          [evaluacionId, criterio.idCriterio, criterio.descripcion || null, criterio.puntaje]
-        );
-      }
-    }
     
     // Insertar los subcriterios evaluados si existen
     if (evaluacionData.subcriterios && evaluacionData.subcriterios.length > 0) {
@@ -161,19 +151,8 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
       ]
     );
     
-    // Eliminar criterios y subcriterios existentes para reinsertarlos
-    await connection.execute('DELETE FROM EVALUACION_CRITERIO WHERE idEvaluacion = ?', [evaluacionId]);
+    // Eliminar subcriterios existentes para reinsertarlos
     await connection.execute('DELETE FROM EVALUACION_SUBCRITERIOS WHERE idEvaluacion = ?', [evaluacionId]);
-    
-    // Reinsertar criterios actualizados
-    if (evaluacionData.criterios && evaluacionData.criterios.length > 0) {
-      for (const criterio of evaluacionData.criterios) {
-        await connection.execute(
-          'INSERT INTO EVALUACION_CRITERIO (idEvaluacion, idCriterio, descripcion, puntaje) VALUES (?, ?, ?, ?)',
-          [evaluacionId, criterio.idCriterio, criterio.descripcion, criterio.puntaje]
-        );
-      }
-    }
     
     // Reinsertar subcriterios actualizados
     if (evaluacionData.subcriterios && evaluacionData.subcriterios.length > 0) {
@@ -210,9 +189,6 @@ const deleteEvaluacion = async (evaluacionId) => {
     // Eliminar subcriterios relacionados
     await connection.execute('DELETE FROM EVALUACION_SUBCRITERIOS WHERE idEvaluacion = ?', [evaluacionId]);
     
-    // Eliminar criterios relacionados
-    await connection.execute('DELETE FROM EVALUACION_CRITERIO WHERE idEvaluacion = ?', [evaluacionId]);
-    
     // Eliminar la evaluación
     await connection.execute('DELETE FROM EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
     
@@ -231,17 +207,18 @@ const deleteEvaluacion = async (evaluacionId) => {
   }
 };
 
-// Obtener colaboradores disponibles para evaluar
+// Obtener colaboradores disponibles para evaluar con información completa
 const getColaboradoresParaEvaluar = async () => {
   try {
     const [rows] = await pool.execute(
       `SELECT c.idColaborador as id, 
       CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as fullName,
+      c.nombres, c.apePat, c.apeMat,
       tc.nombre as roleName
       FROM COLABORADOR c
       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
       WHERE c.estado = 1
-      ORDER BY c.nombres`
+      ORDER BY c.nombres, c.apePat`
     );
     
     return {
