@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,7 +18,7 @@ import {
   Trash2 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
 import UserDialog, { UserFormValues } from './UserDialog';
 
 // Tipos
@@ -28,11 +29,17 @@ interface User {
   active: boolean;
   role: string;
   roleId: number;
+  colaboradorId?: number;
 }
 
 interface Role {
   id: number;
   name: string;
+}
+
+interface Colaborador {
+  id: number;
+  fullName: string;
 }
 
 interface UsersTabContentProps {
@@ -42,7 +49,23 @@ interface UsersTabContentProps {
   roles: Role[];
 }
 
-// Servicios API - Fixed token name
+// Servicios API
+const fetchColaboradores = async (): Promise<Colaborador[]> => {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/colaboradores', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar colaboradores');
+  }
+  
+  const data = await response.json();
+  return data.colaboradores;
+};
+
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('iesrfa_token');
   const response = await fetch('http://localhost:3306/api/users', {
@@ -56,7 +79,8 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId)
+      roleId: parseInt(userData.roleId),
+      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
     })
   });
   
@@ -82,7 +106,8 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId)
+      roleId: parseInt(userData.roleId),
+      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
     })
   });
   
@@ -121,6 +146,15 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
 
   // Query client
   const queryClient = useQueryClient();
+
+  // Query para colaboradores
+  const { 
+    data: colaboradores = [], 
+    isLoading: colaboradoresLoading 
+  } = useQuery({
+    queryKey: ['colaboradores'],
+    queryFn: fetchColaboradores
+  });
 
   // Mutations
   const createUserMutation = useMutation({
@@ -197,7 +231,8 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       name: user.name,
       email: user.email,
       active: !user.active,
-      roleId: String(user.roleId)
+      roleId: String(user.roleId),
+      colaboradorId: user.colaboradorId ? String(user.colaboradorId) : ''
     };
     
     updateUserMutation.mutate(updatedUser);
@@ -210,6 +245,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Función para obtener el nombre del colaborador
+  const getColaboradorName = (colaboradorId?: number) => {
+    if (!colaboradorId) return 'Sin asignar';
+    const colaborador = colaboradores.find(c => c.id === colaboradorId);
+    return colaborador ? colaborador.fullName : 'Sin asignar';
+  };
 
   return (
     <>
@@ -232,6 +274,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                 <TableHead>Nombre</TableHead>
                 <TableHead>Correo electrónico</TableHead>
                 <TableHead>Rol</TableHead>
+                <TableHead>Colaborador</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -239,13 +282,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     Cargando usuarios...
                   </TableCell>
                 </TableRow>
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No se encontraron resultados.
                   </TableCell>
                 </TableRow>
@@ -259,6 +302,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                         {user.role}
                       </Badge>
                     </TableCell>
+                    <TableCell>{getColaboradorName(user.colaboradorId)}</TableCell>
                     <TableCell>
                       <Switch 
                         checked={user.active} 
@@ -300,6 +344,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
         onOpenChange={setIsUserDialogOpen}
         userData={selectedUser}
         roles={roles}
+        colaboradores={colaboradores}
         onSubmit={handleSubmitUser}
         isSubmitting={isSubmitting}
       />
