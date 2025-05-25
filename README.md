@@ -22,22 +22,38 @@ node src/server.cjs
 # Inicia el entorno de desarrollo
 npm run dev
 
-## Conexión a la base de datos
+```
 
-# Para conectarte a la base de datos, puedes usar cualquier gestor como DBeaver, MySQL Workbench o la línea de comandos.
-# Credenciales:
+## 🧩 Conexión a la base de datos
+
+Para conectarte a la base de datos, puedes usar cualquier gestor como DBeaver, MySQL Workbench o la línea de comandos.
+
+### Credenciales:
+
+```bash
 
 Host: sql10.freesqldatabase.com
-User: sql10780136
-password: WhVIT2MEuc,
-database: sql10780136
 
-## Tecnologías utilizadas
+Usuario: sql10780136
 
-#Este proyecto fue desarrollado utilizando:
+Contraseña: WhVIT2MEuc
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSScls
+Base de datos: sql10780136
+
+```
+
+⚠️ Asegúrate de que el puerto y la configuración remota estén habilitados si accedes desde un entorno local.
+
+## 🧰 Tecnologías utilizadas
+
+Este proyecto fue desarrollado utilizando:
+
+⚡ Vite – Empaquetador ultrarrápido
+
+🟦 TypeScript – Tipado estático para JavaScript
+
+⚛️ React – Biblioteca para interfaces de usuario
+
+🎨 shadcn/ui – Componentes de interfaz modernos
+
+💨 Tailwind CSS – Framework de utilidades para estilos
