@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -9,13 +10,13 @@ const login = async (correo, contrasena) => {
   try {
     // Consulta mejorada para obtener también el nombre del colaborador
     const [users] = await pool.execute(
-      `SELECT u.idUsuario, u.nombre, u.correo, u.vigencia, 
+      `SELECT u.idUsuario, u.nombre, u.correo, u.vigencia, u.contrasena,
               t.nombre as role, t.idTipoUsu as roleId, u.idColaborador,
               CASE 
                 WHEN u.idColaborador IS NOT NULL 
                 THEN CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat)
                 ELSE u.nombre
-              END as colaboradorNombre
+              END as colaboradorName
        FROM USUARIO u 
        JOIN TIPO_USUARIO t ON u.idTipoUsu = t.idTipoUsu 
        LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
@@ -61,7 +62,7 @@ const login = async (correo, contrasena) => {
         role: user.role,
         roleId: user.roleId,
         colaboradorId: user.idColaborador,
-        colaboradorNombre: user.colaboradorNombre
+        colaboradorName: user.colaboradorName
       }
     };
   } catch (error) {
@@ -101,7 +102,7 @@ const getUserInfo = async (userId) => {
                 WHEN u.idColaborador IS NOT NULL 
                 THEN CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat)
                 ELSE u.nombre
-              END as colaboradorNombre
+              END as colaboradorName
        FROM USUARIO u 
        JOIN TIPO_USUARIO t ON u.idTipoUsu = t.idTipoUsu 
        LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
@@ -140,7 +141,7 @@ const getUserInfo = async (userId) => {
         roleId: user.roleId,
         active: user.vigencia === 1,
         colaboradorId: user.idColaborador,
-        colaboradorNombre: user.colaboradorNombre
+        colaboradorName: user.colaboradorName
       }
     };
   } catch (error) {
@@ -190,7 +191,7 @@ const register = async (nombre, correo, contrasena, roleId = 4) => {
         role: 'Estudiante',
         roleId: roleId,
         colaboradorId: null,
-        colaboradorNombre: nombre
+        colaboradorName: nombre
       }
     };
   } catch (error) {
