@@ -121,6 +121,3 @@ INSERT INTO TIPO_COLABORADOR (nombre) VALUES
 
 INSERT INTO TIPO_CONTRATO (nombre) 
 VALUES ('Tiempo Parcial'), ('Tiempo Completo'), ('Nombrado');
-
-INSERT INTO CONTRATO (fechaInicio, fechaFin, estado, idTipoContrato) 
-VALUES ('2024-03-01', '2025-02-28', 1, 1);
