@@ -32,9 +32,12 @@ const createUser = async (userData) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
     
+    // Preparar el valor de colaboradorId (null si no se proporciona o es vacío)
+    const colaboradorId = userData.colaboradorId && userData.colaboradorId !== '' ? userData.colaboradorId : null;
+    
     const [result] = await pool.execute(
       'INSERT INTO USUARIO (nombre, correo, contrasena, vigencia, idTipoUsu, idColaborador) VALUES (?, ?, ?, ?, ?, ?)',
-      [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId, userData.colaboradorId]
+      [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId, colaboradorId]
     );
     
     return {
@@ -54,6 +57,9 @@ const createUser = async (userData) => {
 // Actualizar un usuario
 const updateUser = async (userId, userData) => {
   try {
+    // Preparar el valor de colaboradorId (null si no se proporciona o es vacío)
+    const colaboradorId = userData.colaboradorId && userData.colaboradorId !== '' ? userData.colaboradorId : null;
+    
     // Si viene una nueva contraseña, la hasheamos
     if (userData.password) {
       const saltRounds = 10;
@@ -61,7 +67,7 @@ const updateUser = async (userId, userData) => {
       
       const [result] = await pool.execute(
         'UPDATE USUARIO SET nombre = ?, correo = ?, contrasena = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ? WHERE idUsuario = ?',
-        [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId, userData.colaboradorId, userId]
+        [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId, colaboradorId, userId]
       );
       
       if (result.affectedRows === 0) {
@@ -71,7 +77,7 @@ const updateUser = async (userId, userData) => {
       // Si no viene contraseña, actualizamos el resto de campos
       const [result] = await pool.execute(
         'UPDATE USUARIO SET nombre = ?, correo = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ? WHERE idUsuario = ?',
-        [userData.name, userData.email, userData.active ? 1 : 0, userData.roleId, userData.colaboradorId, userId]
+        [userData.name, userData.email, userData.active ? 1 : 0, userData.roleId, colaboradorId, userId]
       );
       
       if (result.affectedRows === 0) {
