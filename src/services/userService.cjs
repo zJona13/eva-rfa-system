@@ -2,14 +2,21 @@
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 
-// Obtener todos los usuarios
+// Obtener todos los usuarios con información del colaborador
 const getAllUsers = async () => {
   try {
     const [rows] = await pool.execute(
       `SELECT u.idUsuario as id, u.nombre as name, u.correo as email, 
-      u.vigencia as active, t.nombre as role, t.idTipoUsu as roleId 
+      u.vigencia as active, t.nombre as role, t.idTipoUsu as roleId,
+      u.idColaborador as colaboradorId,
+      CASE 
+        WHEN c.idColaborador IS NOT NULL 
+        THEN CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat)
+        ELSE NULL
+      END as colaboradorName
       FROM USUARIO u 
-      JOIN TIPO_USUARIO t ON u.idTipoUsu = t.idTipoUsu`
+      JOIN TIPO_USUARIO t ON u.idTipoUsu = t.idTipoUsu
+      LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador`
     );
     
     return {
@@ -25,6 +32,27 @@ const getAllUsers = async () => {
   }
 };
 
+// Obtener todos los colaboradores disponibles (sin usuario asignado)
+const getAvailableColaboradores = async () => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT c.idColaborador as id, 
+      CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as name
+      FROM COLABORADOR c 
+      LEFT JOIN USUARIO u ON c.idColaborador = u.idColaborador
+      WHERE u.idColaborador IS NULL AND c.estado = 1`
+    );
+    
+    return {
+      success: true,
+      colaboradores: rows
+    };
+  } catch (error) {
+    console.error('Error al obtener colaboradores disponibles:', error);
+    return { success: false, message: 'Error al obtener colaboradores disponibles' };
+  }
+};
+
 // Crear un nuevo usuario
 const createUser = async (userData) => {
   try {
@@ -32,9 +60,12 @@ const createUser = async (userData) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
     
+    // Preparar el colaboradorId - si viene vacío o null, usar NULL
+    const colaboradorId = userData.colaboradorId && userData.colaboradorId !== '' ? userData.colaboradorId : null;
+    
     const [result] = await pool.execute(
-      'INSERT INTO USUARIO (nombre, correo, contrasena, vigencia, idTipoUsu) VALUES (?, ?, ?, ?, ?)',
-      [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId]
+      'INSERT INTO USUARIO (nombre, correo, contrasena, vigencia, idTipoUsu, idColaborador) VALUES (?, ?, ?, ?, ?, ?)',
+      [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId, colaboradorId]
     );
     
     return {
@@ -44,6 +75,9 @@ const createUser = async (userData) => {
     };
   } catch (error) {
     console.error('Error al crear usuario:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return { success: false, message: 'El colaborador ya tiene un usuario asignado' };
+    }
     return { success: false, message: 'Error al crear el usuario' };
   }
 };
@@ -51,14 +85,17 @@ const createUser = async (userData) => {
 // Actualizar un usuario
 const updateUser = async (userId, userData) => {
   try {
+    // Preparar el colaboradorId - si viene vacío o null, usar NULL
+    const colaboradorId = userData.colaboradorId && userData.colaboradorId !== '' ? userData.colaboradorId : null;
+    
     // Si viene una nueva contraseña, la hasheamos
     if (userData.password) {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
       
       const [result] = await pool.execute(
-        'UPDATE USUARIO SET nombre = ?, correo = ?, contrasena = ?, vigencia = ?, idTipoUsu = ? WHERE idUsuario = ?',
-        [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId, userId]
+        'UPDATE USUARIO SET nombre = ?, correo = ?, contrasena = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ? WHERE idUsuario = ?',
+        [userData.name, userData.email, hashedPassword, userData.active ? 1 : 0, userData.roleId, colaboradorId, userId]
       );
       
       if (result.affectedRows === 0) {
@@ -67,8 +104,8 @@ const updateUser = async (userId, userData) => {
     } else {
       // Si no viene contraseña, actualizamos el resto de campos
       const [result] = await pool.execute(
-        'UPDATE USUARIO SET nombre = ?, correo = ?, vigencia = ?, idTipoUsu = ? WHERE idUsuario = ?',
-        [userData.name, userData.email, userData.active ? 1 : 0, userData.roleId, userId]
+        'UPDATE USUARIO SET nombre = ?, correo = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ? WHERE idUsuario = ?',
+        [userData.name, userData.email, userData.active ? 1 : 0, userData.roleId, colaboradorId, userId]
       );
       
       if (result.affectedRows === 0) {
@@ -82,6 +119,9 @@ const updateUser = async (userId, userData) => {
     };
   } catch (error) {
     console.error('Error al actualizar usuario:', error);
+    if (error.code === 'ER_DUP_ENTRY') {
+      return { success: false, message: 'El colaborador ya tiene un usuario asignado' };
+    }
     return { success: false, message: 'Error al actualizar el usuario' };
   }
 };
@@ -113,6 +153,7 @@ const deleteUser = async (userId) => {
 
 module.exports = {
   getAllUsers,
+  getAvailableColaboradores,
   createUser,
   updateUser,
   deleteUser
