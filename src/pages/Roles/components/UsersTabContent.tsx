@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,7 +59,10 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
       password: userData.password,
       active: userData.active,
       roleId: parseInt(userData.roleId),
-      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
+      // Convertir cadena vacía o 'none' a null
+      colaboradorId: userData.colaboradorId && userData.colaboradorId !== 'none' 
+        ? parseInt(userData.colaboradorId) 
+        : null
     })
   });
   
@@ -87,7 +89,10 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
       password: userData.password,
       active: userData.active,
       roleId: parseInt(userData.roleId),
-      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
+      // Convertir cadena vacía o 'none' a null
+      colaboradorId: userData.colaboradorId && userData.colaboradorId !== 'none' 
+        ? parseInt(userData.colaboradorId) 
+        : null
     })
   });
   

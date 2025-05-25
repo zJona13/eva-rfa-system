@@ -17,6 +17,12 @@ const PORT = process.env.PORT || 3306;
 app.use(cors());
 app.use(express.json());
 
+// Agregar logging middleware para debug
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
+  next();
+});
+
 // Test database connection on startup
 testConnection()
   .then(connected => {
@@ -44,9 +50,15 @@ const authenticateToken = (req, res, next) => {
   next();
 };
 
-// Rutas de autenticación
-app.post('/api/login', async (req, res) => {
+// ========================
+// RUTAS DE AUTENTICACIÓN
+// ========================
+
+// Login
+app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
+  
+  console.log('Login attempt for:', email);
   
   if (!email || !password) {
     return res.status(400).json({ message: 'Email y contraseña son requeridos' });
@@ -56,9 +68,11 @@ app.post('/api/login', async (req, res) => {
     const result = await authService.login(email, password);
     
     if (!result.success) {
+      console.log('Login failed:', result.message);
       return res.status(401).json({ message: result.message });
     }
     
+    console.log('Login successful for user:', result.user.email);
     res.json(result);
   } catch (error) {
     console.error('Error en login:', error);
@@ -66,7 +80,17 @@ app.post('/api/login', async (req, res) => {
   }
 });
 
-// Rutas protegidas - usando el middleware temporal
+// Logout (opcional)
+app.post('/api/auth/logout', authenticateToken, async (req, res) => {
+  try {
+    // Aquí podrías invalidar el token si tienes una blacklist
+    res.json({ success: true, message: 'Logout exitoso' });
+  } catch (error) {
+    console.error('Error en logout:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
 // Obtener información del usuario actual
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   const authHeader = req.headers.authorization;
@@ -76,7 +100,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     const tokenInfo = await authService.verifyToken(token);
     
     if (!tokenInfo.valid) {
-      return res.status(401).json({ message: tokenInfo.error });
+      return res.status(401).json({ message: 'Token inválido' });
     }
     
     const userId = tokenInfo.user.id;
@@ -92,6 +116,10 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
+ 
+// ========================
+// RESTO DE LAS RUTAS
+// ========================
 
 // Rutas de roles
 app.get('/api/roles', authenticateToken, async (req, res) => {

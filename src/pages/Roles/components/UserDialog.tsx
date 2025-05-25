@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -26,13 +25,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 
 // Types for the form
+// Actualizar el esquema para permitir valores especiales
 const userFormSchema = z.object({
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
   email: z.string().email({ message: 'Debe ser un correo electrónico válido' }),
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }).optional(),
   confirmPassword: z.string().optional(),
   roleId: z.string().min(1, { message: 'Seleccione un rol' }),
-  colaboradorId: z.string().optional(),
+  colaboradorId: z.string().optional(), // Cambiamos para permitir valor especial
   active: z.boolean().default(true),
 }).refine(data => !data.password || data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
@@ -87,7 +87,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
       password: '',
       confirmPassword: '',
       roleId: '',
-      colaboradorId: '',
+      colaboradorId: 'none', // Valor por defecto para "Sin colaborador"
       active: true,
     },
   });
@@ -125,7 +125,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
         password: '',
         confirmPassword: '',
         roleId: userData?.roleId ? String(userData.roleId) : '',
-        colaboradorId: userData?.colaboradorId ? String(userData.colaboradorId) : '',
+        colaboradorId: userData?.colaboradorId ? String(userData.colaboradorId) : 'none',
         active: userData?.active !== undefined ? userData.active : true,
       });
       
@@ -134,10 +134,14 @@ const UserDialog: React.FC<UserDialogProps> = ({
   }, [open, userData, form]);
 
   const handleSubmit = (values: UserFormValues) => {
-    onSubmit({
+    // Convertir 'none' a null antes de enviar
+    const processedValues = {
       ...values,
+      colaboradorId: values.colaboradorId === 'none' ? '' : values.colaboradorId,
       id: userData?.id
-    });
+    };
+    
+    onSubmit(processedValues);
   };
 
   const isNewUser = !userData?.id;
@@ -231,7 +235,10 @@ const UserDialog: React.FC<UserDialogProps> = ({
                     </FormControl>
                     <SelectContent>
                       {roles.map((role) => (
-                        <SelectItem key={role.id} value={String(role.id)}>
+                        <SelectItem 
+                          key={role.id} 
+                          value={String(role.id)} // Asegúrate de que nunca sea cadena vacía
+                        >
                           {role.name}
                         </SelectItem>
                       ))}
@@ -246,25 +253,33 @@ const UserDialog: React.FC<UserDialogProps> = ({
               name="colaboradorId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Colaborador (Opcional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <FormLabel>Colaborador</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || "none"}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder={loadingColaboradores ? "Cargando..." : "Seleccione un colaborador"} />
+                        <SelectValue placeholder="Seleccione un colaborador" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="">Sin colaborador asignado</SelectItem>
-                      {colaboradores.map((colaborador) => (
-                        <SelectItem key={colaborador.id} value={String(colaborador.id)}>
-                          {colaborador.fullName}
+                      {loadingColaboradores ? (
+                        <SelectItem value="loading" disabled>
+                          Cargando...
                         </SelectItem>
-                      ))}
+                      ) : (
+                        <>
+                          <SelectItem value="none">Sin colaborador</SelectItem>
+                          {colaboradores.map((colaborador) => (
+                            <SelectItem 
+                              key={colaborador.id} 
+                              value={String(colaborador.id)}
+                            >
+                              {colaborador.fullName}
+                            </SelectItem>
+                          ))}
+                        </>
+                      )}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Asigne un colaborador al usuario si corresponde
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
