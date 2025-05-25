@@ -216,12 +216,31 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
   };
 
   const handleSubmitUser = (values: UserFormValues & { id?: number }) => {
+    console.log('Enviando datos:', values);
     setIsSubmitting(true);
     
+    // Preparar datos para envío
+    const userData = {
+      name: values.name,
+      email: values.email,
+      password: values.password || undefined, // No enviar cadena vacía
+      active: values.active,
+      roleId: parseInt(values.roleId),
+      colaboradorId: values.colaboradorId && values.colaboradorId !== '' ? parseInt(values.colaboradorId) : undefined
+    };
+    
+    console.log('Datos preparados:', userData);
+    
     if (values.id) {
-      updateUserMutation.mutate(values);
+      updateUserMutation.mutate({ ...userData, id: values.id });
     } else {
-      createUserMutation.mutate(values);
+      // Para usuarios nuevos, la contraseña es requerida
+      if (!userData.password) {
+        toast.error('La contraseña es requerida para usuarios nuevos');
+        setIsSubmitting(false);
+        return;
+      }
+      createUserMutation.mutate(userData);
     }
   };
 
@@ -231,8 +250,8 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       name: user.name,
       email: user.email,
       active: !user.active,
-      roleId: String(user.roleId),
-      colaboradorId: user.colaboradorId ? String(user.colaboradorId) : ''
+      roleId: user.roleId,
+      colaboradorId: user.colaboradorId
     };
     
     updateUserMutation.mutate(updatedUser);

@@ -25,18 +25,26 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 
-// Types for the form
+// Types for the form - Esquema de validación corregido
 const userFormSchema = z.object({
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
   email: z.string().email({ message: 'Debe ser un correo electrónico válido' }),
-  password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }).optional(),
+  password: z.string().optional().refine((password) => {
+    return !password || password.length >= 6;
+  }, { message: 'La contraseña debe tener al menos 6 caracteres' }),
   confirmPassword: z.string().optional(),
   roleId: z.string().min(1, { message: 'Seleccione un rol' }),
   colaboradorId: z.string().optional(),
   active: z.boolean().default(true),
-}).refine(data => !data.password || data.password === data.confirmPassword, {
-  message: "Las contraseñas no coinciden",
-  path: ["confirmPassword"],
+}).superRefine((data, ctx) => {
+  // Validación de confirmación de contraseña solo si hay contraseña
+  if (data.password && data.password !== data.confirmPassword) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Las contraseñas no coinciden",
+      path: ["confirmPassword"],
+    });
+  }
 });
 
 export type UserFormValues = z.infer<typeof userFormSchema>;
@@ -107,6 +115,16 @@ const UserDialog: React.FC<UserDialogProps> = ({
   }, [open, userData, form]);
 
   const handleSubmit = (values: UserFormValues) => {
+    console.log('Datos del formulario:', values);
+    
+    // Para nuevo usuario, la contraseña es requerida
+    const isNewUser = !userData?.id;
+    if (isNewUser && !values.password) {
+      form.setError('password', { message: 'La contraseña es requerida para usuarios nuevos' });
+      return;
+    }
+
+    // Enviar datos con id si existe
     onSubmit({
       ...values,
       id: userData?.id
@@ -159,13 +177,12 @@ const UserDialog: React.FC<UserDialogProps> = ({
               name="password"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{isNewUser ? 'Contraseña' : 'Nueva Contraseña (opcional)'}</FormLabel>
+                  <FormLabel>{isNewUser ? 'Contraseña *' : 'Nueva Contraseña (opcional)'}</FormLabel>
                   <FormControl>
                     <Input 
                       type="password" 
                       placeholder={isNewUser ? 'Contraseña' : 'Deje en blanco para mantener la actual'} 
                       {...field} 
-                      required={isNewUser}
                     />
                   </FormControl>
                   <FormMessage />
@@ -183,7 +200,6 @@ const UserDialog: React.FC<UserDialogProps> = ({
                       type="password" 
                       placeholder="Confirme la contraseña" 
                       {...field} 
-                      required={isNewUser || !!form.watch('password')}
                     />
                   </FormControl>
                   <FormMessage />
