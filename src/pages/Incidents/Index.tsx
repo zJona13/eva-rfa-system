@@ -1,11 +1,110 @@
 
-import React from 'react';
+import React, { useState } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
+import { useAuth } from '@/contexts/AuthContext';
+
+const API_BASE_URL = 'http://localhost:3306/api';
+
+const fetchIncidencias = async (userId: number) => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
+
+const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: string }) => {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
+    method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ estado }),
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
+};
 
 const Incidents = () => {
+  const { user } = useAuth();
+  const queryClient = useQueryClient();
+
+  const { data: incidenciasData, isLoading } = useQuery({
+    queryKey: ['incidencias', user?.id],
+    queryFn: () => fetchIncidencias(user?.id || 0),
+    enabled: !!user?.id,
+  });
+
+  const updateEstadoMutation = useMutation({
+    mutationFn: updateIncidenciaEstado,
+    onSuccess: () => {
+      toast.success('Estado de incidencia actualizado');
+      queryClient.invalidateQueries({ queryKey: ['incidencias'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Error al actualizar: ${error.message}`);
+    },
+  });
+
+  const incidencias = incidenciasData?.incidencias || [];
+
+  const handleEstadoChange = (incidenciaId: number, nuevoEstado: string) => {
+    updateEstadoMutation.mutate({ id: incidenciaId, estado: nuevoEstado });
+  };
+
+  const getEstadoColor = (estado: string) => {
+    switch (estado) {
+      case 'Resuelto':
+        return 'bg-green-100 text-green-800';
+      case 'En proceso':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Pendiente':
+        return 'bg-red-100 text-red-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getTipoColor = (tipo: string) => {
+    switch (tipo) {
+      case 'Académica':
+        return 'bg-blue-100 text-blue-800';
+      case 'Administrativa':
+        return 'bg-purple-100 text-purple-800';
+      case 'Técnica':
+        return 'bg-orange-100 text-orange-800';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center p-8">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -15,74 +114,70 @@ const Incidents = () => {
             Registre y haga seguimiento a incidencias del sistema o proceso evaluativo.
           </p>
         </div>
-        <Button onClick={() => toast.info('Nueva incidencia')}>
-          Nueva Incidencia
-        </Button>
       </div>
 
-      <div className="space-y-4">
+      {incidencias.length === 0 ? (
         <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between">
-              <div>
-                <CardTitle>Error en carga de evaluación</CardTitle>
-                <CardDescription>Reportado: 12/05/2025 · Técnica</CardDescription>
-              </div>
-              <Badge className="bg-ies-warning-500">En proceso</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              Al intentar guardar mi autoevaluación, el sistema muestra un error y no se registran mis respuestas.
-            </p>
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={() => toast.info('Ver detalles')}>Ver detalles</Button>
-            </div>
+          <CardContent className="text-center py-8">
+            <p className="text-muted-foreground">No hay incidencias registradas.</p>
           </CardContent>
         </Card>
+      ) : (
+        <div className="space-y-4">
+          {incidencias.map((incidencia: any) => (
+            <Card key={incidencia.id}>
+              <CardHeader className="pb-2">
+                <div className="flex justify-between items-start">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">Incidencia #{incidencia.id}</CardTitle>
+                    <CardDescription>
+                      Reportado: {new Date(incidencia.fecha).toLocaleDateString()} - {incidencia.hora}
+                    </CardDescription>
+                    <div className="flex gap-2">
+                      <Badge className={getTipoColor(incidencia.tipo)}>
+                        {incidencia.tipo}
+                      </Badge>
+                      <Badge className={getEstadoColor(incidencia.estado)}>
+                        {incidencia.estado}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm">{incidencia.descripcion}</p>
+                  
+                  <div className="text-xs text-muted-foreground space-y-1">
+                    <p><strong>Reportado por:</strong> {incidencia.reportadorNombre}</p>
+                    <p><strong>Afectado:</strong> {incidencia.afectadoNombre}</p>
+                  </div>
 
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between">
-              <div>
-                <CardTitle>Acceso denegado a módulo de resultados</CardTitle>
-                <CardDescription>Reportado: 10/05/2025 · Administrativa</CardDescription>
-              </div>
-              <Badge variant="outline" className="bg-ies-success-50 text-ies-success-500 border-ies-success-500">
-                Resuelto
-              </Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              No puedo acceder al módulo de resultados aunque tengo el rol de evaluador asignado.
-            </p>
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={() => toast.info('Ver detalles')}>Ver detalles</Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="pb-2">
-            <div className="flex justify-between">
-              <div>
-                <CardTitle>Criterio incorrecto en lista de cotejo</CardTitle>
-                <CardDescription>Reportado: 08/05/2025 · Académica</CardDescription>
-              </div>
-              <Badge variant="destructive">Pendiente</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-muted-foreground">
-              El criterio #4 de la lista de cotejo para docentes contiene un error en su redacción.
-            </p>
-            <div className="flex justify-end mt-4">
-              <Button variant="outline" onClick={() => toast.info('Ver detalles')}>Ver detalles</Button>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+                  <div className="flex justify-between items-center pt-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-sm font-medium">Estado:</span>
+                      <Select
+                        value={incidencia.estado}
+                        onValueChange={(nuevoEstado) => handleEstadoChange(incidencia.id, nuevoEstado)}
+                        disabled={updateEstadoMutation.isPending}
+                      >
+                        <SelectTrigger className="w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Pendiente">Pendiente</SelectItem>
+                          <SelectItem value="En proceso">En proceso</SelectItem>
+                          <SelectItem value="Resuelto">Resuelto</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

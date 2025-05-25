@@ -9,6 +9,8 @@ const colaboradorService = require('./services/colaboradorService.cjs');
 const evaluacionService = require('./services/evaluacionService.cjs');
 const authService = require('./services/authService.cjs');
 const criteriosService = require('./services/criteriosService.cjs');
+const incidenciaService = require('./services/incidenciaService.cjs');
+const notificacionService = require('./services/notificacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -649,6 +651,129 @@ app.get('/api/colaborador-by-user/:userId', authenticateToken, async (req, res) 
     }
   } catch (error) {
     console.error('Error in /api/colaborador-by-user:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// ========================
+// RUTAS DE INCIDENCIAS
+// ========================
+
+// Crear nueva incidencia
+app.post('/api/incidencias', authenticateToken, async (req, res) => {
+  try {
+    const incidenciaData = req.body;
+    console.log('Creating incidencia:', incidenciaData);
+    
+    const result = await incidenciaService.createIncidencia(incidenciaData);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in POST /api/incidencias:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Obtener incidencias por usuario
+app.get('/api/incidencias/user/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await incidenciaService.getIncidenciasByUser(userId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/incidencias/user:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Obtener todas las incidencias
+app.get('/api/incidencias', authenticateToken, async (req, res) => {
+  try {
+    const result = await incidenciaService.getAllIncidencias();
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/incidencias:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar estado de incidencia
+app.put('/api/incidencias/:id/estado', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+    
+    const result = await incidenciaService.updateIncidenciaEstado(id, estado);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in PUT /api/incidencias/estado:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// ========================
+// RUTAS DE NOTIFICACIONES
+// ========================
+
+// Obtener notificaciones por usuario
+app.get('/api/notificaciones/user/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await notificacionService.getNotificacionesByUser(userId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/notificaciones/user:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Marcar notificación como leída
+app.put('/api/notificaciones/:id/read', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await notificacionService.markNotificacionAsRead(id);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in PUT /api/notificaciones/read:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Obtener contador de notificaciones no leídas
+app.get('/api/notificaciones/unread-count/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await notificacionService.getUnreadNotificationsCount(userId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/notificaciones/unread-count:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });

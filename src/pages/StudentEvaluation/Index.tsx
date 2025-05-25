@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import EvaluacionEstudianteForm from './EvaluacionEstudianteForm';
+import IncidenciaDialog from '@/components/IncidenciaDialog';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
@@ -30,6 +30,8 @@ const StudentEvaluation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [showForm, setShowForm] = useState(false);
+  const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
+  const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
 
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -40,6 +42,24 @@ const StudentEvaluation = () => {
 
   const evaluaciones = evaluacionesData?.evaluaciones || [];
   const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluacion estudiante-docente');
+
+  const handleGenerateIncidencia = (evaluacion: any) => {
+    setSelectedEvaluacion({
+      evaluatedId: evaluacion.evaluatedId,
+      evaluatedName: evaluacion.evaluatedName,
+      score: evaluacion.score,
+      type: evaluacion.type
+    });
+    setShowIncidenciaDialog(true);
+  };
+
+  const getEvaluationStatus = (score: number) => {
+    return score >= 11 ? 'Aprobado' : 'Desaprobado';
+  };
+
+  const getStatusColor = (score: number) => {
+    return score >= 11 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  };
 
   if (showForm) {
     return <EvaluacionEstudianteForm onCancel={() => setShowForm(false)} />;
@@ -58,7 +78,7 @@ const StudentEvaluation = () => {
         <CardHeader>
           <CardTitle>Mis Evaluaciones a Docentes</CardTitle>
           <CardDescription>
-            Historial de evaluaciones que has realizado a docentes
+            Historial de evaluaciones que has realizado a docentes. Nota aprobatoria: ≥ 11/20
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -98,7 +118,7 @@ const StudentEvaluation = () => {
                         Puntaje: {evaluacion.score}/20
                       </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-col items-end">
                       <span className={`px-2 py-1 rounded text-xs ${
                         evaluacion.status === 'Completada' 
                           ? 'bg-green-100 text-green-800' 
@@ -106,6 +126,19 @@ const StudentEvaluation = () => {
                       }`}>
                         {evaluacion.status}
                       </span>
+                      <span className={`px-2 py-1 rounded text-xs ${getStatusColor(evaluacion.score)}`}>
+                        {getEvaluationStatus(evaluacion.score)}
+                      </span>
+                      {evaluacion.score < 11 && user?.role !== 'student' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleGenerateIncidencia(evaluacion)}
+                          className="text-xs"
+                        >
+                          Generar Incidencia
+                        </Button>
+                      )}
                     </div>
                   </div>
                   {evaluacion.comments && (
@@ -119,6 +152,14 @@ const StudentEvaluation = () => {
           )}
         </CardContent>
       </Card>
+
+      {selectedEvaluacion && (
+        <IncidenciaDialog
+          open={showIncidenciaDialog}
+          onOpenChange={setShowIncidenciaDialog}
+          evaluacionData={selectedEvaluacion}
+        />
+      )}
     </div>
   );
 };
