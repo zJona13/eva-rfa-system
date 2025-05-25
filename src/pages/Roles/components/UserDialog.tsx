@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -32,7 +31,6 @@ const userFormSchema = z.object({
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }).optional(),
   confirmPassword: z.string().optional(),
   roleId: z.string().min(1, { message: 'Seleccione un rol' }),
-  colaboradorId: z.string().optional(),
   active: z.boolean().default(true),
 }).refine(data => !data.password || data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
@@ -47,11 +45,6 @@ interface Role {
   name: string;
 }
 
-interface Colaborador {
-  id: number;
-  name: string;
-}
-
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -60,11 +53,9 @@ interface UserDialogProps {
     name?: string;
     email?: string;
     roleId?: number;
-    colaboradorId?: number;
     active?: boolean;
   } | null;
   roles: Role[];
-  colaboradores: Colaborador[];
   onSubmit: (values: UserFormValues & { id?: number }) => void;
   isSubmitting: boolean;
 }
@@ -74,7 +65,6 @@ const UserDialog: React.FC<UserDialogProps> = ({
   onOpenChange,
   userData,
   roles,
-  colaboradores,
   onSubmit,
   isSubmitting
 }) => {
@@ -86,7 +76,6 @@ const UserDialog: React.FC<UserDialogProps> = ({
       password: '',
       confirmPassword: '',
       roleId: '',
-      colaboradorId: '',
       active: true,
     },
   });
@@ -100,7 +89,6 @@ const UserDialog: React.FC<UserDialogProps> = ({
         password: '',
         confirmPassword: '',
         roleId: userData?.roleId ? String(userData.roleId) : '',
-        colaboradorId: userData?.colaboradorId ? String(userData.colaboradorId) : '',
         active: userData?.active !== undefined ? userData.active : true,
       });
     }
@@ -210,34 +198,6 @@ const UserDialog: React.FC<UserDialogProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="colaboradorId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Colaborador (Opcional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccione un colaborador" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      <SelectItem value="">Sin colaborador</SelectItem>
-                      {colaboradores.map((colaborador) => (
-                        <SelectItem key={colaborador.id} value={String(colaborador.id)}>
-                          {colaborador.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    Vincule este usuario con un colaborador del sistema
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

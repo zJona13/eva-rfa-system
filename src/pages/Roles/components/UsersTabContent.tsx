@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +17,7 @@ import {
   Trash2 
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { useMutation, useQueryClient, useQuery } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog, { UserFormValues } from './UserDialog';
 
 // Tipos
@@ -29,16 +28,9 @@ interface User {
   active: boolean;
   role: string;
   roleId: number;
-  colaboradorId?: number;
-  colaboradorName?: string;
 }
 
 interface Role {
-  id: number;
-  name: string;
-}
-
-interface Colaborador {
   id: number;
   name: string;
 }
@@ -50,7 +42,7 @@ interface UsersTabContentProps {
   roles: Role[];
 }
 
-// Servicios API
+// Servicios API - Fixed token name
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('iesrfa_token');
   const response = await fetch('http://localhost:3306/api/users', {
@@ -64,8 +56,7 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId),
-      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
+      roleId: parseInt(userData.roleId)
     })
   });
   
@@ -91,8 +82,7 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId),
-      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
+      roleId: parseInt(userData.roleId)
     })
   });
   
@@ -123,22 +113,6 @@ const deleteUser = async (id: number): Promise<{ success: boolean, message: stri
   return data;
 };
 
-const fetchAvailableColaboradores = async (): Promise<Colaborador[]> => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/users/colaboradores', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
-  
-  if (!response.ok) {
-    throw new Error('Error al cargar colaboradores disponibles');
-  }
-  
-  const data = await response.json();
-  return data.colaboradores;
-};
-
 const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, searchQuery, roles }) => {
   // State
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
@@ -148,21 +122,11 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
   // Query client
   const queryClient = useQueryClient();
 
-  // Query for available colaboradores
-  const { 
-    data: colaboradores = [],
-    isLoading: colaboradoresLoading
-  } = useQuery({
-    queryKey: ['availableColaboradores'],
-    queryFn: fetchAvailableColaboradores
-  });
-
   // Mutations
   const createUserMutation = useMutation({
     mutationFn: createUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['availableColaboradores'] });
       toast.success('Usuario creado exitosamente');
       setIsUserDialogOpen(false);
       setSelectedUser(null);
@@ -178,7 +142,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
     mutationFn: updateUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['availableColaboradores'] });
       toast.success('Usuario actualizado exitosamente');
       setIsUserDialogOpen(false);
       setSelectedUser(null);
@@ -194,7 +157,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
     mutationFn: deleteUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      queryClient.invalidateQueries({ queryKey: ['availableColaboradores'] });
       toast.success('Usuario eliminado exitosamente');
     },
     onError: (error: Error) => {
@@ -235,8 +197,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       name: user.name,
       email: user.email,
       active: !user.active,
-      roleId: String(user.roleId),
-      colaboradorId: user.colaboradorId ? String(user.colaboradorId) : ''
+      roleId: String(user.roleId)
     };
     
     updateUserMutation.mutate(updatedUser);
@@ -247,8 +208,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.colaboradorName && user.colaboradorName.toLowerCase().includes(searchQuery.toLowerCase()))
+      user.role.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -272,7 +232,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                 <TableHead>Nombre</TableHead>
                 <TableHead>Correo electrónico</TableHead>
                 <TableHead>Rol</TableHead>
-                <TableHead>Colaborador</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -280,13 +239,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     Cargando usuarios...
                   </TableCell>
                 </TableRow>
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={5} className="h-24 text-center">
                     No se encontraron resultados.
                   </TableCell>
                 </TableRow>
@@ -299,13 +258,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                       <Badge variant={user.role === 'Administrador' ? 'destructive' : 'default'}>
                         {user.role}
                       </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.colaboradorName ? (
-                        <Badge variant="outline">{user.colaboradorName}</Badge>
-                      ) : (
-                        <span className="text-muted-foreground">Sin asignar</span>
-                      )}
                     </TableCell>
                     <TableCell>
                       <Switch 
@@ -348,7 +300,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
         onOpenChange={setIsUserDialogOpen}
         userData={selectedUser}
         roles={roles}
-        colaboradores={colaboradores}
         onSubmit={handleSubmitUser}
         isSubmitting={isSubmitting}
       />
