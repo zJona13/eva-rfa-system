@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4 } from 'lucide-react';
@@ -25,7 +26,7 @@ const Dashboard = () => {
   };
 
   // Use full collaborator name if available, otherwise use user name
-  const displayName = user?.colaboradorNombre || user?.name;
+  const displayName = user?.colaboradorName || user?.name;
 
   return (
     <div className="space-y-8">
