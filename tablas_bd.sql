@@ -102,11 +102,14 @@ CREATE TABLE INCIDENCIA (
 
 CREATE TABLE NOTIFICACION (
     idNotificacion INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    descripcion TEXT,
-    horaEnvio TIME,
-    fechaEnvio DATE,
-    idIncidencia INT(10) NOT NULL,
-    FOREIGN KEY (idIncidencia) REFERENCES INCIDENCIA(idIncidencia) ON DELETE CASCADE
+    mensaje TEXT NOT NULL,
+    fechaNotificacion DATE NOT NULL,
+    horaNotificacion TIME NOT NULL,
+    leido TINYINT(1) DEFAULT 0,
+    idUsuario INT(10) NOT NULL,
+    idIncidencia INT(10),
+    FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE,
+    FOREIGN KEY (idIncidencia) REFERENCES INCIDENCIA(idIncidencia) ON DELETE SET NULL
 );
 
 INSERT INTO TIPO_USUARIO (nombre) VALUES
@@ -121,3 +124,7 @@ INSERT INTO TIPO_COLABORADOR (nombre) VALUES
 
 INSERT INTO TIPO_CONTRATO (nombre) 
 VALUES ('Tiempo Parcial'), ('Tiempo Completo'), ('Nombrado');
+
+INSERT INTO NOTIFICACION (mensaje, fechaNotificacion, horaNotificacion, leido, idUsuario) VALUES
+('Bienvenido al sistema de evaluación', CURDATE(), CURTIME(), 0, 1),
+('Nueva evaluación asignada', CURDATE(), CURTIME(), 0, 2);
