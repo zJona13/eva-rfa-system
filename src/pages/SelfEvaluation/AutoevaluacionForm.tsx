@@ -1,43 +1,20 @@
 
 import React, { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
 const API_BASE_URL = 'http://localhost:3306/api';
-
-interface Subcriterio {
-  idSubCriterio: number;
-  texto: string;
-  puntaje: number;
-  idCriterio: number;
-  criterioNombre: string;
-}
-
-const fetchSubcriterios = async () => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/subcriterios`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
 
 const createEvaluacion = async (evaluacionData: any) => {
   const token = localStorage.getItem('auth_token');
@@ -65,13 +42,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const form = useForm();
-  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<number, number>>({});
-
-  // Fetch subcriterios
-  const { data: subcriteriosData, isLoading: isLoadingSubcriterios } = useQuery({
-    queryKey: ['subcriterios'],
-    queryFn: fetchSubcriterios,
-  });
+  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
 
   const createEvaluacionMutation = useMutation({
     mutationFn: createEvaluacion,
@@ -85,18 +56,10 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
     },
   });
 
-  const subcriterios: Subcriterio[] = subcriteriosData?.subcriterios || [];
-
   // Agrupar subcriterios por criterio
-  const criteriosAgrupados = subcriterios.reduce((acc, subcriterio) => {
-    if (!acc[subcriterio.criterioNombre]) {
-      acc[subcriterio.criterioNombre] = [];
-    }
-    acc[subcriterio.criterioNombre].push(subcriterio);
-    return acc;
-  }, {} as Record<string, Subcriterio[]>);
+  const criteriosAgrupados = getCriteriosAgrupados(subcriteriosAutoevaluacion);
 
-  const handleSubcriterioRating = (subcriterioId: number, rating: number) => {
+  const handleSubcriterioRating = (subcriterioId: string, rating: number) => {
     setSubcriteriosRatings(prev => ({
       ...prev,
       [subcriterioId]: rating
@@ -108,7 +71,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
   };
 
   const onSubmit = (data: any) => {
-    if (Object.keys(subcriteriosRatings).length !== subcriterios.length) {
+    if (Object.keys(subcriteriosRatings).length !== subcriteriosAutoevaluacion.length) {
       toast.error('Debe calificar todos los subcriterios');
       return;
     }
@@ -124,7 +87,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
       comments: data.comentarios || null,
       status: 'Completada',
       subcriterios: Object.entries(subcriteriosRatings).map(([subcriterioId, puntaje]) => ({
-        idSubCriterio: parseInt(subcriterioId),
+        idSubCriterio: subcriterioId,
         puntajeObtenido: puntaje,
         descripcion: null
       }))
@@ -132,14 +95,6 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
 
     createEvaluacionMutation.mutate(evaluacionData);
   };
-
-  if (isLoadingSubcriterios) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -173,6 +128,15 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
             </CardContent>
           </Card>
 
+          <div className="bg-muted p-4 rounded-lg">
+            <h3 className="font-semibold mb-2">Escala de Valoración por Subcriterio:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+              <div><strong>1:</strong> Logrado Totalmente / Siempre</div>
+              <div><strong>0.5:</strong> Logrado Parcialmente / A Veces</div>
+              <div><strong>0:</strong> No Logrado / Nunca</div>
+            </div>
+          </div>
+
           {Object.entries(criteriosAgrupados).map(([criterioNombre, subcriteriosGrupo]) => (
             <Card key={criterioNombre}>
               <CardHeader>
@@ -180,29 +144,31 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {subcriteriosGrupo.map((subcriterio) => (
-                    <div key={subcriterio.idSubCriterio} className="space-y-2">
-                      <Label className="text-sm">{subcriterio.texto}</Label>
+                  {subcriteriosGrupo.map((subcriterio, index) => (
+                    <div key={subcriterio.id} className="space-y-2">
+                      <Label className="text-sm">
+                        <span className="font-medium">{index + 1}.</span> {subcriterio.texto}
+                      </Label>
                       <RadioGroup
-                        value={subcriteriosRatings[subcriterio.idSubCriterio]?.toString() || ''}
-                        onValueChange={(value) => handleSubcriterioRating(subcriterio.idSubCriterio, parseFloat(value))}
+                        value={subcriteriosRatings[subcriterio.id]?.toString() || ''}
+                        onValueChange={(value) => handleSubcriterioRating(subcriterio.id, parseFloat(value))}
                         className="flex gap-6"
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id={`${subcriterio.idSubCriterio}-0`} />
-                          <Label htmlFor={`${subcriterio.idSubCriterio}-0`} className="text-sm">
+                          <RadioGroupItem value="0" id={`${subcriterio.id}-0`} />
+                          <Label htmlFor={`${subcriterio.id}-0`} className="text-sm">
                             0 - No Logrado
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0.5" id={`${subcriterio.idSubCriterio}-0.5`} />
-                          <Label htmlFor={`${subcriterio.idSubCriterio}-0.5`} className="text-sm">
+                          <RadioGroupItem value="0.5" id={`${subcriterio.id}-0.5`} />
+                          <Label htmlFor={`${subcriterio.id}-0.5`} className="text-sm">
                             0.5 - Logrado Parcialmente
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="1" id={`${subcriterio.idSubCriterio}-1`} />
-                          <Label htmlFor={`${subcriterio.idSubCriterio}-1`} className="text-sm">
+                          <RadioGroupItem value="1" id={`${subcriterio.id}-1`} />
+                          <Label htmlFor={`${subcriterio.id}-1`} className="text-sm">
                             1 - Logrado Totalmente
                           </Label>
                         </div>

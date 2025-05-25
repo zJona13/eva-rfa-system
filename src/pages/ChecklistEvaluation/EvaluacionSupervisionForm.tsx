@@ -2,17 +2,18 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { subcriteriosSupervision, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
@@ -22,40 +23,9 @@ interface Colaborador {
   roleName: string;
 }
 
-interface Criterio {
-  idCriterio: number;
-  nombre: string;
-  descripcion: string;
-  puntaje: number;
-}
-
-interface Subcriterio {
-  idSubCriterio: number;
-  texto: string;
-  puntaje: number;
-  idCriterio: number;
-  criterioNombre: string;
-}
-
 const fetchColaboradores = async () => {
   const token = localStorage.getItem('auth_token');
   const response = await fetch(`${API_BASE_URL}/colaboradores-para-evaluar`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const fetchSubcriterios = async () => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/subcriterios`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
@@ -96,18 +66,12 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
   const queryClient = useQueryClient();
   const form = useForm();
   const [selectedColaborador, setSelectedColaborador] = useState<string>('');
-  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<number, number>>({});
+  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
 
   // Fetch colaboradores
   const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
     queryKey: ['colaboradores-para-evaluar'],
     queryFn: fetchColaboradores,
-  });
-
-  // Fetch subcriterios
-  const { data: subcriteriosData, isLoading: isLoadingSubcriterios } = useQuery({
-    queryKey: ['subcriterios'],
-    queryFn: fetchSubcriterios,
   });
 
   const createEvaluacionMutation = useMutation({
@@ -123,18 +87,11 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
   });
 
   const colaboradores: Colaborador[] = colaboradoresData?.colaboradores || [];
-  const subcriterios: Subcriterio[] = subcriteriosData?.subcriterios || [];
 
   // Agrupar subcriterios por criterio
-  const criteriosAgrupados = subcriterios.reduce((acc, subcriterio) => {
-    if (!acc[subcriterio.criterioNombre]) {
-      acc[subcriterio.criterioNombre] = [];
-    }
-    acc[subcriterio.criterioNombre].push(subcriterio);
-    return acc;
-  }, {} as Record<string, Subcriterio[]>);
+  const criteriosAgrupados = getCriteriosAgrupados(subcriteriosSupervision);
 
-  const handleSubcriterioRating = (subcriterioId: number, rating: number) => {
+  const handleSubcriterioRating = (subcriterioId: string, rating: number) => {
     setSubcriteriosRatings(prev => ({
       ...prev,
       [subcriterioId]: rating
@@ -151,7 +108,7 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
       return;
     }
 
-    if (Object.keys(subcriteriosRatings).length !== subcriterios.length) {
+    if (Object.keys(subcriteriosRatings).length !== subcriteriosSupervision.length) {
       toast.error('Debe calificar todos los subcriterios');
       return;
     }
@@ -167,7 +124,7 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
       comments: data.comentarios || null,
       status: 'Completada',
       subcriterios: Object.entries(subcriteriosRatings).map(([subcriterioId, puntaje]) => ({
-        idSubCriterio: parseInt(subcriterioId),
+        idSubCriterio: subcriterioId,
         puntajeObtenido: puntaje,
         descripcion: null
       }))
@@ -176,7 +133,7 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
     createEvaluacionMutation.mutate(evaluacionData);
   };
 
-  if (isLoadingColaboradores || isLoadingSubcriterios) {
+  if (isLoadingColaboradores) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -236,6 +193,15 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
             </CardContent>
           </Card>
 
+          <div className="bg-muted p-4 rounded-lg">
+            <h3 className="font-semibold mb-2">Escala de Valoración por Subcriterio:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+              <div><strong>1:</strong> Cumple Totalmente / Observado Satisfactoriamente</div>
+              <div><strong>0.5:</strong> Cumple Parcialmente / Observado con Áreas de Mejora</div>
+              <div><strong>0:</strong> No Cumple / No Observado</div>
+            </div>
+          </div>
+
           {Object.entries(criteriosAgrupados).map(([criterioNombre, subcriteriosGrupo]) => (
             <Card key={criterioNombre}>
               <CardHeader>
@@ -243,29 +209,31 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {subcriteriosGrupo.map((subcriterio) => (
-                    <div key={subcriterio.idSubCriterio} className="space-y-2">
-                      <Label className="text-sm">{subcriterio.texto}</Label>
+                  {subcriteriosGrupo.map((subcriterio, index) => (
+                    <div key={subcriterio.id} className="space-y-2">
+                      <Label className="text-sm">
+                        <span className="font-medium">{index + 1}.</span> {subcriterio.texto}
+                      </Label>
                       <RadioGroup
-                        value={subcriteriosRatings[subcriterio.idSubCriterio]?.toString() || ''}
-                        onValueChange={(value) => handleSubcriterioRating(subcriterio.idSubCriterio, parseFloat(value))}
+                        value={subcriteriosRatings[subcriterio.id]?.toString() || ''}
+                        onValueChange={(value) => handleSubcriterioRating(subcriterio.id, parseFloat(value))}
                         className="flex gap-6"
                       >
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0" id={`${subcriterio.idSubCriterio}-0`} />
-                          <Label htmlFor={`${subcriterio.idSubCriterio}-0`} className="text-sm">
+                          <RadioGroupItem value="0" id={`${subcriterio.id}-0`} />
+                          <Label htmlFor={`${subcriterio.id}-0`} className="text-sm">
                             0 - No Cumple
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="0.5" id={`${subcriterio.idSubCriterio}-0.5`} />
-                          <Label htmlFor={`${subcriterio.idSubCriterio}-0.5`} className="text-sm">
+                          <RadioGroupItem value="0.5" id={`${subcriterio.id}-0.5`} />
+                          <Label htmlFor={`${subcriterio.id}-0.5`} className="text-sm">
                             0.5 - Cumple Parcialmente
                           </Label>
                         </div>
                         <div className="flex items-center space-x-2">
-                          <RadioGroupItem value="1" id={`${subcriterio.idSubCriterio}-1`} />
-                          <Label htmlFor={`${subcriterio.idSubCriterio}-1`} className="text-sm">
+                          <RadioGroupItem value="1" id={`${subcriterio.id}-1`} />
+                          <Label htmlFor={`${subcriterio.id}-1`} className="text-sm">
                             1 - Cumple Totalmente
                           </Label>
                         </div>
