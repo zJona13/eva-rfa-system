@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Users, UserCog, UserSquare2, FileText } from 'lucide-react';
@@ -238,13 +237,13 @@ const Roles = () => {
               <FileText className="h-4 w-4" />
               <span>Tipos Contrato</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-1">
-              <UserCog className="h-4 w-4" />
-              <span>Usuarios</span>
-            </TabsTrigger>
             <TabsTrigger value="colaboradores" className="flex items-center gap-1">
               <UserSquare2 className="h-4 w-4" />
               <span>Colaboradores</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-1">
+              <UserCog className="h-4 w-4" />
+              <span>Usuarios</span>
             </TabsTrigger>
           </TabsList>
           
@@ -288,16 +287,6 @@ const Roles = () => {
           />
         </TabsContent>
 
-        {/* Tab de Usuarios */}
-        <TabsContent value="users" className="space-y-4">
-          <UsersTabContent 
-            users={users}
-            isLoading={usersLoading}
-            searchQuery={searchQuery}
-            roles={roles}
-          />
-        </TabsContent>
-        
         {/* Tab de Colaboradores */}
         <TabsContent value="colaboradores" className="space-y-4">
           <ColaboradoresTabContent 
@@ -306,6 +295,16 @@ const Roles = () => {
             searchQuery={searchQuery}
             tiposColaborador={tiposColaborador}
             tiposContrato={tiposContrato}
+          />
+        </TabsContent>
+        
+        {/* Tab de Usuarios */}
+        <TabsContent value="users" className="space-y-4">
+          <UsersTabContent 
+            users={users}
+            isLoading={usersLoading}
+            searchQuery={searchQuery}
+            roles={roles}
           />
         </TabsContent>
       </Tabs>

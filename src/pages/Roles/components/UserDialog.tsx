@@ -1,5 +1,4 @@
-
-import React from 'react';
+import React, { useEffect } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -72,14 +71,28 @@ const UserDialog: React.FC<UserDialogProps> = ({
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
-      name: userData?.name || '',
-      email: userData?.email || '',
+      name: '',
+      email: '',
       password: '',
       confirmPassword: '',
-      roleId: userData?.roleId ? String(userData.roleId) : '',
-      active: userData?.active !== undefined ? userData.active : true,
+      roleId: '',
+      active: true,
     },
   });
+
+  // Reset form when userData changes or dialog opens/closes
+  useEffect(() => {
+    if (open) {
+      form.reset({
+        name: userData?.name || '',
+        email: userData?.email || '',
+        password: '',
+        confirmPassword: '',
+        roleId: userData?.roleId ? String(userData.roleId) : '',
+        active: userData?.active !== undefined ? userData.active : true,
+      });
+    }
+  }, [open, userData, form]);
 
   const handleSubmit = (values: UserFormValues) => {
     onSubmit({

@@ -42,9 +42,9 @@ interface UsersTabContentProps {
   roles: Role[];
 }
 
-// Servicios API - Updated port from 5000 to 3306
+// Servicios API - Fixed token name
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch('http://localhost:3306/api/users', {
     method: 'POST',
     headers: {
@@ -56,7 +56,7 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId) // Convertir a número
+      roleId: parseInt(userData.roleId)
     })
   });
   
@@ -70,7 +70,7 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
 };
 
 const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch(`http://localhost:3306/api/users/${userData.id}`, {
     method: 'PUT',
     headers: {
@@ -82,7 +82,7 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId) // Convertir a número
+      roleId: parseInt(userData.roleId)
     })
   });
   
@@ -96,7 +96,7 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
 };
 
 const deleteUser = async (id: number): Promise<{ success: boolean, message: string }> => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch(`http://localhost:3306/api/users/${id}`, {
     method: 'DELETE',
     headers: {
@@ -280,7 +280,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                           size="icon" 
                           className="text-muted-foreground hover:text-destructive"
                           onClick={() => handleDeleteUser(user.id)}
-                          disabled={user.role === 'Administrador'} // No permitir eliminar admin
+                          disabled={user.role === 'Administrador'}
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
