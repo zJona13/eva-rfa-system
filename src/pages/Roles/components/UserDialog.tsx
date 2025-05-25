@@ -1,4 +1,5 @@
-import React, { useEffect } from 'react';
+
+import React, { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -31,6 +32,7 @@ const userFormSchema = z.object({
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }).optional(),
   confirmPassword: z.string().optional(),
   roleId: z.string().min(1, { message: 'Seleccione un rol' }),
+  colaboradorId: z.string().optional(),
   active: z.boolean().default(true),
 }).refine(data => !data.password || data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
@@ -45,6 +47,11 @@ interface Role {
   name: string;
 }
 
+interface Colaborador {
+  id: number;
+  fullName: string;
+}
+
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -53,6 +60,7 @@ interface UserDialogProps {
     name?: string;
     email?: string;
     roleId?: number;
+    colaboradorId?: number;
     active?: boolean;
   } | null;
   roles: Role[];
@@ -68,6 +76,9 @@ const UserDialog: React.FC<UserDialogProps> = ({
   onSubmit,
   isSubmitting
 }) => {
+  const [colaboradores, setColaboradores] = useState<Colaborador[]>([]);
+  const [loadingColaboradores, setLoadingColaboradores] = useState(false);
+
   const form = useForm<UserFormValues>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -76,9 +87,34 @@ const UserDialog: React.FC<UserDialogProps> = ({
       password: '',
       confirmPassword: '',
       roleId: '',
+      colaboradorId: '',
       active: true,
     },
   });
+
+  // Fetch available colaboradores
+  const fetchColaboradores = async () => {
+    try {
+      setLoadingColaboradores(true);
+      const token = localStorage.getItem('iesrfa_token');
+      const excludeUserId = userData?.id ? `?excludeUserId=${userData.id}` : '';
+      
+      const response = await fetch(`http://localhost:3306/api/users/available-colaboradores${excludeUserId}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setColaboradores(data.colaboradores || []);
+      }
+    } catch (error) {
+      console.error('Error al cargar colaboradores:', error);
+    } finally {
+      setLoadingColaboradores(false);
+    }
+  };
 
   // Reset form when userData changes or dialog opens/closes
   useEffect(() => {
@@ -89,8 +125,11 @@ const UserDialog: React.FC<UserDialogProps> = ({
         password: '',
         confirmPassword: '',
         roleId: userData?.roleId ? String(userData.roleId) : '',
+        colaboradorId: userData?.colaboradorId ? String(userData.colaboradorId) : '',
         active: userData?.active !== undefined ? userData.active : true,
       });
+      
+      fetchColaboradores();
     }
   }, [open, userData, form]);
 
@@ -198,6 +237,34 @@ const UserDialog: React.FC<UserDialogProps> = ({
                       ))}
                     </SelectContent>
                   </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="colaboradorId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Colaborador (Opcional)</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={loadingColaboradores ? "Cargando..." : "Seleccione un colaborador"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="">Sin colaborador asignado</SelectItem>
+                      {colaboradores.map((colaborador) => (
+                        <SelectItem key={colaborador.id} value={String(colaborador.id)}>
+                          {colaborador.fullName}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    Asigne un colaborador al usuario si corresponde
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}

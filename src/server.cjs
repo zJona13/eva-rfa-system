@@ -44,8 +44,8 @@ const authenticateToken = (req, res, next) => {
   next();
 };
 
-// Rutas públicas
-app.post('/api/auth/login', async (req, res) => {
+// Rutas de autenticación
+app.post('/api/login', async (req, res) => {
   const { email, password } = req.body;
   
   if (!email || !password) {
@@ -93,7 +93,7 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
   }
 });
 
-// Rutas para gestión de roles de usuario
+// Rutas de roles
 app.get('/api/roles', authenticateToken, async (req, res) => {
   const result = await roleService.getAllRoles();
   
@@ -148,7 +148,7 @@ app.delete('/api/roles/:roleId', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-// Rutas para gestión de tipos de colaborador
+// Rutas de tipos de colaborador
 app.get('/api/tiposcolaborador', authenticateToken, async (req, res) => {
   const result = await tipoColaboradorService.getAllTiposColaborador();
   
@@ -203,7 +203,7 @@ app.delete('/api/tiposcolaborador/:id', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-// Rutas para gestión de tipos de contrato
+// Rutas de tipos de contrato
 app.get('/api/tiposcontrato', authenticateToken, async (req, res) => {
   try {
     console.log('GET /api/tiposcontrato - Fetching all tipos contrato');
@@ -283,62 +283,7 @@ app.delete('/api/tiposcontrato/:id', authenticateToken, async (req, res) => {
   }
 });
 
-// Rutas para gestión de usuarios
-app.get('/api/users', authenticateToken, async (req, res) => {
-  const result = await userService.getAllUsers();
-  
-  if (!result.success) {
-    return res.status(500).json({ message: result.message });
-  }
-  
-  res.json(result);
-});
-
-app.post('/api/users', authenticateToken, async (req, res) => {
-  const { name, email, password, active, roleId } = req.body;
-  
-  if (!name || !email || !password || roleId === undefined) {
-    return res.status(400).json({ message: 'Todos los campos son requeridos' });
-  }
-  
-  const result = await userService.createUser({ name, email, password, active, roleId });
-  
-  if (!result.success) {
-    return res.status(500).json({ message: result.message });
-  }
-  
-  res.status(201).json(result);
-});
-
-app.put('/api/users/:userId', authenticateToken, async (req, res) => {
-  const { userId } = req.params;
-  const { name, email, password, active, roleId } = req.body;
-  
-  if (!name || !email || roleId === undefined) {
-    return res.status(400).json({ message: 'Los campos name, email y roleId son requeridos' });
-  }
-  
-  const result = await userService.updateUser(userId, { name, email, password, active, roleId });
-  
-  if (!result.success) {
-    return res.status(result.message === 'Usuario no encontrado' ? 404 : 500).json({ message: result.message });
-  }
-  
-  res.json(result);
-});
-
-app.delete('/api/users/:userId', authenticateToken, async (req, res) => {
-  const { userId } = req.params;
-  const result = await userService.deleteUser(userId);
-  
-  if (!result.success) {
-    return res.status(result.message === 'Usuario no encontrado' ? 404 : 400).json({ message: result.message });
-  }
-  
-  res.json(result);
-});
-
-// Rutas para gestión de colaboradores
+// Rutas de colaboradores
 app.get('/api/colaboradores', authenticateToken, async (req, res) => {
   const result = await colaboradorService.getAllColaboradores();
   
@@ -435,6 +380,85 @@ app.delete('/api/colaboradores/:id', authenticateToken, async (req, res) => {
   }
   
   res.json(result);
+});
+
+// Rutas de usuarios
+app.get('/api/users', authenticateToken, async (req, res) => {
+  try {
+    const result = await userService.getAllUsers();
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error en la ruta de usuarios:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.get('/api/users/available-colaboradores', authenticateToken, async (req, res) => {
+  try {
+    const { excludeUserId } = req.query;
+    const result = await userService.getAvailableColaboradores(excludeUserId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error en la ruta de colaboradores disponibles:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.post('/api/users', authenticateToken, async (req, res) => {
+  try {
+    const result = await userService.createUser(req.body);
+    
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error en la creación de usuario:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.put('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const result = await userService.updateUser(userId, req.body);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error en la actualización de usuario:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const result = await userService.deleteUser(userId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error en la eliminación de usuario:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
 });
 
 // Rutas para gestión de evaluaciones

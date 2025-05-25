@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +29,8 @@ interface User {
   active: boolean;
   role: string;
   roleId: number;
+  colaboradorId?: number;
+  colaboradorName?: string;
 }
 
 interface Role {
@@ -56,7 +59,8 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId)
+      roleId: parseInt(userData.roleId),
+      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
     })
   });
   
@@ -82,7 +86,8 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
       email: userData.email,
       password: userData.password,
       active: userData.active,
-      roleId: parseInt(userData.roleId)
+      roleId: parseInt(userData.roleId),
+      colaboradorId: userData.colaboradorId ? parseInt(userData.colaboradorId) : null
     })
   });
   
@@ -197,7 +202,8 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       name: user.name,
       email: user.email,
       active: !user.active,
-      roleId: String(user.roleId)
+      roleId: String(user.roleId),
+      colaboradorId: user.colaboradorId ? String(user.colaboradorId) : undefined
     };
     
     updateUserMutation.mutate(updatedUser);
@@ -208,7 +214,8 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      user.role.toLowerCase().includes(searchQuery.toLowerCase())
+      user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.colaboradorName && user.colaboradorName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -232,6 +239,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                 <TableHead>Nombre</TableHead>
                 <TableHead>Correo electrónico</TableHead>
                 <TableHead>Rol</TableHead>
+                <TableHead>Colaborador</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -239,13 +247,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     Cargando usuarios...
                   </TableCell>
                 </TableRow>
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={5} className="h-24 text-center">
+                  <TableCell colSpan={6} className="h-24 text-center">
                     No se encontraron resultados.
                   </TableCell>
                 </TableRow>
@@ -258,6 +266,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                       <Badge variant={user.role === 'Administrador' ? 'destructive' : 'default'}>
                         {user.role}
                       </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {user.colaboradorName ? (
+                        <span className="text-sm">{user.colaboradorName}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Sin asignar</span>
+                      )}
                     </TableCell>
                     <TableCell>
                       <Switch 
