@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear una nueva incidencia
@@ -43,12 +42,13 @@ const createIncidencia = async (incidenciaData) => {
   }
 };
 
-// Obtener incidencias por usuario (como reportador o afectado)
+// Obtener incidencias por usuario con el nuevo esquema
 const getIncidenciasByUser = async (userId) => {
   try {
     const [rows] = await pool.execute(
       `SELECT i.idIncidencia as id, i.fechaIncidencia as fecha, 
       i.horaIncidencia as hora, i.descripcion, i.estado, i.tipo,
+      i.accionTomada,
       ur.nombre as reportadorNombre,
       ua.nombre as afectadoNombre
       FROM INCIDENCIA i
@@ -65,7 +65,7 @@ const getIncidenciasByUser = async (userId) => {
     };
   } catch (error) {
     console.error('Error al obtener incidencias:', error);
-    return { success: false, message: 'Error al obtener las incidencias' };
+    return { success: false, message: 'Error al obtener las incidencias del usuario' };
   }
 };
 

@@ -92,12 +92,16 @@ CREATE TABLE REPORTE (
 
 CREATE TABLE INCIDENCIA (
     idIncidencia INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
-    fecha DATE,
-    hora TIME,
+    fechaIncidencia DATE NOT NULL,
+    horaIncidencia TIME NOT NULL,
+    descripcion TEXT NOT NULL,
+    tipo VARCHAR(50) NOT NULL,
     estado VARCHAR(50),
     accionTomada TEXT,
-    idUsuario INT(10) NOT NULL,
-    FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE
+    idUsuarioReportador INT(10) NOT NULL,
+    idUsuarioAfectado INT(10) NOT NULL,
+    FOREIGN KEY (idUsuarioReportador) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE,
+    FOREIGN KEY (idUsuarioAfectado) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE
 );
 
 CREATE TABLE NOTIFICACION (
