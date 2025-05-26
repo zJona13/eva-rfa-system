@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -8,7 +7,7 @@ import { modulesData } from '@/config/navigation';
 import StatCard from '@/components/Dashboard/StatCard';
 import ModuleCard from '@/components/Dashboard/ModuleCard';
 import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
-import { authenticatedFetch } from '@/utils/oauthUtils';
+import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306';
 

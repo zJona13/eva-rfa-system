@@ -1,11 +1,10 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Users, UserCog, UserSquare2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
-import { authenticatedFetch } from '@/utils/oauthUtils';
+import { authenticatedFetch } from '@/utils/sessionUtils';
 
 // Import our separate tab content components
 import RolesTabContent from './components/RolesTabContent';
