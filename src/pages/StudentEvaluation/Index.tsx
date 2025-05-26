@@ -5,31 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApiWithToken } from '@/hooks/useApiWithToken';
 import EvaluacionEstudianteForm from './EvaluacionEstudianteForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
-
-const API_BASE_URL = 'http://localhost:3306/api';
-
-// API functions
-const fetchEvaluacionesByEvaluador = async (userId: number) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/evaluaciones/evaluador/${userId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
 
 const StudentEvaluation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { apiRequest } = useApiWithToken();
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
@@ -37,11 +20,11 @@ const StudentEvaluation = () => {
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-estudiante', user?.id],
-    queryFn: () => fetchEvaluacionesByEvaluador(Number(user?.id) || 0),
+    queryFn: () => apiRequest(`/evaluaciones/evaluador/${user?.id}`),
     enabled: !!user?.id,
   });
 
-  const evaluaciones = evaluacionesData?.evaluaciones || [];
+  const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
   const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluacion estudiante-docente');
 
   const handleGenerateIncidencia = (evaluacion: any) => {

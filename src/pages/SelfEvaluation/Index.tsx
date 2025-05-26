@@ -5,31 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApiWithToken } from '@/hooks/useApiWithToken';
 import AutoevaluacionForm from './AutoevaluacionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
-
-const API_BASE_URL = 'http://localhost:3306/api';
-
-// API functions
-const fetchEvaluacionesByColaborador = async (colaboradorId: number) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/evaluaciones/colaborador/${colaboradorId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
 
 const SelfEvaluation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { apiRequest } = useApiWithToken();
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
@@ -37,11 +20,11 @@ const SelfEvaluation = () => {
   // Fetch autoevaluaciones del usuario actual
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-colaborador', user?.colaboradorId],
-    queryFn: () => fetchEvaluacionesByColaborador(user?.colaboradorId || 0),
+    queryFn: () => apiRequest(`/evaluaciones/colaborador/${user?.colaboradorId}`),
     enabled: !!user?.colaboradorId,
   });
 
-  const evaluaciones = evaluacionesData?.evaluaciones || [];
+  const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
   const autoevaluaciones = evaluaciones.filter((e: any) => e.type === 'Autoevaluacion');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
