@@ -70,18 +70,6 @@ export const navItems: NavItem[] = [
       variant: 'destructive',
     },
   },
-  {
-    title: 'Validación',
-    href: '/validation',
-    icon: ShieldCheck,
-    roles: ['admin', 'validator'],
-  },
-  {
-    title: 'Resultados',
-    href: '/results',
-    icon: BarChart4,
-    roles: ['admin', 'evaluator', 'evaluated'],
-  },
 ];
 
 export const modulesData = [
@@ -129,23 +117,5 @@ export const modulesData = [
     icon: Settings,
     color: 'bg-ies-neutral-100 text-ies-neutral-700',
     roles: ['admin'],
-  },
-  {
-    id: 6,
-    title: 'Validación de Evaluaciones',
-    description: 'Revisión y validación de evaluaciones completadas',
-    href: '/validation',
-    icon: ShieldCheck,
-    color: 'bg-ies-blue-100 text-ies-blue-600',
-    roles: ['admin', 'validator'],
-  },
-  {
-    id: 7,
-    title: 'Publicación de Resultados',
-    description: 'Consulta de resultados individuales y agrupados',
-    href: '/results',
-    icon: BarChart4,
-    color: 'bg-ies-purple-100 text-ies-purple-600',
-    roles: ['admin', 'evaluator', 'evaluated'],
   },
 ];
