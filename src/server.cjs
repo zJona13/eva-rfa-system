@@ -891,7 +891,7 @@ app.get('/api/reportes/evaluados-con-incidencias', authenticateToken, async (req
       res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error en /api/reportes/evaluados-con-incidencias:', error);
+    console.error('Error in /api/reportes/evaluados-con-incidencias:', error);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
@@ -918,7 +918,7 @@ app.get('/api/reportes/personal-de-baja', authenticateToken, async (req, res) =>
       res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error en /api/reportes/personal-de-baja:', error);
+    console.error('Error in /api/reportes/personal-de-baja:', error);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
@@ -945,7 +945,7 @@ app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (re
       res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error en /api/reportes/personal-alta-calificacion:', error);
+    console.error('Error in /api/reportes/personal-alta-calificacion:', error);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
@@ -1005,6 +1005,140 @@ app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, re
 });
 
 console.log('Rutas de reportes configuradas exitosamente');
+
+// Endpoint para obtener estadísticas del dashboard
+app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+  try {
+    console.log(`GET /api/dashboard/stats - Usuario: ${req.user?.name} Rol: ${req.user?.role}`);
+    
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const colaboradorId = req.user.colaboradorId;
+    
+    let stats = {};
+    
+    if (userRole === 'Evaluado' && colaboradorId) {
+      // Estadísticas para evaluados (docentes)
+      const [evaluacionesRecibidas] = await pool.execute(
+        'SELECT COUNT(*) as total FROM EVALUACION WHERE idColaborador = ?',
+        [colaboradorId]
+      );
+      
+      const [evaluacionesAprobadas] = await pool.execute(
+        'SELECT COUNT(*) as total FROM EVALUACION WHERE idColaborador = ? AND puntaje >= 11',
+        [colaboradorId]
+      );
+      
+      const [promedioCalificacion] = await pool.execute(
+        'SELECT AVG(puntaje) as promedio FROM EVALUACION WHERE idColaborador = ?',
+        [colaboradorId]
+      );
+      
+      const [incidenciasPersonales] = await pool.execute(
+        `SELECT COUNT(i.idIncidencia) as total 
+         FROM INCIDENCIA i 
+         JOIN USUARIO u ON i.idUsuarioAfectado = u.idUsuario 
+         WHERE u.idColaborador = ?`,
+        [colaboradorId]
+      );
+      
+      stats = {
+        evaluacionesRecibidas: evaluacionesRecibidas[0].total,
+        evaluacionesAprobadas: evaluacionesAprobadas[0].total,
+        promedioCalificacion: parseFloat(promedioCalificacion[0].promedio || 0).toFixed(1),
+        incidenciasPersonales: incidenciasPersonales[0].total
+      };
+      
+    } else if (userRole === 'Administrador' || userRole === 'Evaluador') {
+      // Estadísticas generales para administradores y evaluadores
+      const [totalEvaluaciones] = await pool.execute(
+        'SELECT COUNT(*) as total FROM EVALUACION'
+      );
+      
+      const [evaluacionesPendientes] = await pool.execute(
+        'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "Pendiente"'
+      );
+      
+      const [totalIncidencias] = await pool.execute(
+        'SELECT COUNT(*) as total FROM INCIDENCIA'
+      );
+      
+      const [validacionesPendientes] = await pool.execute(
+        'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "En Revisión"'
+      );
+      
+      const [promedioGeneral] = await pool.execute(
+        'SELECT AVG(puntaje) as promedio FROM EVALUACION'
+      );
+      
+      stats = {
+        totalEvaluaciones: totalEvaluaciones[0].total,
+        evaluacionesPendientes: evaluacionesPendientes[0].total,
+        totalIncidencias: totalIncidencias[0].total,
+        validacionesPendientes: validacionesPendientes[0].total,
+        promedioGeneral: parseFloat(promedioGeneral[0].promedio || 0).toFixed(1)
+      };
+    }
+    
+    console.log('Dashboard stats obtenidas:', stats);
+    res.json({ success: true, stats });
+    
+  } catch (error) {
+    console.error('Error al obtener estadísticas del dashboard:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener las estadísticas' });
+  }
+});
+
+// Endpoint para obtener evaluaciones recientes para el dashboard
+app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res) => {
+  try {
+    console.log(`GET /api/dashboard/recent-evaluations - Usuario: ${req.user?.name} Rol: ${req.user?.role}`);
+    
+    const userId = req.user.id;
+    const userRole = req.user.role;
+    const colaboradorId = req.user.colaboradorId;
+    
+    let evaluaciones = [];
+    
+    if (userRole === 'Evaluado' && colaboradorId) {
+      // Evaluaciones recibidas por el docente
+      const [rows] = await pool.execute(
+        `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
+         e.puntaje, e.tipo, e.estado,
+         u.nombre as evaluadorNombre
+         FROM EVALUACION e
+         JOIN USUARIO u ON e.idUsuario = u.idUsuario
+         WHERE e.idColaborador = ?
+         ORDER BY e.fechaEvaluacion DESC
+         LIMIT 5`,
+        [colaboradorId]
+      );
+      evaluaciones = rows;
+      
+    } else if (userRole === 'Administrador' || userRole === 'Evaluador') {
+      // Evaluaciones recientes del sistema
+      const [rows] = await pool.execute(
+        `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha,
+         e.puntaje, e.tipo, e.estado,
+         u.nombre as evaluadorNombre,
+         CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluadoNombre
+         FROM EVALUACION e
+         JOIN USUARIO u ON e.idUsuario = u.idUsuario
+         JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
+         ORDER BY e.fechaEvaluacion DESC
+         LIMIT 10`
+      );
+      evaluaciones = rows;
+    }
+    
+    console.log('Evaluaciones recientes obtenidas:', evaluaciones.length);
+    res.json({ success: true, evaluaciones });
+    
+  } catch (error) {
+    console.error('Error al obtener evaluaciones recientes:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener las evaluaciones recientes' });
+  }
+});
 
 // Iniciar el servidor
 app.listen(PORT, () => {
