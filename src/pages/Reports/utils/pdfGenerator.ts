@@ -1,10 +1,10 @@
-
 import jsPDF from 'jspdf';
-import 'jspdf-autotable';
+import autoTable from 'jspdf-autotable';
 
+// Definir el tipo correctamente
 declare module 'jspdf' {
   interface jsPDF {
-    autoTable: (options: any) => void;
+    autoTable: (options: any) => jsPDF;
   }
 }
 
@@ -60,15 +60,15 @@ export const generatePDF = async (reportType: ReportType, data: any) => {
 const generateEvaluacionesTable = (doc: jsPDF, evaluaciones: any[], startY: number) => {
   const tableData = evaluaciones.map(evaluacion => [
     new Date(evaluacion.fecha).toLocaleDateString(),
-    evaluacion.evaluadoNombre,
-    evaluacion.evaluadorNombre,
-    evaluacion.tipo,
-    `${evaluacion.puntaje}/20`,
-    evaluacion.estado,
-    evaluacion.rolEvaluado
+    evaluacion.evaluadoNombre || 'N/A',
+    evaluacion.evaluadorNombre || 'N/A',
+    evaluacion.tipo || 'N/A',
+    `${evaluacion.puntaje || 0}/20`,
+    evaluacion.estado || 'N/A',
+    evaluacion.rolEvaluado || 'N/A'
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Fecha', 'Evaluado', 'Evaluador', 'Tipo', 'Puntaje', 'Estado', 'Rol']],
     body: tableData,
     startY: startY,
@@ -82,14 +82,14 @@ const generateEvaluacionesTable = (doc: jsPDF, evaluaciones: any[], startY: numb
 
 const generateIncidenciasTable = (doc: jsPDF, evaluados: any[], startY: number) => {
   const tableData = evaluados.map(evaluado => [
-    evaluado.evaluadoNombre,
-    evaluado.rolEvaluado,
-    evaluado.totalIncidencias.toString(),
-    new Date(evaluado.ultimaIncidencia).toLocaleDateString(),
-    evaluado.descripcionesIncidencias.substring(0, 100) + '...'
+    evaluado.evaluadoNombre || 'N/A',
+    evaluado.rolEvaluado || 'N/A',
+    (evaluado.totalIncidencias || 0).toString(),
+    evaluado.ultimaIncidencia ? new Date(evaluado.ultimaIncidencia).toLocaleDateString() : 'N/A',
+    (evaluado.descripcionesIncidencias || '').substring(0, 100) + '...'
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Evaluado', 'Rol', 'Total Incidencias', 'Última Incidencia', 'Descripciones']],
     body: tableData,
     startY: startY,
@@ -103,15 +103,15 @@ const generateIncidenciasTable = (doc: jsPDF, evaluados: any[], startY: number) 
 
 const generatePersonalBajaTable = (doc: jsPDF, personal: any[], startY: number) => {
   const tableData = personal.map(persona => [
-    persona.nombreCompleto,
-    persona.dni,
-    persona.tipoColaborador,
+    persona.nombreCompleto || 'N/A',
+    persona.dni || 'N/A',
+    persona.tipoColaborador || 'N/A',
     persona.telefono || 'N/A',
     persona.tipoContrato || 'N/A',
     persona.fechaFin ? new Date(persona.fechaFin).toLocaleDateString() : 'N/A'
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Nombre Completo', 'DNI', 'Tipo', 'Teléfono', 'Tipo Contrato', 'Fecha Fin']],
     body: tableData,
     startY: startY,
@@ -122,15 +122,15 @@ const generatePersonalBajaTable = (doc: jsPDF, personal: any[], startY: number) 
 
 const generateAltaCalificacionTable = (doc: jsPDF, personal: any[], startY: number) => {
   const tableData = personal.map(persona => [
-    persona.nombreCompleto,
-    persona.tipoColaborador,
-    parseFloat(persona.promedioCalificacion).toFixed(2),
-    persona.totalEvaluaciones.toString(),
-    persona.mejorCalificacion.toString(),
-    persona.peorCalificacion.toString()
+    persona.nombreCompleto || 'N/A',
+    persona.tipoColaborador || 'N/A',
+    parseFloat(persona.promedioCalificacion || 0).toFixed(2),
+    (persona.totalEvaluaciones || 0).toString(),
+    (persona.mejorCalificacion || 0).toString(),
+    (persona.peorCalificacion || 0).toString()
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Nombre Completo', 'Tipo', 'Promedio', 'Total Eval.', 'Mejor', 'Peor']],
     body: tableData,
     startY: startY,
@@ -147,16 +147,16 @@ const generateAltaCalificacionTable = (doc: jsPDF, personal: any[], startY: numb
 
 const generateSemestreTable = (doc: jsPDF, evaluaciones: any[], startY: number) => {
   const tableData = evaluaciones.map(evaluacion => [
-    evaluacion.año.toString(),
-    evaluacion.semestre,
-    evaluacion.tipoEvaluacion,
-    evaluacion.totalEvaluaciones.toString(),
-    parseFloat(evaluacion.promedioGeneral).toFixed(2),
-    evaluacion.aprobadas.toString(),
-    evaluacion.desaprobadas.toString()
+    (evaluacion.año || 0).toString(),
+    evaluacion.semestre || 'N/A',
+    evaluacion.tipoEvaluacion || 'N/A',
+    (evaluacion.totalEvaluaciones || 0).toString(),
+    parseFloat(evaluacion.promedioGeneral || 0).toFixed(2),
+    (evaluacion.aprobadas || 0).toString(),
+    (evaluacion.desaprobadas || 0).toString()
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Año', 'Semestre', 'Tipo Evaluación', 'Total', 'Promedio', 'Aprobadas', 'Desaprobadas']],
     body: tableData,
     startY: startY,
@@ -173,16 +173,16 @@ const generateSemestreTable = (doc: jsPDF, evaluaciones: any[], startY: number) 
 
 const generateAreaTable = (doc: jsPDF, evaluaciones: any[], startY: number) => {
   const tableData = evaluaciones.map(evaluacion => [
-    evaluacion.area,
-    evaluacion.totalEvaluaciones.toString(),
-    parseFloat(evaluacion.promedioArea).toFixed(2),
-    evaluacion.aprobadas.toString(),
-    evaluacion.desaprobadas.toString(),
-    evaluacion.mejorCalificacion.toString(),
-    evaluacion.totalColaboradores.toString()
+    evaluacion.area || 'N/A',
+    (evaluacion.totalEvaluaciones || 0).toString(),
+    parseFloat(evaluacion.promedioArea || 0).toFixed(2),
+    (evaluacion.aprobadas || 0).toString(),
+    (evaluacion.desaprobadas || 0).toString(),
+    (evaluacion.mejorCalificacion || 0).toString(),
+    (evaluacion.totalColaboradores || 0).toString()
   ]);
 
-  doc.autoTable({
+  autoTable(doc, {
     head: [['Área', 'Total Eval.', 'Promedio', 'Aprobadas', 'Desaprobadas', 'Mejor', 'Colaboradores']],
     body: tableData,
     startY: startY,
