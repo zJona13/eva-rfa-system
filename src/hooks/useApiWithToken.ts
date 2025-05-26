@@ -85,7 +85,7 @@ export const useApiWithToken = () => {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Error de conexión';
-      console.error(`❌ Error en petición ${method} ${endpoint}:`, error);
+      console.error(`❌ Error en petición a ${endpoint}:`, error);
       setError(errorMessage);
       toast.error('Error de conexión con el servidor');
       return { success: false, error: errorMessage };
