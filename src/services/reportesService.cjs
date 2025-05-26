@@ -4,6 +4,7 @@ const { pool } = require('../utils/dbConnection.cjs');
 // Reporte de evaluaciones aprobadas (≥ 11)
 const getEvaluacionesAprobadas = async () => {
   try {
+    console.log('Ejecutando consulta para evaluaciones aprobadas...');
     const [rows] = await pool.execute(
       `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
       e.horaEvaluacion as hora, e.puntaje as puntaje, e.comentario as comentarios,
@@ -19,6 +20,7 @@ const getEvaluacionesAprobadas = async () => {
       ORDER BY e.fechaEvaluacion DESC, e.puntaje DESC`
     );
     
+    console.log(`Evaluaciones aprobadas encontradas: ${rows.length}`);
     return {
       success: true,
       evaluaciones: rows
