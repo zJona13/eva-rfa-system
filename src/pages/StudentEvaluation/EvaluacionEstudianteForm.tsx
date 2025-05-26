@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -12,50 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { ArrowLeft } from 'lucide-react';
 import { subcriteriosEstudiante, getCriteriosAgrupados } from '@/data/evaluationCriteria';
-
-const API_BASE_URL = 'http://localhost:3306/api';
 
 interface Colaborador {
   id: number;
   fullName: string;
   roleName: string;
 }
-
-const fetchColaboradores = async () => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/colaboradores-para-evaluar`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const createEvaluacion = async (evaluacionData: any) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/evaluaciones`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(evaluacionData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
 
 interface EvaluacionEstudianteFormProps {
   onCancel: () => void;
@@ -65,17 +29,21 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const form = useForm();
+  const { apiRequest } = useApiWithToken();
   const [selectedColaborador, setSelectedColaborador] = useState<string>('');
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
 
   // Fetch colaboradores
   const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
     queryKey: ['colaboradores-para-evaluar'],
-    queryFn: fetchColaboradores,
+    queryFn: () => apiRequest('/colaboradores-para-evaluar'),
   });
 
   const createEvaluacionMutation = useMutation({
-    mutationFn: createEvaluacion,
+    mutationFn: (evaluacionData: any) => apiRequest('/evaluaciones', {
+      method: 'POST',
+      body: evaluacionData
+    }),
     onSuccess: () => {
       toast.success('Evaluación creada exitosamente');
       queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
@@ -86,7 +54,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
     },
   });
 
-  const colaboradores: Colaborador[] = colaboradoresData?.colaboradores || [];
+  const colaboradores: Colaborador[] = colaboradoresData?.data?.colaboradores || [];
 
   // Agrupar subcriterios por criterio
   const criteriosAgrupados = getCriteriosAgrupados(subcriteriosEstudiante);

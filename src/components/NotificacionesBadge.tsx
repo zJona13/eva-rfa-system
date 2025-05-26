@@ -7,57 +7,28 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bell, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
-
-const API_BASE_URL = 'http://localhost:3306/api';
-
-const fetchNotificaciones = async (userId: number) => {
-  console.log('Fetching notifications for user:', userId);
-  
-  const response = await fetch(`${API_BASE_URL}/notificaciones/user/${userId}`, {
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const markAsRead = async (notificationId: number) => {
-  const response = await fetch(`${API_BASE_URL}/notificaciones/${notificationId}/read`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
 
 const NotificacionesBadge = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { apiRequest } = useApiWithToken();
   const [open, setOpen] = useState(false);
 
   const userId = user?.id ? parseInt(user.id) : 0;
 
   const { data: notificacionesData } = useQuery({
     queryKey: ['notificaciones', userId],
-    queryFn: () => fetchNotificaciones(userId),
+    queryFn: () => apiRequest(`/notificaciones/user/${userId}`),
     enabled: !!userId,
     refetchInterval: 30000, // Refetch cada 30 segundos
   });
 
   const markAsReadMutation = useMutation({
-    mutationFn: markAsRead,
+    mutationFn: (notificationId: number) => apiRequest(`/notificaciones/${notificationId}/read`, {
+      method: 'PUT'
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
     },
@@ -66,7 +37,7 @@ const NotificacionesBadge = () => {
     },
   });
 
-  const notificaciones = notificacionesData?.notificaciones || [];
+  const notificaciones = notificacionesData?.data?.notificaciones || [];
   const unreadCount = notificaciones.filter((n: any) => !n.leido).length;
 
   const handleMarkAsRead = (notificationId: number) => {

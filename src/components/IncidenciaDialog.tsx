@@ -9,8 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-
-const API_BASE_URL = 'http://localhost:3306/api';
+import { useApiWithToken } from '@/hooks/useApiWithToken';
 
 interface IncidenciaDialogProps {
   open: boolean;
@@ -23,41 +22,20 @@ interface IncidenciaDialogProps {
   };
 }
 
-const createIncidencia = async (incidenciaData: any) => {
-  console.log('Creating incidencia with data:', incidenciaData);
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/incidencias`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(incidenciaData),
-  });
-
-  console.log('Response status:', response.status);
-  
-  if (!response.ok) {
-    const errorText = await response.text();
-    console.error('Error response:', errorText);
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  const result = await response.json();
-  console.log('Incidencia created successfully:', result);
-  return result;
-};
-
 const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange, evaluacionData }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { apiRequest } = useApiWithToken();
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('Académica');
 
   console.log('IncidenciaDialog props:', { open, evaluacionData, user });
 
   const createIncidenciaMutation = useMutation({
-    mutationFn: createIncidencia,
+    mutationFn: (incidenciaData: any) => apiRequest('/incidencias', {
+      method: 'POST',
+      body: incidenciaData
+    }),
     onSuccess: (data) => {
       console.log('Incidencia creation success:', data);
       toast.success('Incidencia creada exitosamente. Se ha notificado al docente.');

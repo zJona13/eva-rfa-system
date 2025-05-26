@@ -10,44 +10,9 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { ArrowLeft } from 'lucide-react';
 import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
-
-const API_BASE_URL = 'http://localhost:3306/api';
-
-const fetchColaboradorByUserId = async (userId: number) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/colaborador-by-user/${userId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
-const createEvaluacion = async (evaluacionData: any) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/evaluaciones`, {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(evaluacionData),
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
 
 interface AutoevaluacionFormProps {
   onCancel: () => void;
@@ -57,17 +22,21 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const form = useForm();
+  const { apiRequest } = useApiWithToken();
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
 
   // Fetch colaborador info by user ID
   const { data: colaboradorData, isLoading: isLoadingColaborador } = useQuery({
     queryKey: ['colaborador-by-user', user?.id],
-    queryFn: () => fetchColaboradorByUserId(Number(user?.id) || 0),
+    queryFn: () => apiRequest(`/colaborador-by-user/${user?.id}`),
     enabled: !!user?.id,
   });
 
   const createEvaluacionMutation = useMutation({
-    mutationFn: createEvaluacion,
+    mutationFn: (evaluacionData: any) => apiRequest('/evaluaciones', {
+      method: 'POST',
+      body: evaluacionData
+    }),
     onSuccess: () => {
       toast.success('Autoevaluación creada exitosamente');
       queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
@@ -98,7 +67,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
       return;
     }
 
-    const colaborador = colaboradorData?.colaborador;
+    const colaborador = colaboradorData?.data?.colaborador;
     if (!colaborador) {
       toast.error('No se pudo obtener información del colaborador');
       return;
@@ -127,7 +96,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
     );
   }
 
-  const colaborador = colaboradorData?.colaborador;
+  const colaborador = colaboradorData?.data?.colaborador;
 
   return (
     <div className="space-y-6">
