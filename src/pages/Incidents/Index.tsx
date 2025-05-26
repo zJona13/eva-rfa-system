@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const API_BASE_URL = 'http://localhost:3306/api';
 
 const fetchIncidencias = async (userId: number) => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
@@ -26,7 +26,7 @@ const fetchIncidencias = async (userId: number) => {
 };
 
 const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: string }) => {
-  const token = localStorage.getItem('auth_token');
+  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
     method: 'PUT',
     headers: {
@@ -48,6 +48,8 @@ const Incidents = () => {
   const queryClient = useQueryClient();
 
   const userId = user?.id ? parseInt(user.id) : 0;
+
+  console.log('Usuario actual:', user); // Debug log para verificar datos del usuario
 
   const { data: incidenciasData, isLoading } = useQuery({
     queryKey: ['incidencias', userId],
@@ -74,8 +76,21 @@ const Incidents = () => {
 
   // Verificar si el usuario puede modificar el estado (solo evaluadores y administradores)
   const canModifyStatus = () => {
-    const userRole = user?.role?.toLowerCase();
-    return userRole === 'evaluador' || userRole === 'administrador';
+    if (!user?.role) {
+      console.log('No hay rol de usuario'); // Debug log
+      return false;
+    }
+    
+    const userRole = user.role.toLowerCase();
+    console.log('Rol del usuario (normalizado):', userRole); // Debug log
+    
+    // Verificar múltiples variaciones posibles del rol
+    const allowedRoles = ['evaluador', 'administrador', 'admin', 'evaluator'];
+    const canModify = allowedRoles.includes(userRole);
+    
+    console.log('¿Puede modificar estado?:', canModify); // Debug log
+    
+    return canModify;
   };
 
   const getEstadoColor = (estado: string) => {
@@ -121,6 +136,13 @@ const Incidents = () => {
             Registre y haga seguimiento a incidencias del sistema o proceso evaluativo.
           </p>
         </div>
+      </div>
+
+      {/* Debug info para verificar permisos */}
+      <div className="bg-muted p-3 rounded-lg text-sm">
+        <p><strong>Usuario:</strong> {user?.name}</p>
+        <p><strong>Rol:</strong> {user?.role}</p>
+        <p><strong>Puede modificar estado:</strong> {canModifyStatus() ? 'Sí' : 'No'}</p>
       </div>
 
       {incidencias.length === 0 ? (
