@@ -60,68 +60,188 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Función para obtener el token almacenado
+  const getStoredToken = () => {
+    return localStorage.getItem('oauth_access_token');
+  };
+
+  // Función para almacenar el token
+  const storeToken = (tokenData: any) => {
+    localStorage.setItem('oauth_access_token', tokenData.access_token);
+    localStorage.setItem('oauth_refresh_token', tokenData.refresh_token);
+    localStorage.setItem('oauth_expires_at', (Date.now() + (tokenData.expires_in * 1000)).toString());
+  };
+
+  // Función para limpiar tokens
+  const clearTokens = () => {
+    localStorage.removeItem('oauth_access_token');
+    localStorage.removeItem('oauth_refresh_token');
+    localStorage.removeItem('oauth_expires_at');
+    localStorage.removeItem('current_user');
+  };
+
+  // Función para verificar si el token ha expirado
+  const isTokenExpired = () => {
+    const expiresAt = localStorage.getItem('oauth_expires_at');
+    if (!expiresAt) return true;
+    return Date.now() > parseInt(expiresAt);
+  };
+
+  // Función para refrescar el token
+  const refreshToken = async () => {
+    const refresh_token = localStorage.getItem('oauth_refresh_token');
+    if (!refresh_token) return false;
+
+    try {
+      const response = await fetch(`${API_URL}/oauth/token`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          grant_type: 'refresh_token',
+          refresh_token: refresh_token
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok && data.access_token) {
+        storeToken(data);
+        return true;
+      } else {
+        console.error('Error refreshing token:', data);
+        return false;
+      }
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return false;
+    }
+  };
+
+  // Función para hacer requests autenticados
+  const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+    let token = getStoredToken();
+    
+    if (!token) {
+      throw new Error('No access token available');
+    }
+
+    // Verificar si el token ha expirado y intentar refrescarlo
+    if (isTokenExpired()) {
+      console.log('Token expired, attempting to refresh...');
+      const refreshed = await refreshToken();
+      if (!refreshed) {
+        throw new Error('Failed to refresh token');
+      }
+      token = getStoredToken();
+    }
+
+    return fetch(url, {
+      ...options,
+      headers: {
+        ...options.headers,
+        'Authorization': `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+    });
+  };
+
   useEffect(() => {
     // Verificar si hay una sesión activa guardada
     const savedUser = localStorage.getItem('current_user');
-    console.log('Checking saved user session:', savedUser ? 'exists' : 'not found');
+    const token = getStoredToken();
     
-    if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
+    console.log('Checking saved session:', { user: savedUser ? 'exists' : 'not found', token: token ? 'exists' : 'not found' });
+    
+    if (savedUser && token && savedUser !== 'null' && savedUser !== 'undefined') {
       try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        console.log('User session restored:', userData.name);
+        // Verificar si el token sigue siendo válido
+        if (isTokenExpired()) {
+          console.log('Token expired, attempting refresh...');
+          refreshToken().then((refreshed) => {
+            if (refreshed) {
+              const userData = JSON.parse(savedUser);
+              setUser(userData);
+              console.log('User session restored with refreshed token:', userData.name);
+            } else {
+              console.log('Failed to refresh token, clearing session');
+              clearTokens();
+            }
+            setIsLoading(false);
+          });
+        } else {
+          const userData = JSON.parse(savedUser);
+          setUser(userData);
+          console.log('User session restored:', userData.name);
+          setIsLoading(false);
+        }
       } catch (error) {
         console.error('Error parsing saved user:', error);
-        localStorage.removeItem('current_user');
+        clearTokens();
+        setIsLoading(false);
       }
     } else {
       console.log('No valid user session found');
+      setIsLoading(false);
     }
-    
-    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login for:', email);
-      const response = await fetch(`${API_URL}/auth/login`, {
+      console.log('Attempting OAuth login for:', email);
+      const response = await fetch(`${API_URL}/oauth/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          grant_type: 'password',
+          username: email,
+          password: password
+        }),
       });
 
       const data = await response.json();
-      console.log('Login response:', data);
+      console.log('OAuth login response:', data);
       
       if (!response.ok) {
-        toast.error(data.message || 'Credenciales incorrectas');
+        toast.error(data.error_description || 'Credenciales incorrectas');
         setIsLoading(false);
         return;
       }
       
-      if (data.success && data.user) {
-        const mappedUser = {
-          id: data.user.id.toString(),
-          name: data.user.name,
-          email: data.user.email,
-          role: mapRole(data.user.role),
-          colaboradorId: data.user.colaboradorId,
-          colaboradorName: data.user.colaboradorName
-        };
+      if (data.access_token) {
+        // Almacenar tokens
+        storeToken(data);
         
-        setUser(mappedUser);
-        // Guardar sesión sin token
-        localStorage.setItem('current_user', JSON.stringify(mappedUser));
-        console.log('User session saved successfully');
+        // Obtener información del usuario
+        const userResponse = await authenticatedFetch(`${API_URL}/oauth/me`);
+        const userInfo = await userResponse.json();
         
-        // Mostrar nombre del colaborador si está disponible
-        const displayName = mappedUser.colaboradorName || mappedUser.name;
-        toast.success(`Bienvenido, ${displayName}`);
-        navigate('/dashboard');
+        if (userResponse.ok && userInfo.success && userInfo.user) {
+          const mappedUser = {
+            id: userInfo.user.id.toString(),
+            name: userInfo.user.name,
+            email: userInfo.user.email,
+            role: mapRole(userInfo.user.role),
+            colaboradorId: userInfo.user.colaboradorId,
+            colaboradorName: userInfo.user.colaboradorName
+          };
+          
+          setUser(mappedUser);
+          localStorage.setItem('current_user', JSON.stringify(mappedUser));
+          console.log('User session saved successfully');
+          
+          // Mostrar nombre del colaborador si está disponible
+          const displayName = mappedUser.colaboradorName || mappedUser.name;
+          toast.success(`Bienvenido, ${displayName}`);
+          navigate('/dashboard');
+        } else {
+          toast.error('Error al obtener información del usuario');
+        }
       } else {
         toast.error('Error al iniciar sesión');
       }
@@ -147,12 +267,29 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('current_user');
-    console.log('User logged out, session cleared');
-    toast.info('Sesión cerrada');
-    navigate('/login');
+  const logout = async () => {
+    try {
+      const token = getStoredToken();
+      if (token) {
+        // Intentar revocar el token en el servidor
+        await fetch(`${API_URL}/oauth/revoke`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ token }),
+        }).catch(err => console.log('Error revoking token:', err));
+      }
+    } catch (error) {
+      console.error('Error during logout:', error);
+    } finally {
+      setUser(null);
+      clearTokens();
+      console.log('User logged out, session cleared');
+      toast.info('Sesión cerrada');
+      navigate('/login');
+    }
   };
 
   const value = {

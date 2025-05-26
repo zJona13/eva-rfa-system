@@ -39,90 +39,244 @@ testConnection()
     console.error('❌ Error al probar la conexión:', error);
   });
 
-// Usuario mock temporal (sin autenticación)
-const MOCK_USER = {
-  id: 2,
-  name: 'Usuario Administrador',
-  email: 'admin@iesrfa.edu.pe',
-  role: 'Administrador',
-  roleId: 1,
-  active: true,
-  colaboradorId: 1,
-  colaboradorName: 'Administrador Sistema'
+// OAuth 2.0 Token Store (En producción usar Redis o base de datos)
+const tokenStore = new Map();
+
+// OAuth 2.0 Configuration
+const OAUTH_CONFIG = {
+  clientId: 'ies-evaluation-system',
+  clientSecret: 'your-oauth-secret-key',
+  tokenExpiration: 24 * 60 * 60 * 1000, // 24 horas
+  refreshTokenExpiration: 7 * 24 * 60 * 60 * 1000 // 7 días
 };
 
-// Middleware simplificado sin autenticación JWT
-const authenticateToken = async (req, res, next) => {
-  console.log('⚠️ AUTENTICACIÓN DESHABILITADA - Usando usuario mock');
+// Generar token OAuth 2.0
+const generateOAuthToken = (userId, userEmail, userRole) => {
+  const accessToken = `oauth_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const refreshToken = `refresh_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  const expiresAt = Date.now() + OAUTH_CONFIG.tokenExpiration;
+  const refreshExpiresAt = Date.now() + OAUTH_CONFIG.refreshTokenExpiration;
   
-  // Asignar usuario mock directamente
-  req.user = MOCK_USER;
-  console.log('Usuario asignado:', req.user.name, 'Rol:', req.user.role);
+  const tokenData = {
+    accessToken,
+    refreshToken,
+    userId,
+    userEmail,
+    userRole,
+    expiresAt,
+    refreshExpiresAt,
+    createdAt: Date.now()
+  };
   
-  next();
+  tokenStore.set(accessToken, tokenData);
+  tokenStore.set(refreshToken, { ...tokenData, type: 'refresh' });
+  
+  console.log('OAuth token generado para usuario:', userEmail);
+  
+  return {
+    access_token: accessToken,
+    refresh_token: refreshToken,
+    token_type: 'Bearer',
+    expires_in: OAUTH_CONFIG.tokenExpiration / 1000,
+    scope: 'read write'
+  };
 };
 
-// ========================
-// RUTAS DE AUTENTICACIÓN
-// ========================
-
-// Login simplificado (sin JWT)
-app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  
-  console.log('Login attempt for:', email);
-  
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email y contraseña son requeridos' });
+// Middleware de autenticación OAuth 2.0
+const authenticateOAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      console.log('❌ Token OAuth faltante o formato incorrecto');
+      return res.status(401).json({ 
+        error: 'unauthorized',
+        error_description: 'Token de acceso requerido'
+      });
+    }
+    
+    const token = authHeader.substring(7);
+    const tokenData = tokenStore.get(token);
+    
+    if (!tokenData) {
+      console.log('❌ Token OAuth no encontrado en store');
+      return res.status(401).json({ 
+        error: 'invalid_token',
+        error_description: 'Token de acceso inválido'
+      });
+    }
+    
+    if (tokenData.expiresAt < Date.now()) {
+      console.log('❌ Token OAuth expirado');
+      tokenStore.delete(token);
+      return res.status(401).json({ 
+        error: 'token_expired',
+        error_description: 'Token de acceso expirado'
+      });
+    }
+    
+    // Obtener información actualizada del usuario
+    const userInfo = await authService.getUserInfo(tokenData.userId);
+    
+    if (!userInfo.success) {
+      console.log('❌ Usuario no encontrado para token OAuth');
+      return res.status(401).json({ 
+        error: 'invalid_token',
+        error_description: 'Usuario no encontrado'
+      });
+    }
+    
+    req.user = userInfo.user;
+    req.tokenData = tokenData;
+    console.log('✅ Usuario autenticado:', req.user.name, 'Rol:', req.user.role);
+    
+    next();
+  } catch (error) {
+    console.error('Error en autenticación OAuth:', error);
+    res.status(500).json({ 
+      error: 'server_error',
+      error_description: 'Error interno del servidor'
+    });
   }
+};
+
+// ========================
+// RUTAS DE AUTENTICACIÓN OAUTH 2.0
+// ========================
+
+// Login con OAuth 2.0
+app.post('/api/oauth/token', async (req, res) => {
+  const { grant_type, username, password, refresh_token } = req.body;
+  
+  console.log('OAuth token request:', { grant_type, username });
   
   try {
-    // Simulación de login exitoso
-    const mockResponse = {
-      success: true,
-      user: MOCK_USER,
-      token: 'mock-token' // Token simulado
-    };
-    
-    console.log('Login successful (mock) for user:', email);
-    res.json(mockResponse);
+    if (grant_type === 'password') {
+      // Flujo de autenticación por contraseña
+      if (!username || !password) {
+        return res.status(400).json({ 
+          error: 'invalid_request',
+          error_description: 'Username y password son requeridos'
+        });
+      }
+      
+      const loginResult = await authService.login(username, password);
+      
+      if (!loginResult.success) {
+        return res.status(401).json({ 
+          error: 'invalid_grant',
+          error_description: loginResult.message
+        });
+      }
+      
+      const tokenResponse = generateOAuthToken(
+        loginResult.user.id,
+        loginResult.user.email,
+        loginResult.user.role
+      );
+      
+      res.json(tokenResponse);
+      
+    } else if (grant_type === 'refresh_token') {
+      // Flujo de refresh token
+      if (!refresh_token) {
+        return res.status(400).json({ 
+          error: 'invalid_request',
+          error_description: 'Refresh token es requerido'
+        });
+      }
+      
+      const refreshData = tokenStore.get(refresh_token);
+      
+      if (!refreshData || refreshData.type !== 'refresh' || refreshData.refreshExpiresAt < Date.now()) {
+        return res.status(401).json({ 
+          error: 'invalid_grant',
+          error_description: 'Refresh token inválido o expirado'
+        });
+      }
+      
+      // Generar nuevo access token
+      const tokenResponse = generateOAuthToken(
+        refreshData.userId,
+        refreshData.userEmail,
+        refreshData.userRole
+      );
+      
+      // Eliminar refresh token usado
+      tokenStore.delete(refresh_token);
+      
+      res.json(tokenResponse);
+      
+    } else {
+      res.status(400).json({ 
+        error: 'unsupported_grant_type',
+        error_description: 'Tipo de grant no soportado'
+      });
+    }
   } catch (error) {
-    console.error('Error en login:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error en OAuth token:', error);
+    res.status(500).json({ 
+      error: 'server_error',
+      error_description: 'Error interno del servidor'
+    });
   }
 });
 
-// Logout
-app.post('/api/auth/logout', authenticateToken, async (req, res) => {
+// Revocar token OAuth 2.0
+app.post('/api/oauth/revoke', authenticateOAuth, async (req, res) => {
   try {
-    res.json({ success: true, message: 'Logout exitoso' });
+    const { token } = req.body;
+    const authToken = req.headers.authorization?.substring(7);
+    
+    // Revocar token específico o el token actual
+    const tokenToRevoke = token || authToken;
+    
+    if (tokenStore.has(tokenToRevoke)) {
+      const tokenData = tokenStore.get(tokenToRevoke);
+      tokenStore.delete(tokenToRevoke);
+      
+      // También eliminar refresh token asociado si existe
+      if (tokenData.refreshToken) {
+        tokenStore.delete(tokenData.refreshToken);
+      }
+    }
+    
+    res.json({ success: true, message: 'Token revocado exitosamente' });
   } catch (error) {
-    console.error('Error en logout:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error al revocar token:', error);
+    res.status(500).json({ 
+      error: 'server_error',
+      error_description: 'Error interno del servidor'
+    });
   }
 });
 
 // Obtener información del usuario actual
-app.get('/api/auth/me', authenticateToken, async (req, res) => {
+app.get('/api/oauth/me', authenticateOAuth, async (req, res) => {
   try {
-    const userInfo = {
+    res.json({
       success: true,
-      user: req.user
-    };
-    
-    res.json(userInfo);
+      user: req.user,
+      token_info: {
+        expires_at: req.tokenData.expiresAt,
+        scope: 'read write'
+      }
+    });
   } catch (error) {
     console.error('Error al obtener usuario:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ 
+      error: 'server_error',
+      error_description: 'Error interno del servidor'
+    });
   }
 });
 
 // ========================
-// RESTO DE LAS RUTAS
+// RESTO DE LAS RUTAS (PROTEGIDAS CON OAUTH)
 // ========================
 
 // Rutas de roles
-app.get('/api/roles', authenticateToken, async (req, res) => {
+app.get('/api/roles', authenticateOAuth, async (req, res) => {
   const result = await roleService.getAllRoles();
   
   if (!result.success) {
@@ -132,7 +286,7 @@ app.get('/api/roles', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-app.post('/api/roles', authenticateToken, async (req, res) => {
+app.post('/api/roles', authenticateOAuth, async (req, res) => {
   const { name } = req.body;
   
   if (!name) {
@@ -148,7 +302,7 @@ app.post('/api/roles', authenticateToken, async (req, res) => {
   res.status(201).json(result);
 });
 
-app.put('/api/roles/:roleId', authenticateToken, async (req, res) => {
+app.put('/api/roles/:roleId', authenticateOAuth, async (req, res) => {
   const { roleId } = req.params;
   const { name } = req.body;
   
@@ -165,7 +319,7 @@ app.put('/api/roles/:roleId', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/roles/:roleId', authenticateToken, async (req, res) => {
+app.delete('/api/roles/:roleId', authenticateOAuth, async (req, res) => {
   const { roleId } = req.params;
   const result = await roleService.deleteRole(roleId);
   
@@ -177,7 +331,7 @@ app.delete('/api/roles/:roleId', authenticateToken, async (req, res) => {
 });
 
 // Rutas de tipos de colaborador
-app.get('/api/tiposcolaborador', authenticateToken, async (req, res) => {
+app.get('/api/tiposcolaborador', authenticateOAuth, async (req, res) => {
   const result = await tipoColaboradorService.getAllTiposColaborador();
   
   if (!result.success) {
@@ -187,7 +341,7 @@ app.get('/api/tiposcolaborador', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-app.post('/api/tiposcolaborador', authenticateToken, async (req, res) => {
+app.post('/api/tiposcolaborador', authenticateOAuth, async (req, res) => {
   const { name } = req.body;
   
   if (!name) {
@@ -203,7 +357,7 @@ app.post('/api/tiposcolaborador', authenticateToken, async (req, res) => {
   res.status(201).json(result);
 });
 
-app.put('/api/tiposcolaborador/:id', authenticateToken, async (req, res) => {
+app.put('/api/tiposcolaborador/:id', authenticateOAuth, async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   
@@ -220,7 +374,7 @@ app.put('/api/tiposcolaborador/:id', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/tiposcolaborador/:id', authenticateToken, async (req, res) => {
+app.delete('/api/tiposcolaborador/:id', authenticateOAuth, async (req, res) => {
   const { id } = req.params;
   const result = await tipoColaboradorService.deleteTipoColaborador(id);
   
@@ -232,7 +386,7 @@ app.delete('/api/tiposcolaborador/:id', authenticateToken, async (req, res) => {
 });
 
 // Rutas de tipos de contrato
-app.get('/api/tiposcontrato', authenticateToken, async (req, res) => {
+app.get('/api/tiposcontrato', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/tiposcontrato - Fetching all tipos contrato');
     const result = await tipoContratoService.getAllTiposContrato();
@@ -248,7 +402,7 @@ app.get('/api/tiposcontrato', authenticateToken, async (req, res) => {
   }
 });
 
-app.post('/api/tiposcontrato', authenticateToken, async (req, res) => {
+app.post('/api/tiposcontrato', authenticateOAuth, async (req, res) => {
   try {
     const { name } = req.body;
     console.log('POST /api/tiposcontrato - Creating new tipo contrato:', name);
@@ -270,7 +424,7 @@ app.post('/api/tiposcontrato', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/tiposcontrato/:id', authenticateToken, async (req, res) => {
+app.put('/api/tiposcontrato/:id', authenticateOAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { name } = req.body;
@@ -293,7 +447,7 @@ app.put('/api/tiposcontrato/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/tiposcontrato/:id', authenticateToken, async (req, res) => {
+app.delete('/api/tiposcontrato/:id', authenticateOAuth, async (req, res) => {
   try {
     const { id } = req.params;
     console.log(`DELETE /api/tiposcontrato/${id} - Deleting tipo contrato`);
@@ -312,7 +466,7 @@ app.delete('/api/tiposcontrato/:id', authenticateToken, async (req, res) => {
 });
 
 // Rutas de colaboradores
-app.get('/api/colaboradores', authenticateToken, async (req, res) => {
+app.get('/api/colaboradores', authenticateOAuth, async (req, res) => {
   const result = await colaboradorService.getAllColaboradores();
   
   if (!result.success) {
@@ -322,7 +476,7 @@ app.get('/api/colaboradores', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-app.post('/api/colaboradores', authenticateToken, async (req, res) => {
+app.post('/api/colaboradores', authenticateOAuth, async (req, res) => {
   const colaboradorData = req.body;
   
   if (!colaboradorData.nombres || !colaboradorData.apePat || !colaboradorData.dni || !colaboradorData.roleId || !colaboradorData.contractTypeId) {
@@ -355,7 +509,7 @@ app.post('/api/colaboradores', authenticateToken, async (req, res) => {
   res.status(201).json(result);
 });
 
-app.put('/api/colaboradores/:id', authenticateToken, async (req, res) => {
+app.put('/api/colaboradores/:id', authenticateOAuth, async (req, res) => {
   const { id } = req.params;
   const colaboradorData = req.body;
   
@@ -389,7 +543,7 @@ app.put('/api/colaboradores/:id', authenticateToken, async (req, res) => {
   res.json(result);
 });
 
-app.delete('/api/colaboradores/:id', authenticateToken, async (req, res) => {
+app.delete('/api/colaboradores/:id', authenticateOAuth, async (req, res) => {
   const { id } = req.params;
   const result = await colaboradorService.deleteColaborador(id);
   
@@ -401,7 +555,7 @@ app.delete('/api/colaboradores/:id', authenticateToken, async (req, res) => {
 });
 
 // Rutas de usuarios
-app.get('/api/users', authenticateToken, async (req, res) => {
+app.get('/api/users', authenticateOAuth, async (req, res) => {
   try {
     const result = await userService.getAllUsers();
     
@@ -416,7 +570,7 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/users/available-colaboradores', authenticateToken, async (req, res) => {
+app.get('/api/users/available-colaboradores', authenticateOAuth, async (req, res) => {
   try {
     const { excludeUserId } = req.query;
     const result = await userService.getAvailableColaboradores(excludeUserId);
@@ -432,7 +586,7 @@ app.get('/api/users/available-colaboradores', authenticateToken, async (req, res
   }
 });
 
-app.post('/api/users', authenticateToken, async (req, res) => {
+app.post('/api/users', authenticateOAuth, async (req, res) => {
   try {
     const result = await userService.createUser(req.body);
     
@@ -447,7 +601,7 @@ app.post('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/users/:id', authenticateToken, async (req, res) => {
+app.put('/api/users/:id', authenticateOAuth, async (req, res) => {
   try {
     const userId = req.params.id;
     const result = await userService.updateUser(userId, req.body);
@@ -463,7 +617,7 @@ app.put('/api/users/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/users/:id', authenticateToken, async (req, res) => {
+app.delete('/api/users/:id', authenticateOAuth, async (req, res) => {
   try {
     const userId = req.params.id;
     const result = await userService.deleteUser(userId);
@@ -480,7 +634,7 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
 });
 
 // Rutas para gestión de evaluaciones
-app.get('/api/evaluaciones', authenticateToken, async (req, res) => {
+app.get('/api/evaluaciones', authenticateOAuth, async (req, res) => {
   try {
     const result = await evaluacionService.getAllEvaluaciones();
     if (result.success) {
@@ -494,7 +648,7 @@ app.get('/api/evaluaciones', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/evaluaciones/evaluador/:userId', authenticateToken, async (req, res) => {
+app.get('/api/evaluaciones/evaluador/:userId', authenticateOAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await evaluacionService.getEvaluacionesByEvaluador(userId);
@@ -509,7 +663,7 @@ app.get('/api/evaluaciones/evaluador/:userId', authenticateToken, async (req, re
   }
 });
 
-app.get('/api/evaluaciones/colaborador/:colaboradorId', authenticateToken, async (req, res) => {
+app.get('/api/evaluaciones/colaborador/:colaboradorId', authenticateOAuth, async (req, res) => {
   try {
     const { colaboradorId } = req.params;
     const result = await evaluacionService.getEvaluacionesByColaborador(colaboradorId);
@@ -524,7 +678,7 @@ app.get('/api/evaluaciones/colaborador/:colaboradorId', authenticateToken, async
   }
 });
 
-app.post('/api/evaluaciones', authenticateToken, async (req, res) => {
+app.post('/api/evaluaciones', authenticateOAuth, async (req, res) => {
   try {
     const evaluacionData = req.body;
     console.log('Received evaluation data:', evaluacionData);
@@ -541,7 +695,7 @@ app.post('/api/evaluaciones', authenticateToken, async (req, res) => {
   }
 });
 
-app.put('/api/evaluaciones/:id', authenticateToken, async (req, res) => {
+app.put('/api/evaluaciones/:id', authenticateOAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const evaluacionData = req.body;
@@ -558,7 +712,7 @@ app.put('/api/evaluaciones/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.delete('/api/evaluaciones/:id', authenticateToken, async (req, res) => {
+app.delete('/api/evaluaciones/:id', authenticateOAuth, async (req, res) => {
   try {
     const { id } = req.params;
     
@@ -574,7 +728,7 @@ app.delete('/api/evaluaciones/:id', authenticateToken, async (req, res) => {
   }
 });
 
-app.get('/api/colaboradores-para-evaluar', authenticateToken, async (req, res) => {
+app.get('/api/colaboradores-para-evaluar', authenticateOAuth, async (req, res) => {
   try {
     const result = await evaluacionService.getColaboradoresParaEvaluar();
     if (result.success) {
@@ -593,7 +747,7 @@ app.get('/api/colaboradores-para-evaluar', authenticateToken, async (req, res) =
 // ========================
 
 // Obtener todos los criterios
-app.get('/api/criterios', authenticateToken, async (req, res) => {
+app.get('/api/criterios', authenticateOAuth, async (req, res) => {
   try {
     const result = await criteriosService.getAllCriterios();
     res.json(result);
@@ -604,7 +758,7 @@ app.get('/api/criterios', authenticateToken, async (req, res) => {
 });
 
 // Obtener subcriterios por criterio
-app.get('/api/criterios/:id/subcriterios', authenticateToken, async (req, res) => {
+app.get('/api/criterios/:id/subcriterios', authenticateOAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await criteriosService.getSubcriteriosByCriterio(parseInt(id));
@@ -616,7 +770,7 @@ app.get('/api/criterios/:id/subcriterios', authenticateToken, async (req, res) =
 });
 
 // Obtener todos los subcriterios
-app.get('/api/subcriterios', authenticateToken, async (req, res) => {
+app.get('/api/subcriterios', authenticateOAuth, async (req, res) => {
   try {
     const result = await criteriosService.getAllSubcriterios();
     res.json(result);
@@ -627,7 +781,7 @@ app.get('/api/subcriterios', authenticateToken, async (req, res) => {
 });
 
 // Agregar el nuevo endpoint para obtener colaborador por user ID
-app.get('/api/colaborador-by-user/:userId', authenticateToken, async (req, res) => {
+app.get('/api/colaborador-by-user/:userId', authenticateOAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await evaluacionService.getColaboradorByUserId(userId);
@@ -648,7 +802,7 @@ app.get('/api/colaborador-by-user/:userId', authenticateToken, async (req, res) 
 // ========================
 
 // Crear nueva incidencia
-app.post('/api/incidencias', authenticateToken, async (req, res) => {
+app.post('/api/incidencias', authenticateOAuth, async (req, res) => {
   try {
     const incidenciaData = req.body;
     console.log('Creating incidencia:', incidenciaData);
@@ -666,7 +820,7 @@ app.post('/api/incidencias', authenticateToken, async (req, res) => {
 });
 
 // Obtener incidencias por usuario
-app.get('/api/incidencias/user/:userId', authenticateToken, async (req, res) => {
+app.get('/api/incidencias/user/:userId', authenticateOAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await incidenciaService.getIncidenciasByUser(userId);
@@ -682,7 +836,7 @@ app.get('/api/incidencias/user/:userId', authenticateToken, async (req, res) => 
 });
 
 // Obtener todas las incidencias
-app.get('/api/incidencias', authenticateToken, async (req, res) => {
+app.get('/api/incidencias', authenticateOAuth, async (req, res) => {
   try {
     const result = await incidenciaService.getAllIncidencias();
     if (result.success) {
@@ -697,7 +851,7 @@ app.get('/api/incidencias', authenticateToken, async (req, res) => {
 });
 
 // Actualizar estado de incidencia
-app.put('/api/incidencias/:id/estado', authenticateToken, async (req, res) => {
+app.put('/api/incidencias/:id/estado', authenticateOAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const { estado } = req.body;
@@ -719,7 +873,7 @@ app.put('/api/incidencias/:id/estado', authenticateToken, async (req, res) => {
 // ========================
 
 // Obtener notificaciones por usuario
-app.get('/api/notificaciones/user/:userId', authenticateToken, async (req, res) => {
+app.get('/api/notificaciones/user/:userId', authenticateOAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await notificacionService.getNotificacionesByUser(userId);
@@ -735,7 +889,7 @@ app.get('/api/notificaciones/user/:userId', authenticateToken, async (req, res) 
 });
 
 // Marcar notificación como leída
-app.put('/api/notificaciones/:id/read', authenticateToken, async (req, res) => {
+app.put('/api/notificaciones/:id/read', authenticateOAuth, async (req, res) => {
   try {
     const { id } = req.params;
     const result = await notificacionService.markNotificacionAsRead(id);
@@ -751,7 +905,7 @@ app.put('/api/notificaciones/:id/read', authenticateToken, async (req, res) => {
 });
 
 // Obtener contador de notificaciones no leídas
-app.get('/api/notificaciones/unread-count/:userId', authenticateToken, async (req, res) => {
+app.get('/api/notificaciones/unread-count/:userId', authenticateOAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const result = await notificacionService.getUnreadNotificationsCount(userId);
@@ -770,10 +924,8 @@ app.get('/api/notificaciones/unread-count/:userId', authenticateToken, async (re
 // RUTAS DE REPORTES
 // ========================
 
-// Configurando rutas de reportes...
-
 // Reporte de evaluaciones aprobadas
-app.get('/api/reportes/evaluaciones-aprobadas', authenticateToken, async (req, res) => {
+app.get('/api/reportes/evaluaciones-aprobadas', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/reportes/evaluaciones-aprobadas - Usuario:', req.user?.name, 'Rol:', req.user?.role);
     
@@ -805,7 +957,7 @@ app.get('/api/reportes/evaluaciones-aprobadas', authenticateToken, async (req, r
 });
 
 // Reporte de evaluaciones desaprobadas
-app.get('/api/reportes/evaluaciones-desaprobadas', authenticateToken, async (req, res) => {
+app.get('/api/reportes/evaluaciones-desaprobadas', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/reportes/evaluaciones-desaprobadas - Usuario:', req.user?.name, 'Rol:', req.user?.role);
     
@@ -832,7 +984,7 @@ app.get('/api/reportes/evaluaciones-desaprobadas', authenticateToken, async (req
 });
 
 // Reporte de evaluados con incidencias
-app.get('/api/reportes/evaluados-con-incidencias', authenticateToken, async (req, res) => {
+app.get('/api/reportes/evaluados-con-incidencias', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/reportes/evaluados-con-incidencias - Usuario:', req.user?.name, 'Rol:', req.user?.role);
     
@@ -859,7 +1011,7 @@ app.get('/api/reportes/evaluados-con-incidencias', authenticateToken, async (req
 });
 
 // Reporte de personal de baja
-app.get('/api/reportes/personal-de-baja', authenticateToken, async (req, res) => {
+app.get('/api/reportes/personal-de-baja', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/reportes/personal-de-baja - Usuario:', req.user?.name, 'Rol:', req.user?.role);
     
@@ -886,7 +1038,7 @@ app.get('/api/reportes/personal-de-baja', authenticateToken, async (req, res) =>
 });
 
 // Reporte de personal con alta calificación
-app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (req, res) => {
+app.get('/api/reportes/personal-alta-calificacion', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/reportes/personal-alta-calificacion - Usuario:', req.user?.name, 'Rol:', req.user?.role);
     
@@ -913,7 +1065,7 @@ app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (re
 });
 
 // Reporte de evaluaciones por semestre
-app.get('/api/reportes/evaluaciones-por-semestre', authenticateToken, async (req, res) => {
+app.get('/api/reportes/evaluaciones-por-semestre', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/reportes/evaluaciones-por-semestre - Usuario:', req.user?.name, 'Rol:', req.user?.role);
     
@@ -940,7 +1092,7 @@ app.get('/api/reportes/evaluaciones-por-semestre', authenticateToken, async (req
 });
 
 // Reporte de evaluaciones por área
-app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, res) => {
+app.get('/api/reportes/evaluaciones-por-area', authenticateOAuth, async (req, res) => {
   try {
     console.log('GET /api/reportes/evaluaciones-por-area - Usuario:', req.user?.name, 'Rol:', req.user?.role);
     
@@ -969,7 +1121,7 @@ app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, re
 console.log('Rutas de reportes configuradas exitosamente');
 
 // Endpoint para obtener estadísticas del dashboard
-app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
+app.get('/api/dashboard/stats', authenticateOAuth, async (req, res) => {
   try {
     console.log(`GET /api/dashboard/stats - Usuario: ${req.user?.name} Rol: ${req.user?.role}`);
     
@@ -1052,7 +1204,7 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
 });
 
 // Endpoint para obtener evaluaciones recientes para el dashboard
-app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res) => {
+app.get('/api/dashboard/recent-evaluations', authenticateOAuth, async (req, res) => {
   try {
     console.log('Getting recent evaluations for user:', req.user.id, 'Role:', req.user.role);
 

@@ -11,14 +11,44 @@ import { toast } from 'sonner';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
-const fetchNotificaciones = async (userId: number) => {
-  console.log('Fetching notifications for user:', userId);
+// Función para obtener el token OAuth
+const getOAuthToken = () => {
+  return localStorage.getItem('oauth_access_token');
+};
+
+// Función para verificar si el token ha expirado
+const isTokenExpired = () => {
+  const expiresAt = localStorage.getItem('oauth_expires_at');
+  if (!expiresAt) return true;
+  return Date.now() > parseInt(expiresAt);
+};
+
+// Función para hacer requests autenticados con OAuth
+const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
+  const token = getOAuthToken();
   
-  const response = await fetch(`${API_BASE_URL}/notificaciones/user/${userId}`, {
+  if (!token) {
+    throw new Error('No OAuth token available');
+  }
+
+  if (isTokenExpired()) {
+    throw new Error('OAuth token expired');
+  }
+
+  return fetch(url, {
+    ...options,
     headers: {
+      ...options.headers,
+      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
+};
+
+const fetchNotificaciones = async (userId: number) => {
+  console.log('Fetching notifications for user:', userId);
+  
+  const response = await authenticatedFetch(`${API_BASE_URL}/notificaciones/user/${userId}`);
 
   if (!response.ok) {
     throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -28,11 +58,8 @@ const fetchNotificaciones = async (userId: number) => {
 };
 
 const markAsRead = async (notificationId: number) => {
-  const response = await fetch(`${API_BASE_URL}/notificaciones/${notificationId}/read`, {
+  const response = await authenticatedFetch(`${API_BASE_URL}/notificaciones/${notificationId}/read`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-    },
   });
 
   if (!response.ok) {
