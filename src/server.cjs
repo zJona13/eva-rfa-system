@@ -39,7 +39,7 @@ testConnection()
     console.error('❌ Error al probar la conexión:', error);
   });
 
-// Simple middleware for basic authentication (temporary placeholder)
+// Simple middleware for basic authentication (MEJORADO PARA MANEJAR ERRORES JWT)
 const authenticateToken = async (req, res, next) => {
   // Check for token in Authorization header
   const authHeader = req.headers.authorization;
@@ -58,8 +58,14 @@ const authenticateToken = async (req, res, next) => {
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = 'your_secret_key_here';
     
+    // Validar que el token tenga un formato básico correcto
+    if (!token || token.split('.').length !== 3) {
+      console.log('Token JWT con formato incorrecto:', token);
+      return res.status(401).json({ message: 'Token inválido - formato incorrecto' });
+    }
+    
     const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('Token decodificado:', decoded);
+    console.log('Token decodificado exitosamente:', decoded);
     
     // Obtener información completa del usuario
     const result = await authService.getUserInfo(decoded.id);
@@ -68,11 +74,27 @@ const authenticateToken = async (req, res, next) => {
       console.log('Usuario autenticado:', req.user.name, 'Rol:', req.user.role);
     } else {
       console.log('Error al obtener info del usuario:', result.message);
-      return res.status(401).json({ message: 'Token inválido' });
+      return res.status(401).json({ message: 'Usuario no encontrado' });
     }
   } catch (error) {
-    console.error('Error al verificar token:', error);
-    return res.status(401).json({ message: 'Token inválido' });
+    console.error('Error al verificar token:', error.name, ':', error.message);
+    
+    // Manejar diferentes tipos de errores JWT
+    if (error.name === 'JsonWebTokenError') {
+      if (error.message === 'jwt malformed') {
+        return res.status(401).json({ message: 'Token JWT malformado - por favor inicia sesión nuevamente' });
+      } else if (error.message === 'invalid signature') {
+        return res.status(401).json({ message: 'Token JWT con firma inválida' });
+      } else {
+        return res.status(401).json({ message: 'Token JWT inválido' });
+      }
+    } else if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({ message: 'Token JWT expirado - por favor inicia sesión nuevamente' });
+    } else if (error.name === 'NotBeforeError') {
+      return res.status(401).json({ message: 'Token JWT no activo todavía' });
+    } else {
+      return res.status(401).json({ message: 'Error de autenticación' });
+    }
   }
 
   next();
@@ -82,7 +104,7 @@ const authenticateToken = async (req, res, next) => {
 // RUTAS DE AUTENTICACIÓN
 // ========================
 
-// Login
+// Login - MEJORADO PARA GENERAR TOKENS VÁLIDOS
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   
@@ -119,24 +141,14 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   }
 });
 
-// Obtener información del usuario actual
+// Obtener información del usuario actual - MEJORADO
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader.split(' ')[1];
-  
   try {
-    const tokenInfo = await authService.verifyToken(token);
-    
-    if (!tokenInfo.valid) {
-      return res.status(401).json({ message: 'Token inválido' });
-    }
-    
-    const userId = tokenInfo.user.id;
-    const userInfo = await authService.getUserInfo(userId);
-    
-    if (!userInfo.success) {
-      return res.status(404).json({ message: userInfo.message });
-    }
+    // El usuario ya está disponible en req.user gracias al middleware
+    const userInfo = {
+      success: true,
+      user: req.user
+    };
     
     res.json(userInfo);
   } catch (error) {
@@ -349,16 +361,6 @@ app.get('/api/colaboradores', authenticateToken, async (req, res) => {
   
   res.json(result);
 });
-
-// app.get('/api/tiposcontrato', authenticateRequest, async (req, res) => {
-//   const result = await colaboradorService.getAllTiposContrato();
-  
-//   if (!result.success) {
-//     return res.status(500).json({ message: result.message });
-//   }
-  
-//   res.json(result);
-// });
 
 app.post('/api/colaboradores', authenticateToken, async (req, res) => {
   const colaboradorData = req.body;

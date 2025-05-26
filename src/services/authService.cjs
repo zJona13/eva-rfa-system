@@ -1,11 +1,10 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
 const JWT_SECRET = 'your_secret_key_here';
 
-// Iniciar sesión
+// Iniciar sesión - MEJORADO PARA GENERAR TOKENS MÁS SEGUROS
 const login = async (correo, contrasena) => {
   try {
     // Consulta mejorada para obtener también el nombre del colaborador
@@ -40,17 +39,25 @@ const login = async (correo, contrasena) => {
       return { success: false, message: 'Contraseña incorrecta' };
     }
 
+    // Generar token JWT más robusto con datos adicionales
+    const tokenPayload = { 
+      id: user.idUsuario, 
+      email: user.correo, 
+      role: user.role,
+      roleId: user.roleId,
+      colaboradorId: user.idColaborador,
+      iat: Math.floor(Date.now() / 1000)
+    };
+    
+    console.log('Generando token para usuario:', user.correo, 'Payload:', tokenPayload);
+    
     const token = jwt.sign(
-      { 
-        id: user.idUsuario, 
-        email: user.correo, 
-        role: user.role,
-        roleId: user.roleId,
-        colaboradorId: user.idColaborador
-      },
+      tokenPayload,
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '24h', algorithm: 'HS256' }
     );
+
+    console.log('Token generado exitosamente, longitud:', token.length);
 
     return {
       success: true,
@@ -71,25 +78,43 @@ const login = async (correo, contrasena) => {
   }
 };
 
-// Verificar token (versión simple temporal)
+// Verificar token - MEJORADO CON MEJOR MANEJO DE ERRORES
 const verifyToken = async (token) => {
-  // Implementación temporal, se reemplazará con una solución más segura
-  if (token === 'temp-auth-token') {
-    // En una implementación real, aquí decodificaríamos el token para obtener el ID del usuario
-    // y luego obtendríamos la información actualizada del usuario desde la base de datos
+  try {
+    // Validar formato básico del token
+    if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
+      console.log('Token con formato inválido recibido');
+      return { valid: false, error: 'Token con formato inválido' };
+    }
+
+    // Verificar y decodificar el token
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Token verificado exitosamente para usuario ID:', decoded.id);
+    
+    // Obtener información actualizada del usuario
+    const userInfo = await getUserInfo(decoded.id);
+    
+    if (!userInfo.success) {
+      return { valid: false, error: 'Usuario no encontrado' };
+    }
+    
     return { 
       valid: true,
-      user: {
-        id: 1,
-        name: 'Usuario Temporal',
-        email: 'admin@example.com',
-        role: 'Administrador',
-        colaboradorId: null,
-        colaboradorName: null
-      } 
+      user: userInfo.user
     };
+  } catch (error) {
+    console.error('Error al verificar token:', error.name, ':', error.message);
+    
+    if (error.name === 'JsonWebTokenError') {
+      return { valid: false, error: 'Token JWT inválido: ' + error.message };
+    } else if (error.name === 'TokenExpiredError') {
+      return { valid: false, error: 'Token JWT expirado' };
+    } else if (error.name === 'NotBeforeError') {
+      return { valid: false, error: 'Token JWT no activo todavía' };
+    } else {
+      return { valid: false, error: 'Error de verificación de token' };
+    }
   }
-  return { valid: false, error: 'Token inválido' };
 };
 
 // Obtener información del usuario
@@ -150,7 +175,7 @@ const getUserInfo = async (userId) => {
   }
 };
 
-// Registrar nuevo usuario
+// Registrar nuevo usuario - MEJORADO PARA GENERAR TOKENS CONSISTENTES
 const register = async (nombre, correo, contrasena, roleId = 4) => {
   try {
     const [existingUsers] = await pool.execute(
@@ -170,16 +195,23 @@ const register = async (nombre, correo, contrasena, roleId = 4) => {
       [nombre, correo, hashedPassword, 1, roleId]
     );
 
+    // Generar token consistente con el proceso de login
+    const tokenPayload = { 
+      id: result.insertId, 
+      email: correo, 
+      role: 'Estudiante',
+      roleId: roleId,
+      colaboradorId: null,
+      iat: Math.floor(Date.now() / 1000)
+    };
+
     const token = jwt.sign(
-      { 
-        id: result.insertId, 
-        email: correo, 
-        role: 'Estudiante',
-        roleId: roleId
-      },
+      tokenPayload,
       JWT_SECRET,
-      { expiresIn: '24h' }
+      { expiresIn: '24h', algorithm: 'HS256' }
     );
+
+    console.log('Token de registro generado exitosamente para:', correo);
 
     return {
       success: true,
