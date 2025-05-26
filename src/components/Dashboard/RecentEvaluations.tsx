@@ -120,7 +120,7 @@ const RecentEvaluations = () => {
                       {isEvaluated ? (
                         `Evaluado por: ${evaluacion.evaluadorNombre}`
                       ) : (
-                        `${evaluacion.evaluadoNombre} - ${evaluacion.evaluadorNombre}`
+                        `${evaluacion.evaluadoNombre} - Evaluado por: ${evaluacion.evaluadorNombre}`
                       )}
                     </div>
                     <div className="text-xs text-muted-foreground">

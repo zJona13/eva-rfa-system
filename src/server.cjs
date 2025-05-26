@@ -1092,51 +1092,55 @@ app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
 // Endpoint para obtener evaluaciones recientes para el dashboard
 app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res) => {
   try {
-    console.log(`GET /api/dashboard/recent-evaluations - Usuario: ${req.user?.name} Rol: ${req.user?.role}`);
-    
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const colaboradorId = req.user.colaboradorId;
-    
-    let evaluaciones = [];
-    
-    if (userRole === 'Evaluado' && colaboradorId) {
-      // Evaluaciones recibidas por el docente
-      const [rows] = await pool.execute(
-        `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
-         e.puntaje, e.tipo, e.estado,
-         u.nombre as evaluadorNombre
-         FROM EVALUACION e
-         JOIN USUARIO u ON e.idUsuario = u.idUsuario
-         WHERE e.idColaborador = ?
-         ORDER BY e.fechaEvaluacion DESC
-         LIMIT 5`,
-        [colaboradorId]
-      );
-      evaluaciones = rows;
-      
-    } else if (userRole === 'Administrador' || userRole === 'Evaluador') {
-      // Evaluaciones recientes del sistema
-      const [rows] = await pool.execute(
-        `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha,
-         e.puntaje, e.tipo, e.estado,
-         u.nombre as evaluadorNombre,
-         CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluadoNombre
-         FROM EVALUACION e
-         JOIN USUARIO u ON e.idUsuario = u.idUsuario
-         JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
-         ORDER BY e.fechaEvaluacion DESC
-         LIMIT 10`
-      );
-      evaluaciones = rows;
+    console.log('Getting recent evaluations for user:', req.user.id, 'Role:', req.user.role);
+
+    let query;
+    let params = [];
+
+    if (req.user.role === 'Evaluado') {
+      // Para usuarios evaluados: mostrar sus evaluaciones recibidas
+      query = `
+        SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
+               e.puntaje, e.tipo, e.estado,
+               CONCAT(evaluador.nombres, ' ', evaluador.apePat, ' ', evaluador.apeMat) as evaluadorNombre
+        FROM EVALUACION e
+        JOIN USUARIO u_evaluador ON e.idUsuario = u_evaluador.idUsuario
+        JOIN COLABORADOR evaluador ON u_evaluador.idColaborador = evaluador.idColaborador
+        WHERE e.idColaborador = ?
+        ORDER BY e.fechaEvaluacion DESC
+        LIMIT 10
+      `;
+      params = [req.user.colaboradorId];
+    } else {
+      // Para administradores y evaluadores: mostrar evaluaciones del sistema
+      query = `
+        SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
+               e.puntaje, e.tipo, e.estado,
+               CONCAT(evaluado.nombres, ' ', evaluado.apePat, ' ', evaluado.apeMat) as evaluadoNombre,
+               CONCAT(evaluador.nombres, ' ', evaluador.apePat, ' ', evaluador.apeMat) as evaluadorNombre
+        FROM EVALUACION e
+        JOIN COLABORADOR evaluado ON e.idColaborador = evaluado.idColaborador
+        JOIN USUARIO u_evaluador ON e.idUsuario = u_evaluador.idUsuario
+        JOIN COLABORADOR evaluador ON u_evaluador.idColaborador = evaluador.idColaborador
+        ORDER BY e.fechaEvaluacion DESC
+        LIMIT 10
+      `;
     }
+
+    const [evaluaciones] = await pool.execute(query, params);
     
-    console.log('Evaluaciones recientes obtenidas:', evaluaciones.length);
-    res.json({ success: true, evaluaciones });
+    console.log('Recent evaluations fetched:', evaluaciones.length);
     
+    res.json({
+      success: true,
+      evaluaciones: evaluaciones
+    });
   } catch (error) {
-    console.error('Error al obtener evaluaciones recientes:', error);
-    res.status(500).json({ success: false, message: 'Error al obtener las evaluaciones recientes' });
+    console.error('Error fetching recent evaluations:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error al obtener las evaluaciones recientes'
+    });
   }
 });
 
