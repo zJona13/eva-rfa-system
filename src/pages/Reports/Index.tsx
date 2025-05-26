@@ -10,7 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calendar, Building2 } from 'lucide-react';
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
-import { authenticatedFetch } from '@/utils/oauthUtils';
+import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306';
 

@@ -2,7 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
-import { authenticatedFetch } from '@/utils/oauthUtils';
+import { loginWithSession, logoutWithSession, checkSession } from '@/utils/sessionUtils';
 
 // These would normally come from your API
 export type UserRole = 'admin' | 'evaluator' | 'evaluated' | 'student' | 'validator' | 'guest';
@@ -35,9 +35,6 @@ export const useAuth = () => {
   return context;
 };
 
-// API URL
-const API_URL = 'http://localhost:3306/api';
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -61,165 +58,68 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Función para obtener el token almacenado
-  const getStoredToken = () => {
-    return localStorage.getItem('oauth_access_token');
-  };
-
-  // Función para almacenar el token
-  const storeToken = (tokenData: any) => {
-    localStorage.setItem('oauth_access_token', tokenData.access_token);
-    localStorage.setItem('oauth_refresh_token', tokenData.refresh_token);
-    localStorage.setItem('oauth_expires_at', (Date.now() + (tokenData.expires_in * 1000)).toString());
-  };
-
-  // Función para limpiar tokens
-  const clearTokens = () => {
-    localStorage.removeItem('oauth_access_token');
-    localStorage.removeItem('oauth_refresh_token');
-    localStorage.removeItem('oauth_expires_at');
-    localStorage.removeItem('current_user');
-  };
-
-  // Función para verificar si el token ha expirado
-  const isTokenExpired = () => {
-    const expiresAt = localStorage.getItem('oauth_expires_at');
-    if (!expiresAt) return true;
-    return Date.now() > parseInt(expiresAt);
-  };
-
-  // Función para refrescar el token
-  const refreshToken = async () => {
-    const refresh_token = localStorage.getItem('oauth_refresh_token');
-    if (!refresh_token) return false;
-
-    try {
-      const response = await fetch(`${API_URL}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          grant_type: 'refresh_token',
-          refresh_token: refresh_token
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (response.ok && data.access_token) {
-        storeToken(data);
-        return true;
-      } else {
-        console.error('Error refreshing token:', data);
-        return false;
-      }
-    } catch (error) {
-      console.error('Error refreshing token:', error);
-      return false;
-    }
-  };
-
   useEffect(() => {
-    // Verificar si hay una sesión activa guardada
-    const savedUser = localStorage.getItem('current_user');
-    const token = getStoredToken();
-    
-    console.log('Checking saved session:', { user: savedUser ? 'exists' : 'not found', token: token ? 'exists' : 'not found' });
-    
-    if (savedUser && token && savedUser !== 'null' && savedUser !== 'undefined') {
+    // Verificar si hay una sesión activa al cargar la aplicación
+    const checkAuthStatus = async () => {
       try {
-        // Verificar si el token sigue siendo válido
-        if (isTokenExpired()) {
-          console.log('Token expired, attempting refresh...');
-          refreshToken().then((refreshed) => {
-            if (refreshed) {
-              const userData = JSON.parse(savedUser);
-              setUser(userData);
-              console.log('User session restored with refreshed token:', userData.name);
-            } else {
-              console.log('Failed to refresh token, clearing session');
-              clearTokens();
-            }
-            setIsLoading(false);
-          });
+        console.log('Checking session status...');
+        const sessionData = await checkSession();
+        
+        if (sessionData.success && sessionData.user) {
+          const mappedUser = {
+            id: sessionData.user.id.toString(),
+            name: sessionData.user.name,
+            email: sessionData.user.email,
+            role: mapRole(sessionData.user.role),
+            colaboradorId: sessionData.user.colaboradorId,
+            colaboradorName: sessionData.user.colaboradorName
+          };
+          
+          setUser(mappedUser);
+          console.log('Session restored for user:', mappedUser.name);
         } else {
-          const userData = JSON.parse(savedUser);
-          setUser(userData);
-          console.log('User session restored:', userData.name);
-          setIsLoading(false);
+          console.log('No active session found');
         }
       } catch (error) {
-        console.error('Error parsing saved user:', error);
-        clearTokens();
+        console.error('Error checking session:', error);
+      } finally {
         setIsLoading(false);
       }
-    } else {
-      console.log('No valid user session found');
-      setIsLoading(false);
-    }
+    };
+
+    checkAuthStatus();
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting OAuth login for:', email);
-      const response = await fetch(`${API_URL}/oauth/token`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          grant_type: 'password',
-          username: email,
-          password: password
-        }),
-      });
-
-      const data = await response.json();
-      console.log('OAuth login response:', data);
+      console.log('Attempting session login for:', email);
+      const loginData = await loginWithSession(email, password);
       
-      if (!response.ok) {
-        toast.error(data.error_description || 'Credenciales incorrectas');
-        setIsLoading(false);
-        return;
-      }
-      
-      if (data.access_token) {
-        // Almacenar tokens
-        storeToken(data);
+      if (loginData.success && loginData.user) {
+        const mappedUser = {
+          id: loginData.user.id.toString(),
+          name: loginData.user.name,
+          email: loginData.user.email,
+          role: mapRole(loginData.user.role),
+          colaboradorId: loginData.user.colaboradorId,
+          colaboradorName: loginData.user.colaboradorName
+        };
         
-        // Obtener información del usuario usando authenticatedFetch
-        const userInfo = await authenticatedFetch(`${API_URL}/oauth/me`);
+        setUser(mappedUser);
+        console.log('User session created successfully');
         
-        if (userInfo.success && userInfo.user) {
-          const mappedUser = {
-            id: userInfo.user.id.toString(),
-            name: userInfo.user.name,
-            email: userInfo.user.email,
-            role: mapRole(userInfo.user.role),
-            colaboradorId: userInfo.user.colaboradorId,
-            colaboradorName: userInfo.user.colaboradorName
-          };
-          
-          setUser(mappedUser);
-          localStorage.setItem('current_user', JSON.stringify(mappedUser));
-          console.log('User session saved successfully');
-          
-          // Mostrar nombre del colaborador si está disponible
-          const displayName = mappedUser.colaboradorName || mappedUser.name;
-          toast.success(`Bienvenido, ${displayName}`);
-          navigate('/dashboard');
-        } else {
-          toast.error('Error al obtener información del usuario');
-        }
+        // Mostrar nombre del colaborador si está disponible
+        const displayName = mappedUser.colaboradorName || mappedUser.name;
+        toast.success(`Bienvenido, ${displayName}`);
+        navigate('/dashboard');
       } else {
         toast.error('Error al iniciar sesión');
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error('Error al conectar con el servidor');
+      toast.error(error instanceof Error ? error.message : 'Error al conectar con el servidor');
     } finally {
       setIsLoading(false);
     }
@@ -241,25 +141,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      const token = getStoredToken();
-      if (token) {
-        // Intentar revocar el token en el servidor
-        await fetch(`${API_URL}/oauth/revoke`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ token }),
-        }).catch(err => console.log('Error revoking token:', err));
-      }
-    } catch (error) {
-      console.error('Error during logout:', error);
-    } finally {
+      await logoutWithSession();
       setUser(null);
-      clearTokens();
       console.log('User logged out, session cleared');
       toast.info('Sesión cerrada');
+      navigate('/login');
+    } catch (error) {
+      console.error('Error during logout:', error);
+      // Aún así limpiamos la sesión local
+      setUser(null);
       navigate('/login');
     }
   };
