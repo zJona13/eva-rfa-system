@@ -56,9 +56,9 @@ const Dashboard = () => {
   // Use full collaborator name if available, otherwise use user name
   const displayName = user?.colaboradorName || user?.name;
 
-  // Determine if user is evaluated (docente)
-  const isEvaluated = userRole === 'Evaluado';
-  const isAdminOrEvaluator = userRole === 'Administrador' || userRole === 'Evaluador';
+  // Determine if user is evaluated (docente) - using English role values
+  const isEvaluated = userRole === 'evaluated';
+  const isAdminOrEvaluator = userRole === 'admin' || userRole === 'evaluator';
 
   return (
     <div className="space-y-8">
