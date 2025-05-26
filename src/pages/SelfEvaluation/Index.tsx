@@ -7,24 +7,13 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import AutoevaluacionForm from './AutoevaluacionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
+import { authenticatedFetch } from '@/utils/oauthUtils';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
 // API functions
 const fetchEvaluacionesByColaborador = async (colaboradorId: number) => {
-  const token = localStorage.getItem('auth_token');
-  const response = await fetch(`${API_BASE_URL}/evaluaciones/colaborador/${colaboradorId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
+  return authenticatedFetch(`${API_BASE_URL}/evaluaciones/colaborador/${colaboradorId}`);
 };
 
 const SelfEvaluation = () => {
