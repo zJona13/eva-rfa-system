@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear una nueva incidencia
@@ -9,7 +10,7 @@ const createIncidencia = async (incidenciaData) => {
         incidenciaData.fecha,
         incidenciaData.hora,
         incidenciaData.descripcion,
-        incidenciaData.estado || 'Pendiente',
+        'En proceso', // Estado por defecto siempre "En proceso"
         incidenciaData.tipo,
         incidenciaData.reportadorId,
         incidenciaData.afectadoId
@@ -42,15 +43,15 @@ const createIncidencia = async (incidenciaData) => {
   }
 };
 
-// Obtener incidencias por usuario con el nuevo esquema
+// Obtener incidencias por usuario con nombres completos
 const getIncidenciasByUser = async (userId) => {
   try {
     const [rows] = await pool.execute(
       `SELECT i.idIncidencia as id, i.fechaIncidencia as fecha, 
       i.horaIncidencia as hora, i.descripcion, i.estado, i.tipo,
       i.accionTomada,
-      ur.nombre as reportadorNombre,
-      ua.nombre as afectadoNombre
+      CONCAT(ur.nombre, ' ', ur.apellidoPat, ' ', ur.apellidoMat) as reportadorNombre,
+      CONCAT(ua.nombre, ' ', ua.apellidoPat, ' ', ua.apellidoMat) as afectadoNombre
       FROM INCIDENCIA i
       JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario
       JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario
@@ -69,14 +70,14 @@ const getIncidenciasByUser = async (userId) => {
   }
 };
 
-// Obtener todas las incidencias
+// Obtener todas las incidencias con nombres completos
 const getAllIncidencias = async () => {
   try {
     const [rows] = await pool.execute(
       `SELECT i.idIncidencia as id, i.fechaIncidencia as fecha, 
       i.horaIncidencia as hora, i.descripcion, i.estado, i.tipo,
-      ur.nombre as reportadorNombre,
-      ua.nombre as afectadoNombre
+      CONCAT(ur.nombre, ' ', ur.apellidoPat, ' ', ur.apellidoMat) as reportadorNombre,
+      CONCAT(ua.nombre, ' ', ua.apellidoPat, ' ', ua.apellidoMat) as afectadoNombre
       FROM INCIDENCIA i
       JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario
       JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario

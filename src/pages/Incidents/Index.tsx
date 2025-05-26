@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -71,6 +70,12 @@ const Incidents = () => {
 
   const handleEstadoChange = (incidenciaId: number, nuevoEstado: string) => {
     updateEstadoMutation.mutate({ id: incidenciaId, estado: nuevoEstado });
+  };
+
+  // Verificar si el usuario puede modificar el estado (solo evaluadores y administradores)
+  const canModifyStatus = () => {
+    const userRole = user?.role?.toLowerCase();
+    return userRole === 'evaluador' || userRole === 'administrador';
   };
 
   const getEstadoColor = (estado: string) => {
@@ -156,23 +161,30 @@ const Incidents = () => {
                   </div>
 
                   <div className="flex justify-between items-center pt-2">
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm font-medium">Estado:</span>
-                      <Select
-                        value={incidencia.estado}
-                        onValueChange={(nuevoEstado) => handleEstadoChange(incidencia.id, nuevoEstado)}
-                        disabled={updateEstadoMutation.isPending}
-                      >
-                        <SelectTrigger className="w-32">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="Pendiente">Pendiente</SelectItem>
-                          <SelectItem value="En proceso">En proceso</SelectItem>
-                          <SelectItem value="Resuelto">Resuelto</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </div>
+                    {canModifyStatus() ? (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Estado:</span>
+                        <Select
+                          value={incidencia.estado}
+                          onValueChange={(nuevoEstado) => handleEstadoChange(incidencia.id, nuevoEstado)}
+                          disabled={updateEstadoMutation.isPending}
+                        >
+                          <SelectTrigger className="w-32">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="En proceso">En proceso</SelectItem>
+                            <SelectItem value="Resuelto">Resuelto</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-medium">Estado:</span>
+                        <span className="text-sm text-muted-foreground">{incidencia.estado}</span>
+                        <span className="text-xs text-muted-foreground">(Solo evaluadores y administradores pueden modificar)</span>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardContent>
