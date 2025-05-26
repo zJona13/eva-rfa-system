@@ -91,6 +91,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // Incluir cookies en la solicitud
         body: JSON.stringify({ email, password }),
       });
 
@@ -114,7 +115,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         setUser(mappedUser);
-        // Guardar sesión sin token
+        // Guardar sesión en localStorage como respaldo
         localStorage.setItem('current_user', JSON.stringify(mappedUser));
         console.log('User session saved successfully');
         
@@ -147,7 +148,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = () => {
+  const logout = async () => {
+    try {
+      // Llamar al endpoint de logout del servidor
+      await fetch(`${API_URL}/auth/logout`, {
+        method: 'POST',
+        credentials: 'include', // Incluir cookies en la solicitud
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    }
+    
     setUser(null);
     localStorage.removeItem('current_user');
     console.log('User logged out, session cleared');
