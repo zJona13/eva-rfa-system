@@ -61,35 +61,41 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Check if user is stored in localStorage (simulating persistence)
-    const token = localStorage.getItem('iesrfa_token');
-    if (token) {
+    // Usar la misma clave que espera el resto de la aplicación
+    const token = localStorage.getItem('auth_token');
+    console.log('Token found in localStorage:', token ? 'exists' : 'not found');
+    
+    if (token && token !== 'null' && token !== 'undefined') {
       try {
         // Verificar el token y obtener la información del usuario
         fetchUserInfo(token);
       } catch (error) {
         console.error('Error parsing stored user:', error);
-        localStorage.removeItem('iesrfa_token');
+        localStorage.removeItem('auth_token');
         setIsLoading(false);
       }
     } else {
+      console.log('No valid token found, setting loading to false');
       setIsLoading(false);
     }
   }, []);
 
   const fetchUserInfo = async (token: string) => {
     try {
+      console.log('Fetching user info with token...');
       const response = await fetch(`${API_URL}/auth/me`, {
         headers: {
-          'Authorization': `Bearer ${token}`
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
         }
       });
 
       if (!response.ok) {
-        throw new Error('Token inválido');
+        throw new Error(`Token inválido: ${response.status}`);
       }
 
       const data = await response.json();
+      console.log('User info response:', data);
       
       if (data.success && data.user) {
         setUser({
@@ -100,12 +106,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           colaboradorId: data.user.colaboradorId,
           colaboradorName: data.user.colaboradorName
         });
+        console.log('User set successfully');
       } else {
-        localStorage.removeItem('iesrfa_token');
+        console.log('Invalid user data, removing token');
+        localStorage.removeItem('auth_token');
       }
     } catch (error) {
       console.error('Error fetching user info:', error);
-      localStorage.removeItem('iesrfa_token');
+      localStorage.removeItem('auth_token');
     } finally {
       setIsLoading(false);
     }
@@ -115,6 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
+      console.log('Attempting login for:', email);
       // Integramos con la API real
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
@@ -125,6 +134,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       const data = await response.json();
+      console.log('Login response:', data);
       
       if (!response.ok) {
         toast.error(data.message || 'Credenciales incorrectas');
@@ -143,7 +153,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         setUser(mappedUser);
-        localStorage.setItem('iesrfa_token', data.token);
+        // Usar la misma clave que espera el resto de la aplicación
+        localStorage.setItem('auth_token', data.token);
+        console.log('Token stored successfully:', data.token.substring(0, 20) + '...');
         
         // Mostrar nombre del colaborador si está disponible
         const displayName = mappedUser.colaboradorName || mappedUser.name;
@@ -177,7 +189,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('iesrfa_token');
+    localStorage.removeItem('auth_token');
+    console.log('User logged out, token removed');
     toast.info('Sesión cerrada');
     navigate('/login');
   };
