@@ -61,70 +61,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Usar la misma clave que espera el resto de la aplicación
-    const token = localStorage.getItem('auth_token');
-    console.log('Token found in localStorage:', token ? 'exists' : 'not found');
+    // Verificar si hay una sesión activa guardada
+    const savedUser = localStorage.getItem('current_user');
+    console.log('Checking saved user session:', savedUser ? 'exists' : 'not found');
     
-    if (token && token !== 'null' && token !== 'undefined') {
+    if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
       try {
-        // Verificar el token y obtener la información del usuario
-        fetchUserInfo(token);
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        console.log('User session restored:', userData.name);
       } catch (error) {
-        console.error('Error parsing stored user:', error);
-        localStorage.removeItem('auth_token');
-        setIsLoading(false);
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('current_user');
       }
     } else {
-      console.log('No valid token found, setting loading to false');
-      setIsLoading(false);
+      console.log('No valid user session found');
     }
+    
+    setIsLoading(false);
   }, []);
-
-  const fetchUserInfo = async (token: string) => {
-    try {
-      console.log('Fetching user info with token...');
-      const response = await fetch(`${API_URL}/auth/me`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        throw new Error(`Token inválido: ${response.status}`);
-      }
-
-      const data = await response.json();
-      console.log('User info response:', data);
-      
-      if (data.success && data.user) {
-        setUser({
-          id: data.user.id.toString(),
-          name: data.user.name,
-          email: data.user.email,
-          role: mapRole(data.user.role),
-          colaboradorId: data.user.colaboradorId,
-          colaboradorName: data.user.colaboradorName
-        });
-        console.log('User set successfully');
-      } else {
-        console.log('Invalid user data, removing token');
-        localStorage.removeItem('auth_token');
-      }
-    } catch (error) {
-      console.error('Error fetching user info:', error);
-      localStorage.removeItem('auth_token');
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
       console.log('Attempting login for:', email);
-      // Integramos con la API real
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -142,7 +103,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      if (data.success && data.user && data.token) {
+      if (data.success && data.user) {
         const mappedUser = {
           id: data.user.id.toString(),
           name: data.user.name,
@@ -153,9 +114,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         setUser(mappedUser);
-        // Usar la misma clave que espera el resto de la aplicación
-        localStorage.setItem('auth_token', data.token);
-        console.log('Token stored successfully:', data.token.substring(0, 20) + '...');
+        // Guardar sesión sin token
+        localStorage.setItem('current_user', JSON.stringify(mappedUser));
+        console.log('User session saved successfully');
         
         // Mostrar nombre del colaborador si está disponible
         const displayName = mappedUser.colaboradorName || mappedUser.name;
@@ -176,7 +137,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setIsLoading(true);
     
     try {
-      // En un escenario real, aquí se haría la petición al API
       toast.info('Funcionalidad de registro no implementada en la API actual');
       navigate('/login');
     } catch (error) {
@@ -189,8 +149,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
-    localStorage.removeItem('auth_token');
-    console.log('User logged out, token removed');
+    localStorage.removeItem('current_user');
+    console.log('User logged out, session cleared');
     toast.info('Sesión cerrada');
     navigate('/login');
   };

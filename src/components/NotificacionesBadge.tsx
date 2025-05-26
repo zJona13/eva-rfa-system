@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -11,16 +12,10 @@ import { toast } from 'sonner';
 const API_BASE_URL = 'http://localhost:3306/api';
 
 const fetchNotificaciones = async (userId: number) => {
-  const token = localStorage.getItem('auth_token');
-  console.log('Fetching notifications with token:', token ? 'exists' : 'not found');
+  console.log('Fetching notifications for user:', userId);
   
-  if (!token) {
-    throw new Error('No token available');
-  }
-
   const response = await fetch(`${API_BASE_URL}/notificaciones/user/${userId}`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });
@@ -33,16 +28,9 @@ const fetchNotificaciones = async (userId: number) => {
 };
 
 const markAsRead = async (notificationId: number) => {
-  const token = localStorage.getItem('auth_token');
-  
-  if (!token) {
-    throw new Error('No token available');
-  }
-
   const response = await fetch(`${API_BASE_URL}/notificaciones/${notificationId}/read`, {
     method: 'PUT',
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });

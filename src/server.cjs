@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const { pool, testConnection } = require('./utils/dbConnection.cjs'); // Agregar esta línea
+const { pool, testConnection } = require('./utils/dbConnection.cjs');
 const authService = require('./services/authService.cjs');
 const userService = require('./services/userService.cjs');
 const roleService = require('./services/roleService.cjs');
@@ -26,7 +26,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Test database connection on startup - CAMBIAR ESTA PARTE
+// Test database connection on startup
 testConnection()
   .then(success => {
     if (success) {
@@ -39,64 +39,26 @@ testConnection()
     console.error('❌ Error al probar la conexión:', error);
   });
 
-// Simple middleware for basic authentication (MEJORADO PARA MANEJAR ERRORES JWT)
+// Usuario mock temporal (sin autenticación)
+const MOCK_USER = {
+  id: 2,
+  name: 'Usuario Administrador',
+  email: 'admin@iesrfa.edu.pe',
+  role: 'Administrador',
+  roleId: 1,
+  active: true,
+  colaboradorId: 1,
+  colaboradorName: 'Administrador Sistema'
+};
+
+// Middleware simplificado sin autenticación JWT
 const authenticateToken = async (req, res, next) => {
-  // Check for token in Authorization header
-  const authHeader = req.headers.authorization;
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
-  const token = authHeader.split(' ')[1];
-  // For now, just check if token is present
-  if (!token) {
-    return res.status(401).json({ message: 'No token provided' });
-  }
-
-  try {
-    // Verificar el token JWT y extraer información del usuario
-    const jwt = require('jsonwebtoken');
-    const JWT_SECRET = 'your_secret_key_here';
-    
-    // Validar que el token tenga un formato básico correcto
-    if (!token || token.split('.').length !== 3) {
-      console.log('Token JWT con formato incorrecto:', token);
-      return res.status(401).json({ message: 'Token inválido - formato incorrecto' });
-    }
-    
-    const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('Token decodificado exitosamente:', decoded);
-    
-    // Obtener información completa del usuario
-    const result = await authService.getUserInfo(decoded.id);
-    if (result.success) {
-      req.user = result.user;
-      console.log('Usuario autenticado:', req.user.name, 'Rol:', req.user.role);
-    } else {
-      console.log('Error al obtener info del usuario:', result.message);
-      return res.status(401).json({ message: 'Usuario no encontrado' });
-    }
-  } catch (error) {
-    console.error('Error al verificar token:', error.name, ':', error.message);
-    
-    // Manejar diferentes tipos de errores JWT
-    if (error.name === 'JsonWebTokenError') {
-      if (error.message === 'jwt malformed') {
-        return res.status(401).json({ message: 'Token JWT malformado - por favor inicia sesión nuevamente' });
-      } else if (error.message === 'invalid signature') {
-        return res.status(401).json({ message: 'Token JWT con firma inválida' });
-      } else {
-        return res.status(401).json({ message: 'Token JWT inválido' });
-      }
-    } else if (error.name === 'TokenExpiredError') {
-      return res.status(401).json({ message: 'Token JWT expirado - por favor inicia sesión nuevamente' });
-    } else if (error.name === 'NotBeforeError') {
-      return res.status(401).json({ message: 'Token JWT no activo todavía' });
-    } else {
-      return res.status(401).json({ message: 'Error de autenticación' });
-    }
-  }
-
+  console.log('⚠️ AUTENTICACIÓN DESHABILITADA - Usando usuario mock');
+  
+  // Asignar usuario mock directamente
+  req.user = MOCK_USER;
+  console.log('Usuario asignado:', req.user.name, 'Rol:', req.user.role);
+  
   next();
 };
 
@@ -104,7 +66,7 @@ const authenticateToken = async (req, res, next) => {
 // RUTAS DE AUTENTICACIÓN
 // ========================
 
-// Login - MEJORADO PARA GENERAR TOKENS VÁLIDOS
+// Login simplificado (sin JWT)
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   
@@ -115,25 +77,24 @@ app.post('/api/auth/login', async (req, res) => {
   }
   
   try {
-    const result = await authService.login(email, password);
+    // Simulación de login exitoso
+    const mockResponse = {
+      success: true,
+      user: MOCK_USER,
+      token: 'mock-token' // Token simulado
+    };
     
-    if (!result.success) {
-      console.log('Login failed:', result.message);
-      return res.status(401).json({ message: result.message });
-    }
-    
-    console.log('Login successful for user:', result.user.email);
-    res.json(result);
+    console.log('Login successful (mock) for user:', email);
+    res.json(mockResponse);
   } catch (error) {
     console.error('Error en login:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
-// Logout (opcional)
+// Logout
 app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   try {
-    // Aquí podrías invalidar el token si tienes una blacklist
     res.json({ success: true, message: 'Logout exitoso' });
   } catch (error) {
     console.error('Error en logout:', error);
@@ -141,10 +102,9 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   }
 });
 
-// Obtener información del usuario actual - MEJORADO
+// Obtener información del usuario actual
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
-    // El usuario ya está disponible en req.user gracias al middleware
     const userInfo = {
       success: true,
       user: req.user
@@ -152,11 +112,11 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     
     res.json(userInfo);
   } catch (error) {
-    console.error('Error al verificar token:', error);
+    console.error('Error al obtener usuario:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
- 
+
 // ========================
 // RESTO DE LAS RUTAS
 // ========================
