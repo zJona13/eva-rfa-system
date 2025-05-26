@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calendar, Building2 } from 'lucide-react';
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
+import { authenticatedFetch } from '@/utils/oauthUtils';
 
 const API_BASE_URL = 'http://localhost:3306';
 
@@ -82,19 +83,7 @@ const reportTypes: ReportType[] = [
 ];
 
 const fetchReportData = async (endpoint: string) => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
+  return authenticatedFetch(`${API_BASE_URL}${endpoint}`);
 };
 
 const Reports = () => {
