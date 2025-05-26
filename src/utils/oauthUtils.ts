@@ -47,7 +47,7 @@ export const refreshToken = async () => {
   }
 };
 
-// Función para hacer requests autenticados
+// Función para hacer requests autenticados - FIXED: Added async keyword
 export const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
   let token = getOAuthToken();
   
