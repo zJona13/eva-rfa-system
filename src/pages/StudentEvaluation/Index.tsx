@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,6 +45,7 @@ const StudentEvaluation = () => {
   const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluacion estudiante-docente');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
+    console.log('Generating incidencia for evaluation:', evaluacion);
     setSelectedEvaluacion({
       evaluatedId: evaluacion.evaluatedId,
       evaluatedName: evaluacion.evaluatedName,
@@ -59,6 +61,12 @@ const StudentEvaluation = () => {
 
   const getStatusColor = (score: number) => {
     return score >= 11 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  };
+
+  // Verificar si el usuario puede generar incidencias (no debe ser el evaluado)
+  const canGenerateIncidencia = (evaluacion: any) => {
+    // El estudiante puede generar incidencias para docentes que evaluó
+    return evaluacion.score < 11;
   };
 
   if (showForm) {
@@ -129,7 +137,7 @@ const StudentEvaluation = () => {
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(evaluacion.score)}`}>
                         {getEvaluationStatus(evaluacion.score)}
                       </span>
-                      {evaluacion.score < 11 && user?.role !== 'student' && (
+                      {canGenerateIncidencia(evaluacion) && (
                         <Button
                           size="sm"
                           variant="outline"

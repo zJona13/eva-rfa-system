@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -44,9 +45,10 @@ const SelfEvaluation = () => {
   const autoevaluaciones = evaluaciones.filter((e: any) => e.type === 'Autoevaluacion');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
+    console.log('Generating incidencia for self-evaluation:', evaluacion);
     setSelectedEvaluacion({
-      evaluatedId: evaluacion.evaluatedId || user?.colaboradorId,
-      evaluatedName: user?.colaboradorName || 'Usuario',
+      evaluatedId: user?.colaboradorId,
+      evaluatedName: user?.colaboradorName || user?.name || 'Usuario',
       score: evaluacion.score,
       type: evaluacion.type
     });
@@ -59,6 +61,11 @@ const SelfEvaluation = () => {
 
   const getStatusColor = (score: number) => {
     return score >= 11 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+  };
+
+  // Para autoevaluaciones, un supervisor puede generar incidencias si la nota es menor a 11
+  const canGenerateIncidencia = (evaluacion: any) => {
+    return evaluacion.score < 11;
   };
 
   if (showForm) {
@@ -129,7 +136,7 @@ const SelfEvaluation = () => {
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(evaluacion.score)}`}>
                         {getEvaluationStatus(evaluacion.score)}
                       </span>
-                      {evaluacion.score < 11 && user?.role !== 'evaluated' && (
+                      {canGenerateIncidencia(evaluacion) && (
                         <Button
                           size="sm"
                           variant="outline"

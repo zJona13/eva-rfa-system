@@ -24,6 +24,7 @@ interface IncidenciaDialogProps {
 }
 
 const createIncidencia = async (incidenciaData: any) => {
+  console.log('Creating incidencia with data:', incidenciaData);
   const token = localStorage.getItem('auth_token');
   const response = await fetch(`${API_BASE_URL}/incidencias`, {
     method: 'POST',
@@ -34,11 +35,17 @@ const createIncidencia = async (incidenciaData: any) => {
     body: JSON.stringify(incidenciaData),
   });
 
+  console.log('Response status:', response.status);
+  
   if (!response.ok) {
+    const errorText = await response.text();
+    console.error('Error response:', errorText);
     throw new Error(`Error ${response.status}: ${response.statusText}`);
   }
 
-  return response.json();
+  const result = await response.json();
+  console.log('Incidencia created successfully:', result);
+  return result;
 };
 
 const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange, evaluacionData }) => {
@@ -47,16 +54,21 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('Académica');
 
+  console.log('IncidenciaDialog props:', { open, evaluacionData, user });
+
   const createIncidenciaMutation = useMutation({
     mutationFn: createIncidencia,
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log('Incidencia creation success:', data);
       toast.success('Incidencia creada exitosamente. Se ha notificado al docente.');
       queryClient.invalidateQueries({ queryKey: ['incidencias'] });
+      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
       onOpenChange(false);
       setDescripcion('');
       setTipo('Académica');
     },
     onError: (error: any) => {
+      console.error('Incidencia creation error:', error);
       toast.error(`Error al crear incidencia: ${error.message}`);
     },
   });
@@ -64,8 +76,20 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    console.log('Form submitted with:', { descripcion, tipo, evaluacionData, user });
+    
     if (!descripcion.trim()) {
       toast.error('La descripción es requerida');
+      return;
+    }
+
+    if (!user?.id) {
+      toast.error('Usuario no identificado');
+      return;
+    }
+
+    if (!evaluacionData.evaluatedId) {
+      toast.error('ID del evaluado no disponible');
       return;
     }
 
@@ -76,10 +100,11 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
       descripcion: `Evaluación desaprobatoria (${evaluacionData.score}/20) - ${evaluacionData.type}: ${descripcion}`,
       estado: 'Pendiente',
       tipo: tipo,
-      reportadorId: user?.id,
+      reportadorId: user.id,
       afectadoId: evaluacionData.evaluatedId
     };
 
+    console.log('Sending incidencia data:', incidenciaData);
     createIncidenciaMutation.mutate(incidenciaData);
   };
 
