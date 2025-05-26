@@ -17,12 +17,22 @@ const app = express();
 const PORT = process.env.PORT || 3306;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
 app.use(express.json());
 
-// Agregar logging middleware para debug
+// Logging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
+  if (req.headers.authorization) {
+    console.log('🔑 Authorization header presente');
+  } else {
+    console.log('⚠️ No authorization header');
+  }
   next();
 });
 
@@ -39,97 +49,148 @@ testConnection()
     console.error('❌ Error al probar la conexión:', error);
   });
 
-// Usuario mock temporal (sin autenticación)
-const MOCK_USER = {
-  id: 2,
-  name: 'Usuario Administrador',
-  email: 'admin@iesrfa.edu.pe',
-  role: 'Administrador',
-  roleId: 1,
-  active: true,
-  colaboradorId: 1,
-  colaboradorName: 'Administrador Sistema'
-};
-
-// Middleware simplificado sin autenticación JWT
+// Middleware de autenticación JWT
 const authenticateToken = async (req, res, next) => {
-  console.log('⚠️ AUTENTICACIÓN DESHABILITADA - Usando usuario mock');
-  
-  // Asignar usuario mock directamente
-  req.user = MOCK_USER;
-  console.log('Usuario asignado:', req.user.name, 'Rol:', req.user.role);
-  
-  next();
+  try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+
+    if (!token) {
+      console.log('❌ AUTENTICACIÓN FALLIDA: No se proporcionó token');
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Token de acceso requerido',
+        error: 'NO_TOKEN_PROVIDED'
+      });
+    }
+
+    console.log('🔍 Verificando token JWT...');
+    const verification = await authService.verifyToken(token);
+    
+    if (!verification.valid) {
+      console.log('❌ AUTENTICACIÓN FALLIDA: Token inválido -', verification.error);
+      return res.status(401).json({ 
+        success: false, 
+        message: 'Token inválido o expirado',
+        error: verification.error
+      });
+    }
+
+    req.user = verification.user;
+    req.tokenData = verification.decoded;
+    console.log('✅ Usuario autenticado:', req.user.name, 'Rol:', req.user.role);
+    next();
+  } catch (error) {
+    console.error('❌ Error en autenticación:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno de autenticación',
+      error: 'INTERNAL_AUTH_ERROR'
+    });
+  }
 };
 
 // ========================
-// RUTAS DE AUTENTICACIÓN
+// RUTAS DE AUTENTICACIÓN (SIN PROTECCIÓN)
 // ========================
 
-// Login simplificado (sin JWT)
+// Login con JWT
 app.post('/api/auth/login', async (req, res) => {
-  const { email, password } = req.body;
-  
-  console.log('Login attempt for:', email);
-  
-  if (!email || !password) {
-    return res.status(400).json({ message: 'Email y contraseña son requeridos' });
-  }
-  
   try {
-    // Simulación de login exitoso
-    const mockResponse = {
-      success: true,
-      user: MOCK_USER,
-      token: 'mock-token' // Token simulado
-    };
+    const { email, password } = req.body;
     
-    console.log('Login successful (mock) for user:', email);
-    res.json(mockResponse);
+    console.log('🔐 Intento de login para:', email);
+    
+    if (!email || !password) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email y contraseña son requeridos' 
+      });
+    }
+    
+    const result = await authService.login(email, password);
+    
+    if (result.success) {
+      console.log('✅ Login exitoso para:', email);
+      res.json({
+        success: true,
+        message: 'Login exitoso',
+        token: result.token,
+        user: result.user
+      });
+    } else {
+      console.log('❌ Login fallido para:', email, '-', result.message);
+      res.status(401).json({
+        success: false,
+        message: result.message
+      });
+    }
   } catch (error) {
-    console.error('Error en login:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('❌ Error en login:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
   }
 });
 
-// Logout
-app.post('/api/auth/logout', authenticateToken, async (req, res) => {
+// Logout con invalidación de token
+app.post('/api/auth/logout', async (req, res) => {
   try {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    
+    if (token) {
+      await authService.invalidateToken(token);
+      console.log('🔓 Logout exitoso, token invalidado');
+    }
+    
     res.json({ success: true, message: 'Logout exitoso' });
   } catch (error) {
-    console.error('Error en logout:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('❌ Error en logout:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
   }
 });
 
-// Obtener información del usuario actual
+// Verificar token y obtener usuario actual
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
-    const userInfo = {
+    console.log('👤 Obteniendo información del usuario actual');
+    res.json({
       success: true,
       user: req.user
-    };
-    
-    res.json(userInfo);
+    });
   } catch (error) {
-    console.error('Error al obtener usuario:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('❌ Error obteniendo usuario actual:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
   }
 });
 
 // ========================
-// RESTO DE LAS RUTAS
+// TODAS LAS DEMÁS RUTAS REQUIEREN AUTENTICACIÓN
 // ========================
 
 // Rutas de roles
 app.get('/api/roles', authenticateToken, async (req, res) => {
-  const result = await roleService.getAllRoles();
-  
-  if (!result.success) {
-    return res.status(500).json({ message: result.message });
+  try {
+    console.log('📋 Obteniendo roles - Usuario:', req.user.name);
+    const result = await roleService.getAllRoles();
+    
+    if (!result.success) {
+      return res.status(500).json({ message: result.message });
+    }
+    
+    res.json(result);
+  } catch (error) {
+    console.error('❌ Error en GET /api/roles:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
-  
-  res.json(result);
 });
 
 app.post('/api/roles', authenticateToken, async (req, res) => {
@@ -1108,7 +1169,8 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
 
 // Iniciar el servidor
 app.listen(PORT, () => {
-  console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+  console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
+  console.log(`🔐 Autenticación JWT habilitada`);
 });
 
 module.exports = app;

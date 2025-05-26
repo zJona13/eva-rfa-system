@@ -4,32 +4,16 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { modulesData } from '@/config/navigation';
 import StatCard from '@/components/Dashboard/StatCard';
 import ModuleCard from '@/components/Dashboard/ModuleCard';
 import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
 
-const API_BASE_URL = 'http://localhost:3306';
-
-const fetchDashboardStats = async () => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`${API_BASE_URL}/api/dashboard/stats`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
-  }
-
-  return response.json();
-};
-
 const Dashboard = () => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { apiRequest } = useApiWithToken();
   
   // Filter modules based on user role
   const userRole = user?.role || 'guest';
@@ -37,13 +21,14 @@ const Dashboard = () => {
     !module.roles || module.roles.includes(userRole)
   );
 
-  // Fetch dashboard statistics
+  // Fetch dashboard statistics using authenticated API
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: fetchDashboardStats,
+    queryFn: () => apiRequest('/dashboard/stats'),
+    refetchInterval: 30000, // Refetch every 30 seconds
   });
 
-  const stats = statsData?.stats || {};
+  const stats = statsData?.data?.stats || {};
 
   // Get greeting based on time of day
   const getGreeting = () => {

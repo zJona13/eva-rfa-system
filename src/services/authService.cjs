@@ -1,12 +1,84 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 
-const JWT_SECRET = 'your_secret_key_here';
+const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here_change_in_production';
+const JWT_EXPIRATION = '24h';
 
-// Iniciar sesión - MEJORADO PARA GENERAR TOKENS MÁS SEGUROS
+// Crear tabla de tokens si no existe
+const createTokensTable = async () => {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS USER_TOKENS (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        idUsuario INT NOT NULL,
+        token VARCHAR(500) NOT NULL UNIQUE,
+        expiration DATETIME NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE,
+        INDEX idx_token (token),
+        INDEX idx_user_id (idUsuario),
+        INDEX idx_expiration (expiration)
+      )
+    `);
+    console.log('✅ Tabla USER_TOKENS verificada/creada');
+  } catch (error) {
+    console.error('❌ Error creando tabla USER_TOKENS:', error);
+  }
+};
+
+// Inicializar tabla al cargar el módulo
+createTokensTable();
+
+// Crear token de usuario en BD
+const createUserToken = async (userId, token, expiration) => {
+  try {
+    await pool.execute(
+      'INSERT INTO USER_TOKENS (idUsuario, token, expiration) VALUES (?, ?, ?)',
+      [userId, token, expiration]
+    );
+    console.log('✅ Token guardado en BD para usuario:', userId);
+  } catch (error) {
+    console.error('❌ Error guardando token en BD:', error);
+    throw error;
+  }
+};
+
+// Verificar si token existe en BD
+const validateTokenInDB = async (token) => {
+  try {
+    const [rows] = await pool.execute(
+      'SELECT * FROM USER_TOKENS WHERE token = ? AND expiration > NOW()',
+      [token]
+    );
+    return rows.length > 0 ? rows[0] : null;
+  } catch (error) {
+    console.error('❌ Error validando token en BD:', error);
+    return null;
+  }
+};
+
+// Limpiar tokens expirados
+const cleanExpiredTokens = async () => {
+  try {
+    const [result] = await pool.execute('DELETE FROM USER_TOKENS WHERE expiration <= NOW()');
+    if (result.affectedRows > 0) {
+      console.log(`🧹 Limpiados ${result.affectedRows} tokens expirados`);
+    }
+  } catch (error) {
+    console.error('❌ Error limpiando tokens expirados:', error);
+  }
+};
+
+// Limpiar tokens expirados cada hora
+setInterval(cleanExpiredTokens, 60 * 60 * 1000);
+
+// Iniciar sesión con JWT
 const login = async (correo, contrasena) => {
   try {
+    console.log('🔐 Iniciando proceso de login para:', correo);
+    
     // Consulta mejorada para obtener también el nombre del colaborador
     const [users] = await pool.execute(
       `SELECT u.idUsuario, u.nombre, u.correo, u.vigencia, u.contrasena,
@@ -24,22 +96,25 @@ const login = async (correo, contrasena) => {
     );
 
     if (users.length === 0) {
+      console.log('❌ Usuario no encontrado:', correo);
       return { success: false, message: 'Usuario no encontrado' };
     }
 
     const user = users[0];
 
     if (!user.vigencia) {
+      console.log('❌ Usuario inactivo:', correo);
       return { success: false, message: 'Usuario inactivo' };
     }
 
     const isPasswordValid = await bcrypt.compare(contrasena, user.contrasena);
     
     if (!isPasswordValid) {
+      console.log('❌ Contraseña incorrecta para:', correo);
       return { success: false, message: 'Contraseña incorrecta' };
     }
 
-    // Generar token JWT más robusto con datos adicionales
+    // Generar token JWT
     const tokenPayload = { 
       id: user.idUsuario, 
       email: user.correo, 
@@ -49,15 +124,19 @@ const login = async (correo, contrasena) => {
       iat: Math.floor(Date.now() / 1000)
     };
     
-    console.log('Generando token para usuario:', user.correo, 'Payload:', tokenPayload);
-    
-    const token = jwt.sign(
-      tokenPayload,
-      JWT_SECRET,
-      { expiresIn: '24h', algorithm: 'HS256' }
-    );
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { 
+      expiresIn: JWT_EXPIRATION,
+      algorithm: 'HS256' 
+    });
 
-    console.log('Token generado exitosamente, longitud:', token.length);
+    // Calcular fecha de expiración
+    const expiration = new Date();
+    expiration.setHours(expiration.getHours() + 24);
+
+    // Guardar token en BD
+    await createUserToken(user.idUsuario, token, expiration);
+
+    console.log('✅ Login exitoso para:', correo, 'Token generado y guardado');
 
     return {
       success: true,
@@ -73,40 +152,51 @@ const login = async (correo, contrasena) => {
       }
     };
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('❌ Error en login:', error);
     return { success: false, message: 'Error en el servidor' };
   }
 };
 
-// Verificar token - MEJORADO CON MEJOR MANEJO DE ERRORES
+// Verificar token JWT
 const verifyToken = async (token) => {
   try {
-    // Validar formato básico del token
-    if (!token || typeof token !== 'string' || token.split('.').length !== 3) {
-      console.log('Token con formato inválido recibido');
-      return { valid: false, error: 'Token con formato inválido' };
+    if (!token || typeof token !== 'string') {
+      console.log('❌ Token inválido o no proporcionado');
+      return { valid: false, error: 'Token no proporcionado' };
     }
 
-    // Verificar y decodificar el token
-    const decoded = jwt.verify(token, JWT_SECRET);
-    console.log('Token verificado exitosamente para usuario ID:', decoded.id);
+    // Limpiar Bearer prefix si existe
+    const cleanToken = token.replace('Bearer ', '').trim();
+
+    // Verificar token en BD primero
+    const tokenInDB = await validateTokenInDB(cleanToken);
+    if (!tokenInDB) {
+      console.log('❌ Token no encontrado en BD o expirado');
+      return { valid: false, error: 'Token no válido o expirado' };
+    }
+
+    // Verificar y decodificar el token JWT
+    const decoded = jwt.verify(cleanToken, JWT_SECRET);
+    console.log('✅ Token JWT verificado para usuario ID:', decoded.id);
     
     // Obtener información actualizada del usuario
     const userInfo = await getUserInfo(decoded.id);
     
     if (!userInfo.success) {
+      console.log('❌ Usuario no encontrado para token válido');
       return { valid: false, error: 'Usuario no encontrado' };
     }
     
     return { 
       valid: true,
-      user: userInfo.user
+      user: userInfo.user,
+      decoded
     };
   } catch (error) {
-    console.error('Error al verificar token:', error.name, ':', error.message);
+    console.error('❌ Error verificando token:', error.name, ':', error.message);
     
     if (error.name === 'JsonWebTokenError') {
-      return { valid: false, error: 'Token JWT inválido: ' + error.message };
+      return { valid: false, error: 'Token JWT inválido' };
     } else if (error.name === 'TokenExpiredError') {
       return { valid: false, error: 'Token JWT expirado' };
     } else if (error.name === 'NotBeforeError') {
@@ -141,21 +231,6 @@ const getUserInfo = async (userId) => {
 
     const user = rows[0];
     
-    // Obtener datos del colaborador si existe
-    let colaborador = null;
-    if (user.idColaborador) {
-      const [colaboradorRows] = await pool.execute(
-        `SELECT c.idColaborador, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombreCompleto 
-         FROM COLABORADOR c 
-         WHERE c.idColaborador = ?`,
-        [user.idColaborador]
-      );
-      
-      if (colaboradorRows.length > 0) {
-        colaborador = colaboradorRows[0];
-      }
-    }
-    
     return {
       success: true,
       user: {
@@ -170,12 +245,12 @@ const getUserInfo = async (userId) => {
       }
     };
   } catch (error) {
-    console.error('Error al obtener información del usuario:', error);
+    console.error('❌ Error obteniendo información del usuario:', error);
     return { success: false, message: 'Error al obtener información del usuario' };
   }
 };
 
-// Registrar nuevo usuario - MEJORADO PARA GENERAR TOKENS CONSISTENTES
+// Registrar nuevo usuario con token
 const register = async (nombre, correo, contrasena, roleId = 4) => {
   try {
     const [existingUsers] = await pool.execute(
@@ -195,7 +270,7 @@ const register = async (nombre, correo, contrasena, roleId = 4) => {
       [nombre, correo, hashedPassword, 1, roleId]
     );
 
-    // Generar token consistente con el proceso de login
+    // Generar token para el nuevo usuario
     const tokenPayload = { 
       id: result.insertId, 
       email: correo, 
@@ -205,13 +280,19 @@ const register = async (nombre, correo, contrasena, roleId = 4) => {
       iat: Math.floor(Date.now() / 1000)
     };
 
-    const token = jwt.sign(
-      tokenPayload,
-      JWT_SECRET,
-      { expiresIn: '24h', algorithm: 'HS256' }
-    );
+    const token = jwt.sign(tokenPayload, JWT_SECRET, { 
+      expiresIn: JWT_EXPIRATION,
+      algorithm: 'HS256' 
+    });
 
-    console.log('Token de registro generado exitosamente para:', correo);
+    // Calcular fecha de expiración
+    const expiration = new Date();
+    expiration.setHours(expiration.getHours() + 24);
+
+    // Guardar token en BD
+    await createUserToken(result.insertId, token, expiration);
+
+    console.log('✅ Usuario registrado y token generado para:', correo);
 
     return {
       success: true,
@@ -227,8 +308,21 @@ const register = async (nombre, correo, contrasena, roleId = 4) => {
       }
     };
   } catch (error) {
-    console.error('Error en registro:', error);
+    console.error('❌ Error en registro:', error);
     return { success: false, message: 'Error en el servidor' };
+  }
+};
+
+// Invalidar token (logout)
+const invalidateToken = async (token) => {
+  try {
+    const cleanToken = token.replace('Bearer ', '').trim();
+    const [result] = await pool.execute('DELETE FROM USER_TOKENS WHERE token = ?', [cleanToken]);
+    console.log('🔓 Token invalidado:', result.affectedRows > 0 ? 'exitosamente' : 'no encontrado');
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Error invalidando token:', error);
+    return { success: false, message: 'Error al invalidar token' };
   }
 };
 
@@ -236,5 +330,6 @@ module.exports = {
   login,
   register,
   verifyToken,
-  getUserInfo
+  getUserInfo,
+  invalidateToken
 };

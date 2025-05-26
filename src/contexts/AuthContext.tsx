@@ -60,32 +60,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Función para obtener el token almacenado
+  const getStoredToken = () => {
+    return localStorage.getItem('iesrfa_token');
+  };
+
+  // Función para guardar el token
+  const saveToken = (token: string) => {
+    localStorage.setItem('iesrfa_token', token);
+    console.log('🔑 Token guardado en localStorage');
+  };
+
+  // Función para eliminar el token
+  const removeToken = () => {
+    localStorage.removeItem('iesrfa_token');
+    localStorage.removeItem('current_user');
+    console.log('🗑️ Token y usuario eliminados del localStorage');
+  };
+
+  // Verificar token al cargar la aplicación
   useEffect(() => {
-    // Verificar si hay una sesión activa guardada
-    const savedUser = localStorage.getItem('current_user');
-    console.log('Checking saved user session:', savedUser ? 'exists' : 'not found');
-    
-    if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
-      try {
-        const userData = JSON.parse(savedUser);
-        setUser(userData);
-        console.log('User session restored:', userData.name);
-      } catch (error) {
-        console.error('Error parsing saved user:', error);
-        localStorage.removeItem('current_user');
+    const verifyStoredToken = async () => {
+      const token = getStoredToken();
+      
+      if (!token) {
+        console.log('⚠️ No se encontró token almacenado');
+        setIsLoading(false);
+        return;
       }
-    } else {
-      console.log('No valid user session found');
-    }
-    
-    setIsLoading(false);
+
+      try {
+        console.log('🔍 Verificando token almacenado...');
+        const response = await fetch(`${API_URL}/auth/me`, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.user) {
+            const mappedUser = {
+              id: data.user.id.toString(),
+              name: data.user.name,
+              email: data.user.email,
+              role: mapRole(data.user.role),
+              colaboradorId: data.user.colaboradorId,
+              colaboradorName: data.user.colaboradorName
+            };
+            
+            setUser(mappedUser);
+            localStorage.setItem('current_user', JSON.stringify(mappedUser));
+            console.log('✅ Sesión restaurada para:', mappedUser.name);
+          }
+        } else {
+          console.log('❌ Token inválido o expirado, eliminando...');
+          removeToken();
+        }
+      } catch (error) {
+        console.error('❌ Error verificando token:', error);
+        removeToken();
+      }
+      
+      setIsLoading(false);
+    };
+
+    verifyStoredToken();
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting login for:', email);
+      console.log('🔐 Intentando login para:', email);
       const response = await fetch(`${API_URL}/auth/login`, {
         method: 'POST',
         headers: {
@@ -95,7 +143,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       const data = await response.json();
-      console.log('Login response:', data);
+      console.log('📨 Respuesta del servidor:', data);
       
       if (!response.ok) {
         toast.error(data.message || 'Credenciales incorrectas');
@@ -103,7 +151,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
       
-      if (data.success && data.user) {
+      if (data.success && data.user && data.token) {
+        // Guardar el token JWT
+        saveToken(data.token);
+        
         const mappedUser = {
           id: data.user.id.toString(),
           name: data.user.name,
@@ -114,9 +165,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         
         setUser(mappedUser);
-        // Guardar sesión sin token
         localStorage.setItem('current_user', JSON.stringify(mappedUser));
-        console.log('User session saved successfully');
+        console.log('✅ Login exitoso, usuario y token guardados');
         
         // Mostrar nombre del colaborador si está disponible
         const displayName = mappedUser.colaboradorName || mappedUser.name;
@@ -126,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         toast.error('Error al iniciar sesión');
       }
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('❌ Error en login:', error);
       toast.error('Error al conectar con el servidor');
     } finally {
       setIsLoading(false);
@@ -140,19 +190,37 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.info('Funcionalidad de registro no implementada en la API actual');
       navigate('/login');
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('❌ Error en registro:', error);
       toast.error('Error al registrar usuario');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('current_user');
-    console.log('User logged out, session cleared');
-    toast.info('Sesión cerrada');
-    navigate('/login');
+  const logout = async () => {
+    try {
+      const token = getStoredToken();
+      
+      if (token) {
+        // Notificar al servidor para invalidar el token
+        await fetch(`${API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    } catch (error) {
+      console.error('❌ Error en logout del servidor:', error);
+    } finally {
+      // Limpiar estado local
+      setUser(null);
+      removeToken();
+      console.log('🔓 Logout completado, redirigiendo a login');
+      toast.info('Sesión cerrada');
+      navigate('/login');
+    }
   };
 
   const value = {
