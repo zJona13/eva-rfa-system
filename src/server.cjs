@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const { pool, testConnection } = require('./utils/dbConnection.cjs'); // Agregar esta línea
@@ -789,6 +790,7 @@ app.get('/api/notificaciones/unread-count/:userId', authenticateToken, async (re
 // Reporte de evaluaciones aprobadas
 app.get('/api/reportes/evaluaciones-aprobadas', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/reportes/evaluaciones-aprobadas - Fetching approved evaluations');
     const result = await reportesService.getEvaluacionesAprobadas();
     if (result.success) {
       res.json(result);
@@ -804,6 +806,7 @@ app.get('/api/reportes/evaluaciones-aprobadas', authenticateToken, async (req, r
 // Reporte de evaluaciones desaprobadas
 app.get('/api/reportes/evaluaciones-desaprobadas', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/reportes/evaluaciones-desaprobadas - Fetching failed evaluations');
     const result = await reportesService.getEvaluacionesDesaprobadas();
     if (result.success) {
       res.json(result);
@@ -819,6 +822,7 @@ app.get('/api/reportes/evaluaciones-desaprobadas', authenticateToken, async (req
 // Reporte de evaluados con incidencias
 app.get('/api/reportes/evaluados-con-incidencias', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/reportes/evaluados-con-incidencias - Fetching evaluated with incidents');
     const result = await reportesService.getEvaluadosConIncidencias();
     if (result.success) {
       res.json(result);
@@ -834,6 +838,7 @@ app.get('/api/reportes/evaluados-con-incidencias', authenticateToken, async (req
 // Reporte de personal de baja
 app.get('/api/reportes/personal-de-baja', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/reportes/personal-de-baja - Fetching inactive personnel');
     const result = await reportesService.getPersonalDeBaja();
     if (result.success) {
       res.json(result);
@@ -849,6 +854,7 @@ app.get('/api/reportes/personal-de-baja', authenticateToken, async (req, res) =>
 // Reporte de personal con alta calificación
 app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/reportes/personal-alta-calificacion - Fetching high-rated personnel');
     const result = await reportesService.getPersonalAltaCalificacion();
     if (result.success) {
       res.json(result);
@@ -864,6 +870,7 @@ app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (re
 // Reporte de evaluaciones por semestre
 app.get('/api/reportes/evaluaciones-por-semestre', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/reportes/evaluaciones-por-semestre - Fetching evaluations by semester');
     const result = await reportesService.getEvaluacionesPorSemestre();
     if (result.success) {
       res.json(result);
@@ -879,6 +886,7 @@ app.get('/api/reportes/evaluaciones-por-semestre', authenticateToken, async (req
 // Reporte de evaluaciones por área
 app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/reportes/evaluaciones-por-area - Fetching evaluations by area');
     const result = await reportesService.getEvaluacionesPorArea();
     if (result.success) {
       res.json(result);
