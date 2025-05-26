@@ -19,6 +19,7 @@ import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
 import Roles from "./pages/Roles/Index";
 import Validation from "./pages/Validation/Index";
 import Results from "./pages/Results/Index";
+import Reports from "./pages/Reports/Index";
 
 // Layout
 import MainLayout from "./components/Layout/MainLayout";
@@ -43,8 +44,9 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/self-evaluation" element={<SelfEvaluation />} />
               <Route path="/student-evaluation" element={<StudentEvaluation />} />
-              <Route path="/incidents" element={<Incidents />} />
               <Route path="/checklist-evaluation" element={<ChecklistEvaluation />} />
+              <Route path="/incidents" element={<Incidents />} />
+              <Route path="/reports" element={<Reports />} />
               <Route path="/roles" element={<Roles />} />
               <Route path="/validation" element={<Validation />} />
               <Route path="/results" element={<Results />} />

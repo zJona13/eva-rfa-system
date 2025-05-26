@@ -1,13 +1,13 @@
 const express = require('express');
 const cors = require('cors');
-const { testConnection } = require('./utils/dbConnection.cjs');
+const mysql = require('mysql2/promise');
+const authService = require('./services/authService.cjs');
+const userService = require('./services/userService.cjs');
 const roleService = require('./services/roleService.cjs');
+const colaboradorService = require('./services/colaboradorService.cjs');
 const tipoColaboradorService = require('./services/tipoColaboradorService.cjs');
 const tipoContratoService = require('./services/tipoContratoService.cjs');
-const userService = require('./services/userService.cjs');
-const colaboradorService = require('./services/colaboradorService.cjs');
 const evaluacionService = require('./services/evaluacionService.cjs');
-const authService = require('./services/authService.cjs');
 const criteriosService = require('./services/criteriosService.cjs');
 const incidenciaService = require('./services/incidenciaService.cjs');
 const notificacionService = require('./services/notificacionService.cjs');
@@ -27,13 +27,15 @@ app.use((req, res, next) => {
 });
 
 // Test database connection on startup
-testConnection()
-  .then(connected => {
-    if (connected) {
-      console.log('Base de datos conectada y lista para usar');
-    } else {
-      console.error('No se pudo establecer conexión con la base de datos');
-    }
+mysql.createConnection()
+  .then(connection => {
+    return connection.query('SELECT 1 + 1 AS result');
+  })
+  .then(result => {
+    console.log('Base de datos conectada y lista para usar');
+  })
+  .catch(error => {
+    console.error('No se pudo establecer conexión con la base de datos');
   });
 
 // Simple middleware for basic authentication (temporary placeholder)

@@ -8,7 +8,8 @@ import {
   ShieldCheck, 
   BarChart4, 
   Home,
-  Settings 
+  Settings,
+  FileText
 } from 'lucide-react';
 
 export interface NavItem {
@@ -42,15 +43,21 @@ export const navItems: NavItem[] = [
     roles: ['admin', 'student'],
   },
   {
+    title: 'Supervisión',
+    href: '/checklist-evaluation',
+    icon: CheckSquare,
+    roles: ['admin', 'evaluator'],
+  },
+  {
     title: 'Incidencias',
     href: '/incidents',
     icon: AlertCircle,
     roles: ['admin', 'evaluator', 'evaluated', 'student', 'validator'],
   },
   {
-    title: 'Supervisión',
-    href: '/checklist-evaluation',
-    icon: CheckSquare,
+    title: 'Reportes',
+    href: '/reports',
+    icon: FileText,
     roles: ['admin', 'evaluator'],
   },
   {
