@@ -28,7 +28,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones Aprobadas',
     description: 'Listado de evaluaciones con puntaje ≥ 11',
     icon: TrendingUp,
-    endpoint: '/reportes/evaluaciones-aprobadas',
+    endpoint: '/api/reportes/evaluaciones-aprobadas',
     color: 'bg-green-100 text-green-800'
   },
   {
@@ -36,7 +36,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones Desaprobadas',
     description: 'Listado de evaluaciones con puntaje < 11',
     icon: AlertTriangle,
-    endpoint: '/reportes/evaluaciones-desaprobadas',
+    endpoint: '/api/reportes/evaluaciones-desaprobadas',
     color: 'bg-red-100 text-red-800'
   },
   {
@@ -44,7 +44,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluados con Incidencias',
     description: 'Personal que tiene incidencias registradas',
     icon: AlertTriangle,
-    endpoint: '/reportes/evaluados-con-incidencias',
+    endpoint: '/api/reportes/evaluados-con-incidencias',
     color: 'bg-orange-100 text-orange-800'
   },
   {
@@ -52,7 +52,7 @@ const reportTypes: ReportType[] = [
     title: 'Personal de Baja',
     description: 'Colaboradores que ya no están activos',
     icon: Users,
-    endpoint: '/reportes/personal-de-baja',
+    endpoint: '/api/reportes/personal-de-baja',
     color: 'bg-gray-100 text-gray-800'
   },
   {
@@ -60,7 +60,7 @@ const reportTypes: ReportType[] = [
     title: 'Personal con Alta Calificación',
     description: 'Colaboradores con promedio ≥ 15',
     icon: TrendingUp,
-    endpoint: '/reportes/personal-alta-calificacion',
+    endpoint: '/api/reportes/personal-alta-calificacion',
     color: 'bg-blue-100 text-blue-800'
   },
   {
@@ -68,7 +68,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones por Semestre',
     description: 'Estadísticas de evaluaciones agrupadas por semestre',
     icon: Calendar,
-    endpoint: '/reportes/evaluaciones-por-semestre',
+    endpoint: '/api/reportes/evaluaciones-por-semestre',
     color: 'bg-purple-100 text-purple-800'
   },
   {
@@ -76,7 +76,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones por Área',
     description: 'Estadísticas de evaluaciones agrupadas por tipo de colaborador',
     icon: Building2,
-    endpoint: '/reportes/evaluaciones-por-area',
+    endpoint: '/api/reportes/evaluaciones-por-area',
     color: 'bg-indigo-100 text-indigo-800'
   }
 ];
