@@ -1,3 +1,4 @@
+
 const express = require('express');
 const cors = require('cors');
 const session = require('express-session');
@@ -17,11 +18,29 @@ const reportesService = require('./services/reportesService.cjs');
 const app = express();
 const PORT = process.env.PORT || 3306;
 
-// Middleware
+// Middleware - Configuración de CORS actualizada para múltiples orígenes
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'http://localhost:4173'
+];
+
 app.use(cors({
-  origin: 'http://localhost:5173', // URL del frontend
+  origin: function (origin, callback) {
+    // Permitir requests sin origin (como aplicaciones móviles o Postman)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      console.log('CORS blocked origin:', origin);
+      return callback(new Error('Not allowed by CORS'), false);
+    }
+  },
   credentials: true // Permitir cookies
 }));
+
 app.use(express.json());
 
 // Configurar sesiones
