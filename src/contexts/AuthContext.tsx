@@ -2,6 +2,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { authenticatedFetch } from '@/utils/oauthUtils';
 
 // These would normally come from your API
 export type UserRole = 'admin' | 'evaluator' | 'evaluated' | 'student' | 'validator' | 'guest';
@@ -119,34 +120,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Función para hacer requests autenticados
-  const authenticatedFetch = async (url: string, options: RequestInit = {}) => {
-    let token = getStoredToken();
-    
-    if (!token) {
-      throw new Error('No access token available');
-    }
-
-    // Verificar si el token ha expirado y intentar refrescarlo
-    if (isTokenExpired()) {
-      console.log('Token expired, attempting to refresh...');
-      const refreshed = await refreshToken();
-      if (!refreshed) {
-        throw new Error('Failed to refresh token');
-      }
-      token = getStoredToken();
-    }
-
-    return fetch(url, {
-      ...options,
-      headers: {
-        ...options.headers,
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-  };
-
   useEffect(() => {
     // Verificar si hay una sesión activa guardada
     const savedUser = localStorage.getItem('current_user');
@@ -217,11 +190,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Almacenar tokens
         storeToken(data);
         
-        // Obtener información del usuario
-        const userResponse = await authenticatedFetch(`${API_URL}/oauth/me`);
-        const userInfo = await userResponse.json();
+        // Obtener información del usuario usando authenticatedFetch
+        const userInfo = await authenticatedFetch(`${API_URL}/oauth/me`);
         
-        if (userResponse.ok && userInfo.success && userInfo.user) {
+        if (userInfo.success && userInfo.user) {
           const mappedUser = {
             id: userInfo.user.id.toString(),
             name: userInfo.user.name,
