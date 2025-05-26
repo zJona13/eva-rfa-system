@@ -17,8 +17,6 @@ import StudentEvaluation from "./pages/StudentEvaluation/Index";
 import Incidents from "./pages/Incidents/Index";
 import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
 import Roles from "./pages/Roles/Index";
-import Validation from "./pages/Validation/Index";
-import Results from "./pages/Results/Index";
 import Reports from "./pages/Reports/Index";
 
 // Layout
@@ -48,8 +46,6 @@ const App = () => (
               <Route path="/incidents" element={<Incidents />} />
               <Route path="/reports" element={<Reports />} />
               <Route path="/roles" element={<Roles />} />
-              <Route path="/validation" element={<Validation />} />
-              <Route path="/results" element={<Results />} />
             </Route>
             
             {/* 404 route */}
