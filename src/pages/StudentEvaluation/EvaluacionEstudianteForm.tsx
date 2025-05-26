@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -13,7 +14,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
 import { subcriteriosEstudiante, getCriteriosAgrupados } from '@/data/evaluationCriteria';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
@@ -24,14 +24,37 @@ interface Colaborador {
 }
 
 const fetchColaboradores = async () => {
-  return authenticatedFetch(`${API_BASE_URL}/colaboradores-para-evaluar`);
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/colaboradores-para-evaluar`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const createEvaluacion = async (evaluacionData: any) => {
-  return authenticatedFetch(`${API_BASE_URL}/evaluaciones`, {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/evaluaciones`, {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(evaluacionData),
   });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 interface EvaluacionEstudianteFormProps {

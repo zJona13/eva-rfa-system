@@ -2,7 +2,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
-import { loginWithSession, logoutWithSession, checkSession } from '@/utils/sessionUtils';
 
 // These would normally come from your API
 export type UserRole = 'admin' | 'evaluator' | 'evaluated' | 'student' | 'validator' | 'guest';
@@ -35,6 +34,9 @@ export const useAuth = () => {
   return context;
 };
 
+// API URL
+const API_URL = 'http://localhost:3306/api';
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -59,56 +61,62 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
-    // Verificar si hay una sesión activa al cargar la aplicación
-    const checkAuthStatus = async () => {
+    // Verificar si hay una sesión activa guardada
+    const savedUser = localStorage.getItem('current_user');
+    console.log('Checking saved user session:', savedUser ? 'exists' : 'not found');
+    
+    if (savedUser && savedUser !== 'null' && savedUser !== 'undefined') {
       try {
-        console.log('Checking session status...');
-        const sessionData = await checkSession();
-        
-        if (sessionData.success && sessionData.user) {
-          const mappedUser = {
-            id: sessionData.user.id.toString(),
-            name: sessionData.user.name,
-            email: sessionData.user.email,
-            role: mapRole(sessionData.user.role),
-            colaboradorId: sessionData.user.colaboradorId,
-            colaboradorName: sessionData.user.colaboradorName
-          };
-          
-          setUser(mappedUser);
-          console.log('Session restored for user:', mappedUser.name);
-        } else {
-          console.log('No active session found');
-        }
+        const userData = JSON.parse(savedUser);
+        setUser(userData);
+        console.log('User session restored:', userData.name);
       } catch (error) {
-        console.error('Error checking session:', error);
-      } finally {
-        setIsLoading(false);
+        console.error('Error parsing saved user:', error);
+        localStorage.removeItem('current_user');
       }
-    };
-
-    checkAuthStatus();
+    } else {
+      console.log('No valid user session found');
+    }
+    
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     setIsLoading(true);
     
     try {
-      console.log('Attempting session login for:', email);
-      const loginData = await loginWithSession(email, password);
+      console.log('Attempting login for:', email);
+      const response = await fetch(`${API_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      const data = await response.json();
+      console.log('Login response:', data);
       
-      if (loginData.success && loginData.user) {
+      if (!response.ok) {
+        toast.error(data.message || 'Credenciales incorrectas');
+        setIsLoading(false);
+        return;
+      }
+      
+      if (data.success && data.user) {
         const mappedUser = {
-          id: loginData.user.id.toString(),
-          name: loginData.user.name,
-          email: loginData.user.email,
-          role: mapRole(loginData.user.role),
-          colaboradorId: loginData.user.colaboradorId,
-          colaboradorName: loginData.user.colaboradorName
+          id: data.user.id.toString(),
+          name: data.user.name,
+          email: data.user.email,
+          role: mapRole(data.user.role),
+          colaboradorId: data.user.colaboradorId,
+          colaboradorName: data.user.colaboradorName
         };
         
         setUser(mappedUser);
-        console.log('User session created successfully');
+        // Guardar sesión sin token
+        localStorage.setItem('current_user', JSON.stringify(mappedUser));
+        console.log('User session saved successfully');
         
         // Mostrar nombre del colaborador si está disponible
         const displayName = mappedUser.colaboradorName || mappedUser.name;
@@ -119,7 +127,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     } catch (error) {
       console.error('Login error:', error);
-      toast.error(error instanceof Error ? error.message : 'Error al conectar con el servidor');
+      toast.error('Error al conectar con el servidor');
     } finally {
       setIsLoading(false);
     }
@@ -139,19 +147,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const logout = async () => {
-    try {
-      await logoutWithSession();
-      setUser(null);
-      console.log('User logged out, session cleared');
-      toast.info('Sesión cerrada');
-      navigate('/login');
-    } catch (error) {
-      console.error('Error during logout:', error);
-      // Aún así limpiamos la sesión local
-      setUser(null);
-      navigate('/login');
-    }
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('current_user');
+    console.log('User logged out, session cleared');
+    toast.info('Sesión cerrada');
+    navigate('/login');
   };
 
   const value = {

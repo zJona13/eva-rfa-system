@@ -4,7 +4,6 @@ import { Search, Users, UserCog, UserSquare2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 // Import our separate tab content components
 import RolesTabContent from './components/RolesTabContent';
@@ -62,27 +61,82 @@ interface Colaborador {
 
 // Servicios API - Updated port from 5000 to 3306
 const fetchRoles = async (): Promise<Role[]> => {
-  const data = await authenticatedFetch('http://localhost:3306/api/roles');
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/roles', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar roles');
+  }
+  
+  const data = await response.json();
   return data.roles;
 };
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
-  const data = await authenticatedFetch('http://localhost:3306/api/tiposcolaborador');
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/tiposcolaborador', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar tipos de colaborador');
+  }
+  
+  const data = await response.json();
   return data.tiposColaborador;
 };
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
-  const data = await authenticatedFetch('http://localhost:3306/api/tiposcontrato');
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/tiposcontrato', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar tipos de contrato');
+  }
+  
+  const data = await response.json();
   return data.tiposContrato;
 };
 
 const fetchUsers = async (): Promise<User[]> => {
-  const data = await authenticatedFetch('http://localhost:3306/api/users');
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/users', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar usuarios');
+  }
+  
+  const data = await response.json();
   return data.users;
 };
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
-  const data = await authenticatedFetch('http://localhost:3306/api/colaboradores');
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/colaboradores', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar colaboradores');
+  }
+  
+  const data = await response.json();
   return data.colaboradores;
 };
 

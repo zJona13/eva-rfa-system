@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -7,12 +8,23 @@ import { modulesData } from '@/config/navigation';
 import StatCard from '@/components/Dashboard/StatCard';
 import ModuleCard from '@/components/Dashboard/ModuleCard';
 import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306';
 
 const fetchDashboardStats = async () => {
-  return authenticatedFetch(`${API_BASE_URL}/api/dashboard/stats`);
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch(`${API_BASE_URL}/api/dashboard/stats`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const Dashboard = () => {
@@ -29,12 +41,6 @@ const Dashboard = () => {
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
     queryFn: fetchDashboardStats,
-    retry: (failureCount, error: any) => {
-      if (error?.message?.includes('invalid_token') || error?.message?.includes('token_expired')) {
-        return false;
-      }
-      return failureCount < 3;
-    }
   });
 
   const stats = statsData?.stats || {};

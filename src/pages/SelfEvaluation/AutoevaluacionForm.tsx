@@ -12,19 +12,41 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
 import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
 const fetchColaboradorByUserId = async (userId: number) => {
-  return authenticatedFetch(`${API_BASE_URL}/colaborador-by-user/${userId}`);
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/colaborador-by-user/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const createEvaluacion = async (evaluacionData: any) => {
-  return authenticatedFetch(`${API_BASE_URL}/evaluaciones`, {
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/evaluaciones`, {
     method: 'POST',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify(evaluacionData),
   });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 interface AutoevaluacionFormProps {

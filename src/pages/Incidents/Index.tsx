@@ -6,19 +6,41 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
 const fetchIncidencias = async (userId: number) => {
-  return authenticatedFetch(`${API_BASE_URL}/incidencias/user/${userId}`);
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: string }) => {
-  return authenticatedFetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
     method: 'PUT',
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
     body: JSON.stringify({ estado }),
   });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const Incidents = () => {

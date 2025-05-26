@@ -1,15 +1,27 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
-const API_BASE_URL = 'http://localhost:3306/api';
+const API_BASE_URL = 'http://localhost:3306';
 
 const fetchRecentEvaluations = async () => {
-  return authenticatedFetch(`${API_BASE_URL}/dashboard/recent-evaluations`);
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch(`${API_BASE_URL}/api/dashboard/recent-evaluations`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const RecentEvaluations = () => {
@@ -17,13 +29,6 @@ const RecentEvaluations = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard-recent-evaluations'],
     queryFn: fetchRecentEvaluations,
-    retry: (failureCount, error: any) => {
-      // No reintentar si es un error de autenticación
-      if (error?.message?.includes('invalid_token') || error?.message?.includes('token_expired')) {
-        return false;
-      }
-      return failureCount < 3;
-    }
   });
 
   if (isLoading) {
@@ -45,7 +50,6 @@ const RecentEvaluations = () => {
   }
 
   if (error) {
-    console.error('Error loading recent evaluations:', error);
     return (
       <Card>
         <CardHeader>

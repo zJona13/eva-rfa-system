@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -7,19 +8,38 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bell, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
 const fetchNotificaciones = async (userId: number) => {
   console.log('Fetching notifications for user:', userId);
-  return authenticatedFetch(`${API_BASE_URL}/notificaciones/user/${userId}`);
+  
+  const response = await fetch(`${API_BASE_URL}/notificaciones/user/${userId}`, {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const markAsRead = async (notificationId: number) => {
-  return authenticatedFetch(`${API_BASE_URL}/notificaciones/${notificationId}/read`, {
+  const response = await fetch(`${API_BASE_URL}/notificaciones/${notificationId}/read`, {
     method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+    },
   });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const NotificacionesBadge = () => {
@@ -34,13 +54,6 @@ const NotificacionesBadge = () => {
     queryFn: () => fetchNotificaciones(userId),
     enabled: !!userId,
     refetchInterval: 30000, // Refetch cada 30 segundos
-    retry: (failureCount, error: any) => {
-      // No reintentar si es un error de autenticación
-      if (error?.message?.includes('invalid_token') || error?.message?.includes('token_expired')) {
-        return false;
-      }
-      return failureCount < 3;
-    }
   });
 
   const markAsReadMutation = useMutation({
@@ -49,7 +62,6 @@ const NotificacionesBadge = () => {
       queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
     },
     onError: (error: any) => {
-      console.error('Error marking notification as read:', error);
       toast.error(`Error al marcar notificación: ${error.message}`);
     },
   });

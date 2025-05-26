@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,13 +7,24 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import AutoevaluacionForm from './AutoevaluacionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
 // API functions
 const fetchEvaluacionesByColaborador = async (colaboradorId: number) => {
-  return authenticatedFetch(`${API_BASE_URL}/evaluaciones/colaborador/${colaboradorId}`);
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/evaluaciones/colaborador/${colaboradorId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const SelfEvaluation = () => {

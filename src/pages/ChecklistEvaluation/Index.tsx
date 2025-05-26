@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,13 +7,24 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import EvaluacionSupervisionForm from './EvaluacionSupervisionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
-import { authenticatedFetch } from '@/utils/sessionUtils';
 
 const API_BASE_URL = 'http://localhost:3306/api';
 
 // API functions
 const fetchEvaluacionesByEvaluador = async (userId: number) => {
-  return authenticatedFetch(`${API_BASE_URL}/evaluaciones/evaluador/${userId}`);
+  const token = localStorage.getItem('auth_token');
+  const response = await fetch(`${API_BASE_URL}/evaluaciones/evaluador/${userId}`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Error ${response.status}: ${response.statusText}`);
+  }
+
+  return response.json();
 };
 
 const ChecklistEvaluation = () => {
@@ -27,12 +39,6 @@ const ChecklistEvaluation = () => {
     queryKey: ['evaluaciones-evaluador', user?.id],
     queryFn: () => fetchEvaluacionesByEvaluador(Number(user?.id) || 0),
     enabled: !!user?.id,
-    retry: (failureCount, error: any) => {
-      if (error?.message?.includes('invalid_token') || error?.message?.includes('token_expired')) {
-        return false;
-      }
-      return failureCount < 3;
-    }
   });
 
   const evaluaciones = evaluacionesData?.evaluaciones || [];
