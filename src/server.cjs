@@ -39,7 +39,18 @@ testConnection()
     console.error('❌ Error al probar la conexión:', error);
   });
 
-// Simple middleware for basic authentication (temporary placeholder)
+// TEMPORAL: Usuario mock para cuando JWT está deshabilitado
+const MOCK_USER = {
+  id: 1,
+  name: 'Usuario Temporal',
+  email: 'admin@example.com',
+  role: 'Administrador',
+  roleId: 1,
+  colaboradorId: 1,
+  colaboradorName: 'Usuario Temporal'
+};
+
+// Simple middleware for basic authentication (JWT TEMPORALMENTE DESHABILITADO)
 const authenticateToken = async (req, res, next) => {
   // Check for token in Authorization header
   const authHeader = req.headers.authorization;
@@ -54,7 +65,14 @@ const authenticateToken = async (req, res, next) => {
   }
 
   try {
-    // Verificar el token JWT y extraer información del usuario
+    // TEMPORAL: JWT DESHABILITADO - Usar usuario mock
+    console.log('⚠️  JWT TEMPORALMENTE DESHABILITADO - Usando usuario mock');
+    
+    // En lugar de verificar JWT, usar el usuario mock
+    req.user = MOCK_USER;
+    console.log('Usuario mock asignado:', req.user.name, 'Rol:', req.user.role);
+    
+    /* CÓDIGO JWT ORIGINAL (COMENTADO TEMPORALMENTE)
     const jwt = require('jsonwebtoken');
     const JWT_SECRET = 'your_secret_key_here';
     
@@ -70,9 +88,12 @@ const authenticateToken = async (req, res, next) => {
       console.log('Error al obtener info del usuario:', result.message);
       return res.status(401).json({ message: 'Token inválido' });
     }
+    */
   } catch (error) {
-    console.error('Error al verificar token:', error);
-    return res.status(401).json({ message: 'Token inválido' });
+    console.error('Error en autenticación temporal:', error);
+    // Usar usuario mock en caso de error también
+    req.user = MOCK_USER;
+    console.log('Error manejado - usando usuario mock');
   }
 
   next();
@@ -82,17 +103,30 @@ const authenticateToken = async (req, res, next) => {
 // RUTAS DE AUTENTICACIÓN
 // ========================
 
-// Login
+// Login (TEMPORAL - devuelve token mock)
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   
-  console.log('Login attempt for:', email);
+  console.log('⚠️  Login temporal (JWT deshabilitado) for:', email);
   
   if (!email || !password) {
     return res.status(400).json({ message: 'Email y contraseña son requeridos' });
   }
   
   try {
+    // TEMPORAL: Devolver respuesta exitosa sin validar credenciales reales
+    console.log('⚠️  Usando login temporal - JWT deshabilitado');
+    
+    const mockResponse = {
+      success: true,
+      token: 'mock-jwt-token-disabled',
+      user: MOCK_USER
+    };
+    
+    console.log('Login temporal exitoso para:', email);
+    res.json(mockResponse);
+    
+    /* CÓDIGO DE LOGIN ORIGINAL (COMENTADO TEMPORALMENTE)
     const result = await authService.login(email, password);
     
     if (!result.success) {
@@ -102,8 +136,9 @@ app.post('/api/auth/login', async (req, res) => {
     
     console.log('Login successful for user:', result.user.email);
     res.json(result);
+    */
   } catch (error) {
-    console.error('Error en login:', error);
+    console.error('Error en login temporal:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -119,12 +154,21 @@ app.post('/api/auth/logout', authenticateToken, async (req, res) => {
   }
 });
 
-// Obtener información del usuario actual
+// Obtener información del usuario actual (TEMPORAL)
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
-  const authHeader = req.headers.authorization;
-  const token = authHeader.split(' ')[1];
-  
   try {
+    console.log('⚠️  /api/auth/me temporal - JWT deshabilitado');
+    
+    // Devolver información del usuario mock
+    res.json({
+      success: true,
+      user: MOCK_USER
+    });
+    
+    /* CÓDIGO ORIGINAL (COMENTADO TEMPORALMENTE)
+    const authHeader = req.headers.authorization;
+    const token = authHeader.split(' ')[1];
+    
     const tokenInfo = await authService.verifyToken(token);
     
     if (!tokenInfo.valid) {
@@ -139,8 +183,9 @@ app.get('/api/auth/me', authenticateToken, async (req, res) => {
     }
     
     res.json(userInfo);
+    */
   } catch (error) {
-    console.error('Error al verificar token:', error);
+    console.error('Error al verificar token temporal:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -946,7 +991,7 @@ app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (re
     }
   } catch (error) {
     console.error('Error in /api/reportes/personal-alta-calificacion:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
@@ -1000,7 +1045,7 @@ app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, re
     }
   } catch (error) {
     console.error('Error in GET /api/reportes/evaluaciones-por-area:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
@@ -1147,6 +1192,7 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+  console.log('⚠️  ADVERTENCIA: JWT TEMPORALMENTE DESHABILITADO');
 });
 
 module.exports = app;

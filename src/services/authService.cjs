@@ -71,12 +71,12 @@ const login = async (correo, contrasena) => {
   }
 };
 
-// Verificar token (versión simple temporal)
+// Verificar token (TEMPORAL - versión simplificada durante la deshabilitación de JWT)
 const verifyToken = async (token) => {
-  // Implementación temporal, se reemplazará con una solución más segura
-  if (token === 'temp-auth-token') {
-    // En una implementación real, aquí decodificaríamos el token para obtener el ID del usuario
-    // y luego obtendríamos la información actualizada del usuario desde la base de datos
+  try {
+    console.log('⚠️  verifyToken temporal - JWT deshabilitado');
+    
+    // TEMPORAL: Siempre devolver válido con usuario mock
     return { 
       valid: true,
       user: {
@@ -84,12 +84,33 @@ const verifyToken = async (token) => {
         name: 'Usuario Temporal',
         email: 'admin@example.com',
         role: 'Administrador',
-        colaboradorId: null,
-        colaboradorName: null
+        colaboradorId: 1,
+        colaboradorName: 'Usuario Temporal'
       } 
     };
+    
+    /* CÓDIGO JWT ORIGINAL (COMENTADO TEMPORALMENTE)
+    if (token === 'temp-auth-token') {
+      // En una implementación real, aquí decodificaríamos el token para obtener el ID del usuario
+      // y luego obtendríamos la información actualizada del usuario desde la base de datos
+      return { 
+        valid: true,
+        user: {
+          id: 1,
+          name: 'Usuario Temporal',
+          email: 'admin@example.com',
+          role: 'Administrador',
+          colaboradorId: null,
+          colaboradorName: null
+        } 
+      };
+    }
+    return { valid: false, error: 'Token inválido' };
+    */
+  } catch (error) {
+    console.error('Error en verifyToken temporal:', error);
+    return { valid: false, error: 'Token inválido' };
   }
-  return { valid: false, error: 'Token inválido' };
 };
 
 // Obtener información del usuario
