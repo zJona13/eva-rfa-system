@@ -40,7 +40,7 @@ testConnection()
   });
 
 // Simple middleware for basic authentication (temporary placeholder)
-const authenticateToken = (req, res, next) => {
+const authenticateToken = async (req, res, next) => {
   // Check for token in Authorization header
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -51,6 +51,28 @@ const authenticateToken = (req, res, next) => {
   // For now, just check if token is present
   if (!token) {
     return res.status(401).json({ message: 'No token provided' });
+  }
+
+  try {
+    // Verificar el token JWT y extraer información del usuario
+    const jwt = require('jsonwebtoken');
+    const JWT_SECRET = 'your_secret_key_here';
+    
+    const decoded = jwt.verify(token, JWT_SECRET);
+    console.log('Token decodificado:', decoded);
+    
+    // Obtener información completa del usuario
+    const result = await authService.getUserInfo(decoded.id);
+    if (result.success) {
+      req.user = result.user;
+      console.log('Usuario autenticado:', req.user.name, 'Rol:', req.user.role);
+    } else {
+      console.log('Error al obtener info del usuario:', result.message);
+      return res.status(401).json({ message: 'Token inválido' });
+    }
+  } catch (error) {
+    console.error('Error al verificar token:', error);
+    return res.status(401).json({ message: 'Token inválido' });
   }
 
   next();
@@ -795,13 +817,17 @@ app.get('/api/reportes/evaluaciones-aprobadas', authenticateToken, async (req, r
     
     // Verificar permisos (solo admin y evaluadores)
     const userRole = req.user?.role?.toLowerCase();
+    console.log('Verificando permisos para rol:', userRole);
+    
     if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      console.log('Acceso denegado para rol:', userRole);
       return res.status(403).json({
         success: false,
         message: 'No tienes permisos para acceder a los reportes'
       });
     }
 
+    console.log('Acceso autorizado, obteniendo datos...');
     const result = await reportesService.getEvaluacionesAprobadas();
     console.log('Resultado evaluaciones aprobadas:', result);
     
