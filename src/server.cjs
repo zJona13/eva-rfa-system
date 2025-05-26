@@ -1,4 +1,3 @@
-
 const express = require('express');
 const cors = require('cors');
 const { pool, testConnection } = require('./utils/dbConnection.cjs'); // Agregar esta línea
@@ -787,117 +786,199 @@ app.get('/api/notificaciones/unread-count/:userId', authenticateToken, async (re
 // RUTAS DE REPORTES
 // ========================
 
+// Configurando rutas de reportes...
+
 // Reporte de evaluaciones aprobadas
 app.get('/api/reportes/evaluaciones-aprobadas', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-aprobadas - Fetching approved evaluations');
+    console.log('GET /api/reportes/evaluaciones-aprobadas - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    
+    // Verificar permisos (solo admin y evaluadores)
+    const userRole = req.user?.role?.toLowerCase();
+    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a los reportes'
+      });
+    }
+
     const result = await reportesService.getEvaluacionesAprobadas();
+    console.log('Resultado evaluaciones aprobadas:', result);
+    
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error in GET /api/reportes/evaluaciones-aprobadas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error en /api/reportes/evaluaciones-aprobadas:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Reporte de evaluaciones desaprobadas
 app.get('/api/reportes/evaluaciones-desaprobadas', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-desaprobadas - Fetching failed evaluations');
+    console.log('GET /api/reportes/evaluaciones-desaprobadas - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    
+    const userRole = req.user?.role?.toLowerCase();
+    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a los reportes'
+      });
+    }
+
     const result = await reportesService.getEvaluacionesDesaprobadas();
+    console.log('Resultado evaluaciones desaprobadas:', result);
+    
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error in GET /api/reportes/evaluaciones-desaprobadas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error en /api/reportes/evaluaciones-desaprobadas:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Reporte de evaluados con incidencias
 app.get('/api/reportes/evaluados-con-incidencias', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluados-con-incidencias - Fetching evaluated with incidents');
+    console.log('GET /api/reportes/evaluados-con-incidencias - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    
+    const userRole = req.user?.role?.toLowerCase();
+    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a los reportes'
+      });
+    }
+
     const result = await reportesService.getEvaluadosConIncidencias();
+    console.log('Resultado evaluados con incidencias:', result);
+    
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error in GET /api/reportes/evaluados-con-incidencias:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error en /api/reportes/evaluados-con-incidencias:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Reporte de personal de baja
 app.get('/api/reportes/personal-de-baja', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/reportes/personal-de-baja - Fetching inactive personnel');
+    console.log('GET /api/reportes/personal-de-baja - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    
+    const userRole = req.user?.role?.toLowerCase();
+    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a los reportes'
+      });
+    }
+
     const result = await reportesService.getPersonalDeBaja();
+    console.log('Resultado personal de baja:', result);
+    
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error in GET /api/reportes/personal-de-baja:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error en /api/reportes/personal-de-baja:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Reporte de personal con alta calificación
 app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/reportes/personal-alta-calificacion - Fetching high-rated personnel');
+    console.log('GET /api/reportes/personal-alta-calificacion - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    
+    const userRole = req.user?.role?.toLowerCase();
+    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a los reportes'
+      });
+    }
+
     const result = await reportesService.getPersonalAltaCalificacion();
+    console.log('Resultado personal alta calificación:', result);
+    
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(500).json(result);
     }
   } catch (error) {
-    console.error('Error in GET /api/reportes/personal-alta-calificacion:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error en /api/reportes/personal-alta-calificacion:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Reporte de evaluaciones por semestre
 app.get('/api/reportes/evaluaciones-por-semestre', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-por-semestre - Fetching evaluations by semester');
+    console.log('GET /api/reportes/evaluaciones-por-semestre - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    
+    const userRole = req.user?.role?.toLowerCase();
+    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a los reportes'
+      });
+    }
+
     const result = await reportesService.getEvaluacionesPorSemestre();
+    console.log('Resultado evaluaciones por semestre:', result);
+    
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(500).json(result);
     }
   } catch (error) {
     console.error('Error in GET /api/reportes/evaluaciones-por-semestre:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Reporte de evaluaciones por área
 app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-por-area - Fetching evaluations by area');
+    console.log('GET /api/reportes/evaluaciones-por-area - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    
+    const userRole = req.user?.role?.toLowerCase();
+    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
+      return res.status(403).json({
+        success: false,
+        message: 'No tienes permisos para acceder a los reportes'
+      });
+    }
+
     const result = await reportesService.getEvaluacionesPorArea();
+    console.log('Resultado evaluaciones por área:', result);
+    
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(500).json(result);
     }
   } catch (error) {
     console.error('Error in GET /api/reportes/evaluaciones-por-area:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
+
+console.log('Rutas de reportes configuradas exitosamente');
 
 // Iniciar el servidor
 app.listen(PORT, () => {
