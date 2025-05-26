@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear una nueva incidencia
@@ -43,18 +42,28 @@ const createIncidencia = async (incidenciaData) => {
   }
 };
 
-// Obtener incidencias por usuario con nombres completos
+// Obtener incidencias por usuario con nombres completos de colaboradores
 const getIncidenciasByUser = async (userId) => {
   try {
     const [rows] = await pool.execute(
       `SELECT i.idIncidencia as id, i.fechaIncidencia as fecha, 
       i.horaIncidencia as hora, i.descripcion, i.estado, i.tipo,
       i.accionTomada,
-      CONCAT(ur.nombre, ' ', ur.apellidoPat, ' ', ur.apellidoMat) as reportadorNombre,
-      CONCAT(ua.nombre, ' ', ua.apellidoPat, ' ', ua.apellidoMat) as afectadoNombre
+      CASE 
+        WHEN cr.idColaborador IS NOT NULL 
+        THEN CONCAT(cr.nombres, ' ', cr.apePat, ' ', cr.apeMat)
+        ELSE ur.nombre 
+      END as reportadorNombre,
+      CASE 
+        WHEN ca.idColaborador IS NOT NULL 
+        THEN CONCAT(ca.nombres, ' ', ca.apePat, ' ', ca.apeMat)
+        ELSE ua.nombre 
+      END as afectadoNombre
       FROM INCIDENCIA i
       JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario
       JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario
+      LEFT JOIN COLABORADOR cr ON ur.idColaborador = cr.idColaborador
+      LEFT JOIN COLABORADOR ca ON ua.idColaborador = ca.idColaborador
       WHERE i.idUsuarioReportador = ? OR i.idUsuarioAfectado = ?
       ORDER BY i.fechaIncidencia DESC, i.horaIncidencia DESC`,
       [userId, userId]
@@ -70,17 +79,28 @@ const getIncidenciasByUser = async (userId) => {
   }
 };
 
-// Obtener todas las incidencias con nombres completos
+// Obtener todas las incidencias con nombres completos de colaboradores
 const getAllIncidencias = async () => {
   try {
     const [rows] = await pool.execute(
       `SELECT i.idIncidencia as id, i.fechaIncidencia as fecha, 
       i.horaIncidencia as hora, i.descripcion, i.estado, i.tipo,
-      CONCAT(ur.nombre, ' ', ur.apellidoPat, ' ', ur.apellidoMat) as reportadorNombre,
-      CONCAT(ua.nombre, ' ', ua.apellidoPat, ' ', ua.apellidoMat) as afectadoNombre
+      i.accionTomada,
+      CASE 
+        WHEN cr.idColaborador IS NOT NULL 
+        THEN CONCAT(cr.nombres, ' ', cr.apePat, ' ', cr.apeMat)
+        ELSE ur.nombre 
+      END as reportadorNombre,
+      CASE 
+        WHEN ca.idColaborador IS NOT NULL 
+        THEN CONCAT(ca.nombres, ' ', ca.apePat, ' ', ca.apeMat)
+        ELSE ua.nombre 
+      END as afectadoNombre
       FROM INCIDENCIA i
       JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario
       JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario
+      LEFT JOIN COLABORADOR cr ON ur.idColaborador = cr.idColaborador
+      LEFT JOIN COLABORADOR ca ON ua.idColaborador = ca.idColaborador
       ORDER BY i.fechaIncidencia DESC, i.horaIncidencia DESC`
     );
     
