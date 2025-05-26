@@ -1,6 +1,6 @@
 const express = require('express');
 const cors = require('cors');
-const mysql = require('mysql2/promise');
+const { pool, testConnection } = require('./utils/dbConnection.cjs'); // Agregar esta línea
 const authService = require('./services/authService.cjs');
 const userService = require('./services/userService.cjs');
 const roleService = require('./services/roleService.cjs');
@@ -26,16 +26,17 @@ app.use((req, res, next) => {
   next();
 });
 
-// Test database connection on startup
-mysql.createConnection()
-  .then(connection => {
-    return connection.query('SELECT 1 + 1 AS result');
-  })
-  .then(result => {
-    console.log('Base de datos conectada y lista para usar');
+// Test database connection on startup - CAMBIAR ESTA PARTE
+testConnection()
+  .then(success => {
+    if (success) {
+      console.log('✅ Base de datos conectada y lista para usar');
+    } else {
+      console.log('❌ No se pudo establecer conexión con la base de datos');
+    }
   })
   .catch(error => {
-    console.error('No se pudo establecer conexión con la base de datos');
+    console.error('❌ Error al probar la conexión:', error);
   });
 
 // Simple middleware for basic authentication (temporary placeholder)
