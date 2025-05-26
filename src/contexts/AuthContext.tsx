@@ -106,20 +106,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const storedToken = getStoredToken();
     
     if (!storedToken) {
+      console.log('No hay token almacenado');
       return false;
     }
+
+    console.log('Verificando token:', storedToken.substring(0, 16) + '...');
 
     try {
       const response = await fetch(`${API_URL}/auth/verify-token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': `Bearer ${storedToken}`,
         },
         credentials: 'include',
         body: JSON.stringify({ token: storedToken }),
       });
 
+      console.log('Respuesta de verificación:', response.status, response.statusText);
       const data = await response.json();
+      console.log('Datos de verificación:', data);
 
       if (response.ok && data.success) {
         const mappedUser = {
@@ -138,13 +144,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return true;
       } else {
         // Token inválido, limpiar almacenamiento
+        console.log('Token verification failed:', data.message);
         removeStoredToken();
         removeStoredUser();
-        console.log('Token verification failed:', data.message);
+        setUser(null);
+        setToken(null);
         return false;
       }
     } catch (error) {
       console.error('Error verifying token:', error);
+      removeStoredToken();
+      removeStoredUser();
+      setUser(null);
+      setToken(null);
       return false;
     }
   };
@@ -159,6 +171,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (storedToken && storedUser) {
         console.log('Found stored token and user, verifying...');
+        // Establecer temporalmente el token para que esté disponible
+        setToken(storedToken);
         const isValid = await verifyToken();
         
         if (!isValid) {
@@ -249,12 +263,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const revokeAllTokens = async () => {
+    const authToken = token || getStoredToken();
+    
+    if (!authToken) {
+      toast.error('No hay sesión activa');
+      return;
+    }
+
     try {
       const response = await fetch(`${API_URL}/auth/revoke-all-tokens`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
+          'Authorization': `Bearer ${authToken}`,
         },
         credentials: 'include',
       });
@@ -274,15 +295,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    const authToken = token || getStoredToken();
+    
     try {
-      // Llamar al endpoint de logout del servidor
-      await fetch(`${API_URL}/auth/logout`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        credentials: 'include',
-      });
+      // Llamar al endpoint de logout del servidor si hay token
+      if (authToken) {
+        await fetch(`${API_URL}/auth/logout`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${authToken}`,
+          },
+          credentials: 'include',
+        });
+      }
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -299,8 +324,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const value = {
     user,
-    token,
-    isAuthenticated: !!user && !!token,
+    token: token || getStoredToken(), // Siempre devolver el token más actual
+    isAuthenticated: !!user && !!(token || getStoredToken()),
     isLoading,
     login,
     logout,
