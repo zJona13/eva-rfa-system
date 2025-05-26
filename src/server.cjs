@@ -55,25 +55,46 @@ testConnection()
     console.error('❌ Error al probar la conexión:', error);
   });
 
-// Middleware de autenticación basado en sesiones
+// Middleware de autenticación híbrido (sesiones + tokens)
 const authenticateSession = async (req, res, next) => {
-  console.log('Session middleware - checking session:', req.session?.user ? 'exists' : 'not found');
+  console.log('Session middleware - checking authentication...');
   
-  if (!req.session?.user) {
-    return res.status(401).json({ message: 'No autenticado' });
+  // Primero verificar si hay un token en las cookies o headers
+  const token = req.headers.authorization?.replace('Bearer ', '') || 
+                req.session?.token || 
+                req.cookies?.authToken;
+  
+  if (token) {
+    console.log('Token found, validating...');
+    const tokenResult = await authService.validateUserToken(token);
+    
+    if (tokenResult.success) {
+      req.user = tokenResult.user;
+      req.session.user = tokenResult.user;
+      req.session.token = token;
+      console.log('Usuario autenticado via token:', req.user.name, 'Rol:', req.user.role);
+      return next();
+    } else {
+      console.log('Token inválido o expirado');
+    }
   }
   
-  req.user = req.session.user;
-  console.log('Usuario autenticado:', req.user.name, 'Rol:', req.user.role);
+  // Si no hay token válido, verificar sesión tradicional
+  if (req.session?.user) {
+    req.user = req.session.user;
+    console.log('Usuario autenticado via sesión:', req.user.name, 'Rol:', req.user.role);
+    return next();
+  }
   
-  next();
+  console.log('No hay autenticación válida');
+  return res.status(401).json({ message: 'No autenticado' });
 };
 
 // ========================
 // RUTAS DE AUTENTICACIÓN
 // ========================
 
-// Login con sesiones
+// Login con tokens y sesiones
 app.post('/api/auth/login', async (req, res) => {
   const { email, password } = req.body;
   
@@ -87,12 +108,24 @@ app.post('/api/auth/login', async (req, res) => {
     const result = await authService.login(email, password);
     
     if (result.success) {
-      // Guardar usuario en la sesión
+      // Guardar usuario y token en la sesión
       req.session.user = result.user;
+      req.session.token = result.token;
+      
       console.log('User session created for:', result.user.email);
+      console.log('Token generated:', result.token.substring(0, 16) + '...');
+      
+      // También enviar el token en una cookie segura
+      res.cookie('authToken', result.token, {
+        httpOnly: true,
+        secure: false, // En producción cambiar a true
+        maxAge: 24 * 60 * 60 * 1000, // 24 horas
+        sameSite: 'lax'
+      });
       
       res.json({
         success: true,
+        token: result.token,
         user: result.user
       });
     } else {
@@ -104,17 +137,32 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Logout
-app.post('/api/auth/logout', (req, res) => {
-  req.session.destroy((err) => {
-    if (err) {
-      console.error('Error destroying session:', err);
-      return res.status(500).json({ message: 'Error al cerrar sesión' });
+// Logout con revocación de tokens
+app.post('/api/auth/logout', authenticateSession, async (req, res) => {
+  try {
+    // Revocar el token si existe
+    if (req.session?.token) {
+      await authService.revokeUserToken(req.session.token);
+      console.log('Token revocado:', req.session.token.substring(0, 16) + '...');
     }
     
-    console.log('Session destroyed successfully');
-    res.json({ success: true, message: 'Logout exitoso' });
-  });
+    // Destruir la sesión
+    req.session.destroy((err) => {
+      if (err) {
+        console.error('Error destroying session:', err);
+        return res.status(500).json({ message: 'Error al cerrar sesión' });
+      }
+      
+      // Limpiar cookie del token
+      res.clearCookie('authToken');
+      
+      console.log('Session and token destroyed successfully');
+      res.json({ success: true, message: 'Logout exitoso' });
+    });
+  } catch (error) {
+    console.error('Error en logout:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
 // Obtener información del usuario actual
@@ -126,6 +174,47 @@ app.get('/api/auth/me', authenticateSession, async (req, res) => {
     });
   } catch (error) {
     console.error('Error al obtener usuario:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Verificar validez del token
+app.post('/api/auth/verify-token', async (req, res) => {
+  try {
+    const { token } = req.body;
+    
+    if (!token) {
+      return res.status(400).json({ success: false, message: 'Token requerido' });
+    }
+    
+    const result = await authService.validateUserToken(token);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        user: result.user
+      });
+    } else {
+      res.status(401).json({ success: false, message: result.message });
+    }
+  } catch (error) {
+    console.error('Error verificando token:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+// Revocar todos los tokens de un usuario
+app.post('/api/auth/revoke-all-tokens', authenticateSession, async (req, res) => {
+  try {
+    const result = await authService.revokeAllUserTokens(req.user.id);
+    
+    if (result.success) {
+      res.json({ success: true, message: 'Todos los tokens han sido revocados' });
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error revocando tokens:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
@@ -1122,6 +1211,7 @@ app.get('/api/dashboard/recent-evaluations', authenticateSession, async (req, re
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor ejecutándose en el puerto ${PORT}`);
+  console.log('Sistema de tokens personalizado activado');
 });
 
 module.exports = app;
