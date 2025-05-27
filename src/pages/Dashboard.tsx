@@ -9,6 +9,7 @@ import { modulesData } from '@/config/navigation';
 import StatCard from '@/components/Dashboard/StatCard';
 import ModuleCard from '@/components/Dashboard/ModuleCard';
 import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
+import EvaluationsChart from '@/components/Dashboard/EvaluationsChart';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -138,10 +139,15 @@ const Dashboard = () => {
         )}
       </div>
 
-      {/* Recent evaluations and modules */}
+      {/* Recent evaluations, chart and modules */}
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Recent Evaluations */}
-        <RecentEvaluations />
+        <div className="space-y-6">
+          {/* Recent Evaluations */}
+          <RecentEvaluations />
+          
+          {/* Evaluations Chart */}
+          <EvaluationsChart />
+        </div>
 
         {/* Module access */}
         <div className="space-y-4">
