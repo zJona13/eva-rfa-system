@@ -1029,6 +1029,66 @@ app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, re
 
 console.log('Rutas de reportes configuradas exitosamente');
 
+// Endpoint para obtener datos del gráfico de evaluaciones para el dashboard
+app.get('/api/dashboard/evaluations-chart', authenticateToken, async (req, res) => {
+  try {
+    console.log(`GET /api/dashboard/evaluations-chart - Usuario: ${req.user?.name} Rol: ${req.user?.role}`);
+    
+    // Obtener conteo de evaluaciones por estado
+    const [completadas] = await pool.execute(
+      'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "Completada"'
+    );
+    
+    const [pendientes] = await pool.execute(
+      'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "Pendiente"'
+    );
+    
+    const [enRevision] = await pool.execute(
+      'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "En Revisión"'
+    );
+    
+    const [canceladas] = await pool.execute(
+      'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "Cancelada"'
+    );
+    
+    const chartData = [
+      { 
+        name: 'Completadas', 
+        value: completadas[0].total, 
+        color: '#22c55e' 
+      },
+      { 
+        name: 'Pendientes', 
+        value: pendientes[0].total, 
+        color: '#eab308' 
+      },
+      { 
+        name: 'En Revisión', 
+        value: enRevision[0].total, 
+        color: '#3b82f6' 
+      },
+      { 
+        name: 'Canceladas', 
+        value: canceladas[0].total, 
+        color: '#ef4444' 
+      }
+    ];
+    
+    console.log('Chart data obtenida:', chartData);
+    res.json({ 
+      success: true, 
+      chartData: chartData 
+    });
+    
+  } catch (error) {
+    console.error('Error al obtener datos del gráfico de evaluaciones:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error al obtener los datos del gráfico' 
+    });
+  }
+});
+
 // Endpoint para obtener estadísticas del dashboard
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
