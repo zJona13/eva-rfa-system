@@ -20,8 +20,9 @@ import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
 import Roles from "./pages/Roles/Index";
 import Reports from "./pages/Reports/Index";
 
-// Layout
+// Layout and Protection
 import MainLayout from "./components/Layout/MainLayout";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -47,12 +48,66 @@ const App = () => (
               {/* Protected routes */}
               <Route element={<MainLayout />}>
                 <Route path="/dashboard" element={<Dashboard />} />
-                <Route path="/self-evaluation" element={<SelfEvaluation />} />
-                <Route path="/student-evaluation" element={<StudentEvaluation />} />
-                <Route path="/checklist-evaluation" element={<ChecklistEvaluation />} />
-                <Route path="/incidents" element={<Incidents />} />
-                <Route path="/reports" element={<Reports />} />
-                <Route path="/roles" element={<Roles />} />
+                
+                {/* Autoevaluación - Solo admin y evaluados */}
+                <Route 
+                  path="/self-evaluation" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'evaluated']}>
+                      <SelfEvaluation />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Evaluación estudiante - Solo admin y estudiantes */}
+                <Route 
+                  path="/student-evaluation" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'student']}>
+                      <StudentEvaluation />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Supervisión - Solo admin y evaluadores */}
+                <Route 
+                  path="/checklist-evaluation" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
+                      <ChecklistEvaluation />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Incidencias - Todos los usuarios autenticados */}
+                <Route 
+                  path="/incidents" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'evaluator', 'evaluated', 'student', 'validator']}>
+                      <Incidents />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Reportes - Solo admin y evaluadores */}
+                <Route 
+                  path="/reports" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
+                      <Reports />
+                    </ProtectedRoute>
+                  } 
+                />
+                
+                {/* Mantenimientos - Solo admin */}
+                <Route 
+                  path="/roles" 
+                  element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <Roles />
+                    </ProtectedRoute>
+                  } 
+                />
               </Route>
               
               {/* 404 route */}
