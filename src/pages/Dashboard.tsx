@@ -50,8 +50,8 @@ const Dashboard = () => {
     <div className="space-y-8">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, {displayName}</h1>
-        <p className="text-muted-foreground mt-2">
-          Bienvenido al Sistema Integral de Evaluación del Personal IES RFA.
+        <p className="text-muted-foreground mt-4">
+          Bienvenido al Sistema de Evaluación para Desempeño del Personal IES RFA.
         </p>
       </div>
 
@@ -151,7 +151,6 @@ const Dashboard = () => {
 
         {/* Module access */}
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold">Módulos disponibles</h2>
           <div className="grid gap-4">
             {filteredModules.slice(0, 6).map((module) => (
               <ModuleCard

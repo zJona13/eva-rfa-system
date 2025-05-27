@@ -47,9 +47,9 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
         <div className="flex flex-col h-full overflow-hidden">
           <div className="p-6">
             <h2 className="text-lg font-medium text-sidebar-foreground">
-              Sistema de Evaluación
+              Sistema de Evaluación para Desempeño del Personal
             </h2>
-            <p className="text-sm text-sidebar-foreground/70">
+            <p className="text-sm mt-3 text-sidebar-foreground/70">
               {userRole === 'admin' ? 'Administrador' : 
                userRole === 'evaluator' ? 'Evaluador' : 
                userRole === 'evaluated' ? 'Evaluado' : 
@@ -86,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
           </nav>
 
           <div className="p-4 border-t text-center text-xs text-muted-foreground">
-            &copy; {new Date().getFullYear()} IES RFA - Sistema de Evaluación del Personal
+            &copy; {new Date().getFullYear()} IES RFA - Sistema de Evaluación para Desempeño del Personal
           </div>
         </div>
       </aside>
