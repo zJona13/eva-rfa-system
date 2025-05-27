@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
@@ -148,7 +147,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) {
         toast.error(data.message || 'Credenciales incorrectas');
         setIsLoading(false);
-        return;
+        // Throw error to trigger failed attempt handling
+        throw new Error(data.message || 'Credenciales incorrectas');
       }
       
       if (data.success && data.user && data.token) {
@@ -174,10 +174,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         navigate('/dashboard');
       } else {
         toast.error('Error al iniciar sesión');
+        throw new Error('Error al iniciar sesión');
       }
     } catch (error) {
       console.error('❌ Error en login:', error);
-      toast.error('Error al conectar con el servidor');
+      if (error instanceof Error && error.message !== 'Error al conectar con el servidor') {
+        // Re-throw the error so LoginForm can handle failed attempts
+        throw error;
+      } else {
+        toast.error('Error al conectar con el servidor');
+        throw new Error('Error al conectar con el servidor');
+      }
     } finally {
       setIsLoading(false);
     }
