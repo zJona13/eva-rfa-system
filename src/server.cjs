@@ -178,11 +178,22 @@ app.post('/api/auth/verify-reset-code', async (req, res) => {
     const { email, code } = req.body;
     
     console.log('🔍 Verificación de código para:', email);
+    console.log('🔍 Datos recibidos:', { email: !!email, code: !!code, codeLength: code?.length });
     
     if (!email || !code) {
+      console.log('❌ Faltan datos requeridos');
       return res.status(400).json({ 
         success: false, 
         message: 'Email y código son requeridos' 
+      });
+    }
+
+    // Validar formato del código (debe ser 6 dígitos)
+    if (!/^\d{6}$/.test(code)) {
+      console.log('❌ Formato de código inválido:', code);
+      return res.status(400).json({ 
+        success: false, 
+        message: 'El código debe tener 6 dígitos' 
       });
     }
     

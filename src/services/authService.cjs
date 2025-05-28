@@ -203,13 +203,52 @@ const generatePasswordResetCode = async (email) => {
 const verifyPasswordResetCode = async (email, code) => {
   try {
     console.log('🔍 Verificando código de recuperación para:', email);
+    console.log('🔍 Código recibido:', code);
+    
+    // Primero verificar si existen códigos para este email
+    const [allCodes] = await pool.execute(
+      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? ORDER BY created_at DESC',
+      [email]
+    );
+    
+    console.log('🔍 Códigos encontrados para el email:', allCodes.length);
+    if (allCodes.length > 0) {
+      console.log('🔍 Último código generado:', {
+        code: allCodes[0].code,
+        expiration: allCodes[0].expiration,
+        used: allCodes[0].used,
+        created_at: allCodes[0].created_at
+      });
+    }
     
     const [codes] = await pool.execute(
       'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND code = ? AND expiration > NOW() AND used = FALSE',
       [email, code]
     );
 
+    console.log('🔍 Códigos válidos encontrados:', codes.length);
+
     if (codes.length === 0) {
+      // Verificar por qué no se encontró el código
+      const [expiredCodes] = await pool.execute(
+        'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND code = ?',
+        [email, code]
+      );
+      
+      if (expiredCodes.length > 0) {
+        const expiredCode = expiredCodes[0];
+        if (expiredCode.used) {
+          console.log('❌ Código ya fue usado');
+          return { success: false, message: 'El código ya ha sido utilizado' };
+        } else if (new Date(expiredCode.expiration) <= new Date()) {
+          console.log('❌ Código expirado');
+          return { success: false, message: 'El código ha expirado. Solicita uno nuevo.' };
+        }
+      } else {
+        console.log('❌ Código no encontrado para el email');
+        return { success: false, message: 'Código inválido' };
+      }
+      
       return { success: false, message: 'Código inválido o expirado' };
     }
 
