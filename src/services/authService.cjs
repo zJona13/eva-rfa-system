@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -30,22 +31,69 @@ const createTokensTable = async () => {
 // Crear tabla de códigos de recuperación si no existe
 const createPasswordResetTable = async () => {
   try {
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        code VARCHAR(6) NOT NULL,
-        token VARCHAR(500) NOT NULL,
-        expiration DATETIME NOT NULL,
-        used BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_email (email),
-        INDEX idx_code (code),
-        INDEX idx_token (token),
-        INDEX idx_expiration (expiration)
-      )
+    // Primero verificar si la tabla existe
+    const [tableExists] = await pool.execute(`
+      SELECT COUNT(*) as count 
+      FROM information_schema.tables 
+      WHERE table_schema = 'EvaluacionDesempeno' 
+      AND table_name = 'PASSWORD_RESET_CODES'
     `);
-    console.log('✅ Tabla PASSWORD_RESET_CODES verificada/creada');
+
+    if (tableExists[0].count === 0) {
+      // Crear tabla si no existe
+      await pool.execute(`
+        CREATE TABLE PASSWORD_RESET_CODES (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          email VARCHAR(255) NOT NULL,
+          code VARCHAR(6) NOT NULL,
+          token VARCHAR(500) NOT NULL,
+          expiration DATETIME NOT NULL,
+          used BOOLEAN DEFAULT FALSE,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          INDEX idx_email (email),
+          INDEX idx_code (code),
+          INDEX idx_token (token),
+          INDEX idx_expiration (expiration)
+        )
+      `);
+      console.log('✅ Tabla PASSWORD_RESET_CODES creada');
+    } else {
+      // Verificar si tiene todas las columnas necesarias
+      const [columns] = await pool.execute(`
+        SELECT COLUMN_NAME 
+        FROM information_schema.columns 
+        WHERE table_schema = 'EvaluacionDesempeno' 
+        AND table_name = 'PASSWORD_RESET_CODES'
+      `);
+      
+      const columnNames = columns.map(col => col.COLUMN_NAME);
+      const requiredColumns = ['id', 'email', 'code', 'token', 'expiration', 'used', 'created_at'];
+      
+      const missingColumns = requiredColumns.filter(col => !columnNames.includes(col));
+      
+      if (missingColumns.length > 0) {
+        console.log('⚠️ Faltan columnas en PASSWORD_RESET_CODES, recreando tabla...');
+        await pool.execute('DROP TABLE IF EXISTS PASSWORD_RESET_CODES');
+        await pool.execute(`
+          CREATE TABLE PASSWORD_RESET_CODES (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            email VARCHAR(255) NOT NULL,
+            code VARCHAR(6) NOT NULL,
+            token VARCHAR(500) NOT NULL,
+            expiration DATETIME NOT NULL,
+            used BOOLEAN DEFAULT FALSE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            INDEX idx_email (email),
+            INDEX idx_code (code),
+            INDEX idx_token (token),
+            INDEX idx_expiration (expiration)
+          )
+        `);
+        console.log('✅ Tabla PASSWORD_RESET_CODES recreada con estructura correcta');
+      } else {
+        console.log('✅ Tabla PASSWORD_RESET_CODES verificada/existe');
+      }
+    }
   } catch (error) {
     console.error('❌ Error creando tabla PASSWORD_RESET_CODES:', error);
   }
