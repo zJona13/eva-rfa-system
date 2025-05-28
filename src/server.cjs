@@ -134,7 +134,128 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Logout con invalidación de token
+// Solicitar recuperación de contraseña
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    console.log('🔑 Solicitud de recuperación de contraseña para:', email);
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email es requerido' 
+      });
+    }
+    
+    const result = await authService.requestPasswordReset(email);
+    
+    if (result.success) {
+      console.log('✅ Código de recuperación enviado para:', email);
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } else {
+      console.log('❌ Error en recuperación para:', email, '-', result.message);
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en forgot-password:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Verificar código de recuperación
+app.post('/api/auth/verify-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    console.log('🔍 Verificación de código para:', email);
+    
+    if (!email || !code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email y código son requeridos' 
+      });
+    }
+    
+    const result = await authService.verifyResetCode(email, code);
+    
+    if (result.success) {
+      console.log('✅ Código verificado para:', email);
+      res.json({
+        success: true,
+        message: result.message,
+        resetToken: result.resetToken
+      });
+    } else {
+      console.log('❌ Error verificando código para:', email, '-', result.message);
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en verify-code:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Restablecer contraseña
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, resetToken, newPassword } = req.body;
+    
+    console.log('🔒 Restablecimiento de contraseña para:', email);
+    
+    if (!email || !resetToken || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email, token y nueva contraseña son requeridos' 
+      });
+    }
+    
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'La contraseña debe tener al menos 6 caracteres' 
+      });
+    }
+    
+    const result = await authService.resetPassword(email, resetToken, newPassword);
+    
+    if (result.success) {
+      console.log('✅ Contraseña restablecida para:', email);
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } else {
+      console.log('❌ Error restableciendo contraseña para:', email, '-', result.message);
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en reset-password:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
 app.post('/api/auth/logout', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -155,7 +276,6 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
-// Verificar token y obtener usuario actual
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     console.log('👤 Obteniendo información del usuario actual');
@@ -1231,6 +1351,7 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
   console.log(`🔐 Autenticación JWT habilitada`);
+  console.log(`📧 Sistema de recuperación de contraseña habilitado`);
 });
 
 module.exports = app;
