@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -159,79 +158,47 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200">
-            <CardHeader>
-              <CardTitle className="text-emerald-800">Escala de Valoración</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="bg-white p-3 rounded-lg border border-red-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-4 h-4 rounded-full bg-red-500"></div>
-                    <span className="font-semibold text-red-700">0 - No Cumple</span>
-                  </div>
-                  <p className="text-sm text-red-600">No observado</p>
-                </div>
-                <div className="bg-white p-3 rounded-lg border border-yellow-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-                    <span className="font-semibold text-yellow-700">0.5 - Cumple Parcialmente</span>
-                  </div>
-                  <p className="text-sm text-yellow-600">Observado con áreas de mejora</p>
-                </div>
-                <div className="bg-white p-3 rounded-lg border border-green-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="w-4 h-4 rounded-full bg-green-500"></div>
-                    <span className="font-semibold text-green-700">1 - Cumple Totalmente</span>
-                  </div>
-                  <p className="text-sm text-green-600">Observado satisfactoriamente</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <div className="bg-muted p-4 rounded-lg">
+            <h3 className="font-semibold mb-2">Escala de Valoración por Subcriterio:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 text-sm">
+              <div><strong>1:</strong> Cumple Totalmente / Observado Satisfactoriamente</div>
+              <div><strong>0.5:</strong> Cumple Parcialmente / Observado con Áreas de Mejora</div>
+              <div><strong>0:</strong> No Cumple / No Observado</div>
+            </div>
+          </div>
 
-          {Object.entries(criteriosAgrupados).map(([criterioNombre, subcriteriosGrupo], sectionIndex) => (
-            <Card key={criterioNombre} className="border-l-4 border-l-emerald-500">
-              <CardHeader className="bg-gradient-to-r from-emerald-50 to-emerald-100">
-                <CardTitle className="text-emerald-800 flex items-center gap-2">
-                  <span className="bg-emerald-500 text-white px-2 py-1 rounded-full text-sm font-bold">
-                    {sectionIndex + 1}
-                  </span>
-                  {criterioNombre}
-                </CardTitle>
+          {Object.entries(criteriosAgrupados).map(([criterioNombre, subcriteriosGrupo]) => (
+            <Card key={criterioNombre}>
+              <CardHeader>
+                <CardTitle className="text-lg">{criterioNombre}</CardTitle>
               </CardHeader>
-              <CardContent className="pt-6">
-                <div className="space-y-6">
+              <CardContent>
+                <div className="space-y-4">
                   {subcriteriosGrupo.map((subcriterio, index) => (
-                    <div key={subcriterio.id} className="bg-gray-50 p-4 rounded-lg border">
-                      <div className="mb-3">
-                        <Label className="text-base font-medium text-gray-800">
-                          <span className="inline-block bg-emerald-100 text-emerald-800 px-2 py-1 rounded-full text-sm font-bold mr-2">
-                            {index + 1}
-                          </span>
-                          {subcriterio.texto}
-                        </Label>
-                      </div>
+                    <div key={subcriterio.id} className="space-y-2">
+                      <Label className="text-sm">
+                        <span className="font-medium">{index + 1}.</span> {subcriterio.texto}
+                      </Label>
                       <RadioGroup
                         value={subcriteriosRatings[subcriterio.id]?.toString() || ''}
                         onValueChange={(value) => handleSubcriterioRating(subcriterio.id, parseFloat(value))}
-                        className="flex flex-wrap gap-4"
+                        className="flex gap-6"
                       >
-                        <div className="flex items-center space-x-2 bg-red-50 p-2 rounded-lg border border-red-200 hover:bg-red-100 transition-colors">
-                          <RadioGroupItem value="0" id={`${subcriterio.id}-0`} className="border-red-500 text-red-500" />
-                          <Label htmlFor={`${subcriterio.id}-0`} className="text-red-700 font-medium cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="0" id={`${subcriterio.id}-0`} />
+                          <Label htmlFor={`${subcriterio.id}-0`} className="text-sm">
                             0 - No Cumple
                           </Label>
                         </div>
-                        <div className="flex items-center space-x-2 bg-yellow-50 p-2 rounded-lg border border-yellow-200 hover:bg-yellow-100 transition-colors">
-                          <RadioGroupItem value="0.5" id={`${subcriterio.id}-0.5`} className="border-yellow-500 text-yellow-500" />
-                          <Label htmlFor={`${subcriterio.id}-0.5`} className="text-yellow-700 font-medium cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="0.5" id={`${subcriterio.id}-0.5`} />
+                          <Label htmlFor={`${subcriterio.id}-0.5`} className="text-sm">
                             0.5 - Cumple Parcialmente
                           </Label>
                         </div>
-                        <div className="flex items-center space-x-2 bg-green-50 p-2 rounded-lg border border-green-200 hover:bg-green-100 transition-colors">
-                          <RadioGroupItem value="1" id={`${subcriterio.id}-1`} className="border-green-500 text-green-500" />
-                          <Label htmlFor={`${subcriterio.id}-1`} className="text-green-700 font-medium cursor-pointer">
+                        <div className="flex items-center space-x-2">
+                          <RadioGroupItem value="1" id={`${subcriterio.id}-1`} />
+                          <Label htmlFor={`${subcriterio.id}-1`} className="text-sm">
                             1 - Cumple Totalmente
                           </Label>
                         </div>
@@ -243,18 +210,13 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
             </Card>
           ))}
 
-          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 border-green-200">
+          <Card>
             <CardHeader>
-              <CardTitle className="text-green-800 text-center">Puntaje Total Obtenido</CardTitle>
+              <CardTitle>Puntaje Total</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="text-4xl font-bold text-center text-green-600">
+              <div className="text-2xl font-bold text-center">
                 {calculateTotalScore()}/20
-              </div>
-              <div className="text-center mt-2">
-                <span className="text-sm text-gray-600">
-                  Progreso: {Math.round((calculateTotalScore() / 20) * 100)}%
-                </span>
               </div>
             </CardContent>
           </Card>
@@ -290,7 +252,6 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
             <Button 
               type="submit" 
               disabled={createEvaluacionMutation.isPending || !selectedColaborador}
-              className="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700"
             >
               {createEvaluacionMutation.isPending ? 'Guardando...' : 'Guardar Evaluación'}
             </Button>
