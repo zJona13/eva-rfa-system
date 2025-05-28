@@ -88,7 +88,7 @@ const getEvaluadosConIncidencias = async () => {
   }
 };
 
-// Reporte de personal de baja (estado = 0)
+// Reporte de personal de baja (estado = 0) - CORREGIDO
 const getPersonalDeBaja = async () => {
   try {
     const [rows] = await pool.execute(
@@ -100,7 +100,7 @@ const getPersonalDeBaja = async () => {
       tcont.nombre as tipoContrato
       FROM COLABORADOR c
       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-      LEFT JOIN CONTRATO cont ON c.idColaborador = cont.idColaborador
+      LEFT JOIN CONTRATO cont ON c.idContrato = cont.idContrato
       LEFT JOIN TIPO_CONTRATO tcont ON cont.idTipoContrato = tcont.idTipoContrato
       WHERE c.estado = 0
       ORDER BY c.nombres, c.apePat`
