@@ -32,13 +32,13 @@ Para conectarte a la base de datos, puedes usar cualquier gestor como DBeaver, M
 
 ```bash
 
-Host: sql10.freesqldatabase.com
+Host: sql3.freesqldatabase.com
 
-Usuario: sql10780136
+Usuario: sql3781530
 
-Contraseña: WhVIT2MEuc
+Contraseña: Y4SJiJsu7x
 
-Base de datos: sql10780136
+Base de datos: sql3781530
 
 ```
 
