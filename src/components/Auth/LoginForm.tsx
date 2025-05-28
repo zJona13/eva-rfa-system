@@ -1,10 +1,10 @@
-
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/contexts/AuthContext';
+import ForgotPasswordForm from './ForgotPasswordForm';
 
 const MAX_ATTEMPTS = 5;
 const BLOCK_DURATION = 60000; // 1 minute in milliseconds
@@ -15,6 +15,7 @@ const LoginForm = () => {
   const [failedAttempts, setFailedAttempts] = useState(0);
   const [isBlocked, setIsBlocked] = useState(false);
   const [blockTimeRemaining, setBlockTimeRemaining] = useState(0);
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { login, isLoading } = useAuth();
 
   // Check for existing block on component mount
@@ -102,6 +103,10 @@ const LoginForm = () => {
     }
   };
 
+  if (showForgotPassword) {
+    return <ForgotPasswordForm onBack={() => setShowForgotPassword(false)} />;
+  }
+
   const isButtonDisabled = isLoading || isBlocked;
 
   return (
@@ -128,12 +133,13 @@ const LoginForm = () => {
         <div className="space-y-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Contraseña</Label>
-            <a 
-              href="#" 
+            <button 
+              type="button"
+              onClick={() => setShowForgotPassword(true)}
               className="text-sm text-primary hover:underline focus:outline-none focus:underline"
             >
               ¿Olvidó su contraseña?
-            </a>
+            </button>
           </div>
           <Input
             id="password"

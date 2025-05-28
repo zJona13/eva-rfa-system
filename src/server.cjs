@@ -134,6 +134,128 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
+// Solicitar código de recuperación de contraseña
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    console.log('🔐 Solicitud de recuperación de contraseña para:', email);
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email es requerido' 
+      });
+    }
+    
+    const result = await authService.generatePasswordResetCode(email);
+    
+    if (result.success) {
+      console.log('✅ Código de recuperación generado para:', email);
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } else {
+      console.log('❌ Error generando código para:', email, '-', result.message);
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en forgot-password:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Verificar código de recuperación
+app.post('/api/auth/verify-reset-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    console.log('🔍 Verificación de código para:', email);
+    
+    if (!email || !code) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email y código son requeridos' 
+      });
+    }
+    
+    const result = await authService.verifyPasswordResetCode(email, code);
+    
+    if (result.success) {
+      console.log('✅ Código verificado para:', email);
+      res.json({
+        success: true,
+        message: result.message,
+        token: result.token
+      });
+    } else {
+      console.log('❌ Error verificando código para:', email, '-', result.message);
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en verify-reset-code:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Restablecer contraseña
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, token, newPassword } = req.body;
+    
+    console.log('🔐 Restablecimiento de contraseña para:', email);
+    
+    if (!email || !token || !newPassword) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Email, token y nueva contraseña son requeridos' 
+      });
+    }
+
+    if (newPassword.length < 6) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'La contraseña debe tener al menos 6 caracteres' 
+      });
+    }
+    
+    const result = await authService.resetPassword(email, token, newPassword);
+    
+    if (result.success) {
+      console.log('✅ Contraseña restablecida para:', email);
+      res.json({
+        success: true,
+        message: result.message
+      });
+    } else {
+      console.log('❌ Error restableciendo contraseña para:', email, '-', result.message);
+      res.status(400).json({
+        success: false,
+        message: result.message
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error en reset-password:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
 // Logout con invalidación de token
 app.post('/api/auth/logout', async (req, res) => {
   try {
@@ -942,7 +1064,7 @@ app.get('/api/reportes/personal-de-baja', authenticateToken, async (req, res) =>
     }
   } catch (error) {
     console.error('Error in /api/reportes/personal-de-baja:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
@@ -969,7 +1091,7 @@ app.get('/api/reportes/personal-alta-calificacion', authenticateToken, async (re
     }
   } catch (error) {
     console.error('Error in /api/reportes/personal-alta-calificacion:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
@@ -1023,7 +1145,7 @@ app.get('/api/reportes/evaluaciones-por-area', authenticateToken, async (req, re
     }
   } catch (error) {
     console.error('Error in GET /api/reportes/evaluaciones-por-area:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 

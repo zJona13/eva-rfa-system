@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
@@ -28,8 +27,33 @@ const createTokensTable = async () => {
   }
 };
 
-// Inicializar tabla al cargar el módulo
+// Crear tabla de códigos de recuperación si no existe
+const createPasswordResetTable = async () => {
+  try {
+    await pool.execute(`
+      CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
+        id INT AUTO_INCREMENT PRIMARY KEY,
+        email VARCHAR(255) NOT NULL,
+        code VARCHAR(6) NOT NULL,
+        token VARCHAR(500) NOT NULL,
+        expiration DATETIME NOT NULL,
+        used BOOLEAN DEFAULT FALSE,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        INDEX idx_email (email),
+        INDEX idx_code (code),
+        INDEX idx_token (token),
+        INDEX idx_expiration (expiration)
+      )
+    `);
+    console.log('✅ Tabla PASSWORD_RESET_CODES verificada/creada');
+  } catch (error) {
+    console.error('❌ Error creando tabla PASSWORD_RESET_CODES:', error);
+  }
+};
+
+// Inicializar tablas al cargar el módulo
 createTokensTable();
+createPasswordResetTable();
 
 // Crear token de usuario en BD
 const createUserToken = async (userId, token, expiration) => {
@@ -73,6 +97,164 @@ const cleanExpiredTokens = async () => {
 
 // Limpiar tokens expirados cada hora
 setInterval(cleanExpiredTokens, 60 * 60 * 1000);
+
+// Generar código de verificación para recuperación de contraseña
+const generatePasswordResetCode = async (email) => {
+  try {
+    console.log('🔐 Generando código de recuperación para:', email);
+    
+    // Verificar que el usuario existe
+    const [users] = await pool.execute(
+      'SELECT idUsuario FROM USUARIO WHERE correo = ?',
+      [email]
+    );
+
+    if (users.length === 0) {
+      return { success: false, message: 'Usuario no encontrado' };
+    }
+
+    // Generar código de 6 dígitos
+    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    
+    // Generar token único para la validación
+    const resetToken = jwt.sign({ email, code }, JWT_SECRET, { expiresIn: '15m' });
+    
+    // Calcular fecha de expiración (15 minutos)
+    const expiration = new Date();
+    expiration.setMinutes(expiration.getMinutes() + 15);
+
+    // Limpiar códigos anteriores del mismo email
+    await pool.execute(
+      'DELETE FROM PASSWORD_RESET_CODES WHERE email = ?',
+      [email]
+    );
+
+    // Guardar código en BD
+    await pool.execute(
+      'INSERT INTO PASSWORD_RESET_CODES (email, code, token, expiration) VALUES (?, ?, ?, ?)',
+      [email, code, resetToken, expiration]
+    );
+
+    // Simular envío de email (en producción aquí iría el servicio de email)
+    console.log(`📧 CÓDIGO DE VERIFICACIÓN para ${email}: ${code}`);
+    console.log(`⏰ Válido hasta: ${expiration.toLocaleString()}`);
+
+    return {
+      success: true,
+      message: 'Código de verificación enviado',
+      // En producción, NO enviar el código en la respuesta
+      code: code // Solo para desarrollo
+    };
+  } catch (error) {
+    console.error('❌ Error generando código de recuperación:', error);
+    return { success: false, message: 'Error en el servidor' };
+  }
+};
+
+// Verificar código de recuperación
+const verifyPasswordResetCode = async (email, code) => {
+  try {
+    console.log('🔍 Verificando código de recuperación para:', email);
+    
+    const [codes] = await pool.execute(
+      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND code = ? AND expiration > NOW() AND used = FALSE',
+      [email, code]
+    );
+
+    if (codes.length === 0) {
+      return { success: false, message: 'Código inválido o expirado' };
+    }
+
+    const resetData = codes[0];
+    
+    // Marcar código como usado para evitar reutilización
+    await pool.execute(
+      'UPDATE PASSWORD_RESET_CODES SET used = TRUE WHERE id = ?',
+      [resetData.id]
+    );
+
+    console.log('✅ Código verificado correctamente para:', email);
+
+    return {
+      success: true,
+      token: resetData.token,
+      message: 'Código verificado correctamente'
+    };
+  } catch (error) {
+    console.error('❌ Error verificando código de recuperación:', error);
+    return { success: false, message: 'Error en el servidor' };
+  }
+};
+
+// Restablecer contraseña
+const resetPassword = async (email, token, newPassword) => {
+  try {
+    console.log('🔐 Restableciendo contraseña para:', email);
+    
+    // Verificar token
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET);
+      if (decoded.email !== email) {
+        return { success: false, message: 'Token inválido' };
+      }
+    } catch (error) {
+      return { success: false, message: 'Token expirado o inválido' };
+    }
+
+    // Verificar que el token existe en BD y no ha sido usado
+    const [tokens] = await pool.execute(
+      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND token = ? AND used = TRUE',
+      [email, token]
+    );
+
+    if (tokens.length === 0) {
+      return { success: false, message: 'Token no válido o ya utilizado' };
+    }
+
+    // Hash de la nueva contraseña
+    const saltRounds = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
+
+    // Actualizar contraseña en BD
+    const [result] = await pool.execute(
+      'UPDATE USUARIO SET contrasena = ? WHERE correo = ?',
+      [hashedPassword, email]
+    );
+
+    if (result.affectedRows === 0) {
+      return { success: false, message: 'Usuario no encontrado' };
+    }
+
+    // Limpiar todos los códigos de recuperación del usuario
+    await pool.execute(
+      'DELETE FROM PASSWORD_RESET_CODES WHERE email = ?',
+      [email]
+    );
+
+    // Invalidar todos los tokens activos del usuario
+    const [users] = await pool.execute(
+      'SELECT idUsuario FROM USUARIO WHERE correo = ?',
+      [email]
+    );
+
+    if (users.length > 0) {
+      await pool.execute(
+        'DELETE FROM USER_TOKENS WHERE idUsuario = ?',
+        [users[0].idUsuario]
+      );
+    }
+
+    console.log('✅ Contraseña restablecida correctamente para:', email);
+
+    return {
+      success: true,
+      message: 'Contraseña actualizada correctamente'
+    };
+  } catch (error) {
+    console.error('❌ Error restableciendo contraseña:', error);
+    return { success: false, message: 'Error en el servidor' };
+  }
+};
 
 // Iniciar sesión con JWT
 const login = async (correo, contrasena) => {
@@ -331,5 +513,8 @@ module.exports = {
   register,
   verifyToken,
   getUserInfo,
-  invalidateToken
+  invalidateToken,
+  generatePasswordResetCode,
+  verifyPasswordResetCode,
+  resetPassword
 };
