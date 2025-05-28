@@ -134,40 +134,72 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Solicitar recuperación de contraseña
-app.post('/api/auth/forgot-password', async (req, res) => {
+// Registro de nuevo usuario
+app.post('/api/auth/register', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, password, nombres, apePat, apeMat, dni, role, contractType } = req.body;
     
-    console.log('🔑 Solicitud de recuperación de contraseña para:', email);
+    console.log('📝 Registro de nuevo usuario:', email);
     
-    if (!email) {
+    if (!email || !password || !nombres || !apePat || !dni || !role || !contractType) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email es requerido' 
+        message: 'Email, contraseña, nombres, apellidos, DNI, rol y tipo de contrato son requeridos' 
       });
     }
     
-    const result = await authService.requestPasswordReset(email);
+    const result = await authService.register(email, password, nombres, apePat, apeMat, dni, role, contractType);
     
     if (result.success) {
-      console.log('✅ Código de recuperación enviado para:', email);
+      console.log('✅ Usuario registrado exitosamente:', email);
       res.json({
         success: true,
-        message: result.message
+        message: 'Usuario registrado exitosamente',
+        token: result.token,
+        user: result.user
       });
     } else {
-      console.log('❌ Error en recuperación para:', email, '-', result.message);
+      console.log('❌ Error al registrar usuario:', email, '-', result.message);
       res.status(400).json({
         success: false,
         message: result.message
       });
     }
   } catch (error) {
-    console.error('❌ Error en forgot-password:', error);
+    console.error('❌ Error en registro:', error);
     res.status(500).json({ 
       success: false, 
       message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Solicitar recuperación de contraseña
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        message: 'El correo electrónico es requerido'
+      });
+    }
+
+    console.log('📧 Solicitando recuperación de contraseña para:', email);
+
+    const result = await authService.requestPasswordReset(email);
+
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('❌ Error en forgot-password:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
     });
   }
 });
@@ -176,37 +208,28 @@ app.post('/api/auth/forgot-password', async (req, res) => {
 app.post('/api/auth/verify-code', async (req, res) => {
   try {
     const { email, code } = req.body;
-    
-    console.log('🔍 Verificación de código para:', email);
-    
+
     if (!email || !code) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email y código son requeridos' 
+      return res.status(400).json({
+        success: false,
+        message: 'Email y código son requeridos'
       });
     }
-    
+
+    console.log('🔍 Verificando código para:', email);
+
     const result = await authService.verifyResetCode(email, code);
-    
+
     if (result.success) {
-      console.log('✅ Código verificado para:', email);
-      res.json({
-        success: true,
-        message: result.message,
-        resetToken: result.resetToken
-      });
+      res.status(200).json(result);
     } else {
-      console.log('❌ Error verificando código para:', email, '-', result.message);
-      res.status(400).json({
-        success: false,
-        message: result.message
-      });
+      res.status(400).json(result);
     }
   } catch (error) {
     console.error('❌ Error en verify-code:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error interno del servidor' 
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
     });
   }
 });
@@ -215,43 +238,28 @@ app.post('/api/auth/verify-code', async (req, res) => {
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { email, resetToken, newPassword } = req.body;
-    
-    console.log('🔒 Restablecimiento de contraseña para:', email);
-    
+
     if (!email || !resetToken || !newPassword) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email, token y nueva contraseña son requeridos' 
-      });
-    }
-    
-    if (newPassword.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'La contraseña debe tener al menos 6 caracteres' 
-      });
-    }
-    
-    const result = await authService.resetPassword(email, resetToken, newPassword);
-    
-    if (result.success) {
-      console.log('✅ Contraseña restablecida para:', email);
-      res.json({
-        success: true,
-        message: result.message
-      });
-    } else {
-      console.log('❌ Error restableciendo contraseña para:', email, '-', result.message);
-      res.status(400).json({
+      return res.status(400).json({
         success: false,
-        message: result.message
+        message: 'Email, token de reset y nueva contraseña son requeridos'
       });
+    }
+
+    console.log('🔒 Restableciendo contraseña para:', email);
+
+    const result = await authService.resetPassword(email, resetToken, newPassword);
+
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
     }
   } catch (error) {
     console.error('❌ Error en reset-password:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error interno del servidor' 
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
     });
   }
 });
