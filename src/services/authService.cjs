@@ -42,7 +42,7 @@ const createPasswordResetTable = async () => {
     if (tableExists[0].count === 0) {
       // Crear tabla si no existe
       await pool.execute(`
-        CREATE TABLE PASSWORD_RESET_CODES (
+        CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
           id INT AUTO_INCREMENT PRIMARY KEY,
           email VARCHAR(255) NOT NULL,
           code VARCHAR(6) NOT NULL,
