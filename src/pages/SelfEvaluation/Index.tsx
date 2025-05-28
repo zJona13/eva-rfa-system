@@ -5,12 +5,14 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
 import AutoevaluacionForm from './AutoevaluacionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
 
 const SelfEvaluation = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { apiRequest } = useApiWithToken();
   const [showForm, setShowForm] = useState(false);
@@ -39,7 +41,7 @@ const SelfEvaluation = () => {
   };
 
   const getEvaluationStatus = (score: number) => {
-    return score >= 11 ? 'Aprobado' : 'Desaprobado';
+    return score >= 11 ? t('evaluation.approved') : t('evaluation.failed');
   };
 
   const getStatusColor = (score: number) => {
@@ -58,17 +60,17 @@ const SelfEvaluation = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Autoevaluación del Personal</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t('selfEval.title')}</h1>
         <p className="text-muted-foreground mt-2">
-          Consulta tus autoevaluaciones anteriores y tu progreso profesional.
+          {t('selfEval.subtitle')}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Historial de Autoevaluaciones</CardTitle>
+          <CardTitle>{t('selfEval.history')}</CardTitle>
           <CardDescription>
-            Consulta tus autoevaluaciones anteriores y tu progreso. Nota aprobatoria: ≥ 11/20
+            {t('selfEval.historyDescription')}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -78,19 +80,19 @@ const SelfEvaluation = () => {
             </div>
           ) : autoevaluaciones.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-muted-foreground">No has realizado autoevaluaciones aún.</p>
+              <p className="text-muted-foreground">{t('selfEval.noEvaluations')}</p>
               <Button 
                 className="mt-4" 
                 onClick={() => setShowForm(true)}
               >
-                Realizar Primera Autoevaluación
+                {t('selfEval.firstEvaluation')}
               </Button>
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex justify-end">
                 <Button onClick={() => setShowForm(true)}>
-                  Nueva Autoevaluación
+                  {t('selfEval.newEvaluation')}
                 </Button>
               </div>
               {autoevaluaciones.map((evaluacion: any) => (
@@ -99,13 +101,13 @@ const SelfEvaluation = () => {
                     <div>
                       <h3 className="font-semibold">{evaluacion.type}</h3>
                       <p className="text-sm text-muted-foreground">
-                        Evaluador: {evaluacion.evaluatorName}
+                        {t('evaluation.evaluator')}: {evaluacion.evaluatorName}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Fecha: {new Date(evaluacion.date).toLocaleDateString()}
+                        {t('common.date')}: {new Date(evaluacion.date).toLocaleDateString()}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        Puntaje: {evaluacion.score}/20
+                        {t('common.score')}: {evaluacion.score}/20
                       </p>
                     </div>
                     <div className="flex gap-2 flex-col items-end">
@@ -114,7 +116,7 @@ const SelfEvaluation = () => {
                           ? 'bg-green-100 text-green-800' 
                           : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {evaluacion.status}
+                        {evaluacion.status === 'Completada' ? t('evaluation.completed') : t('evaluation.pending')}
                       </span>
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(evaluacion.score)}`}>
                         {getEvaluationStatus(evaluacion.score)}
@@ -126,14 +128,14 @@ const SelfEvaluation = () => {
                           onClick={() => handleGenerateIncidencia(evaluacion)}
                           className="text-xs"
                         >
-                          Generar Incidencia
+                          {t('evaluation.generateIncident')}
                         </Button>
                       )}
                     </div>
                   </div>
                   {evaluacion.comments && (
                     <div className="mt-3 p-3 bg-muted rounded">
-                      <p className="text-sm"><strong>Comentarios:</strong> {evaluacion.comments}</p>
+                      <p className="text-sm"><strong>{t('common.comments')}:</strong> {evaluacion.comments}</p>
                     </div>
                   )}
                 </div>

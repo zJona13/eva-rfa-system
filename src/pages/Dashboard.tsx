@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { modulesData } from '@/config/navigation';
 import StatCard from '@/components/Dashboard/StatCard';
@@ -13,6 +14,7 @@ import EvaluationsChart from '@/components/Dashboard/EvaluationsChart';
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const { apiRequest } = useApiWithToken();
   
@@ -34,9 +36,9 @@ const Dashboard = () => {
   // Get greeting based on time of day
   const getGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Buenos días';
-    if (hour < 18) return 'Buenas tardes';
-    return 'Buenas noches';
+    if (hour < 12) return t('dashboard.goodMorning');
+    if (hour < 18) return t('dashboard.goodAfternoon');
+    return t('dashboard.goodEvening');
   };
 
   // Use full collaborator name if available, otherwise use user name
@@ -51,7 +53,7 @@ const Dashboard = () => {
       <div>
         <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, {displayName}</h1>
         <p className="text-muted-foreground mt-4">
-          Bienvenido al Sistema de Evaluación para Desempeño del Personal IES RFA.
+          {t('dashboard.welcome')}
         </p>
       </div>
 
@@ -61,24 +63,24 @@ const Dashboard = () => {
           // Estadísticas para docentes evaluados
           <>
             <StatCard
-              title="Evaluaciones recibidas"
+              title={t('dashboard.receivedEvaluations')}
               value={statsLoading ? '-' : stats.evaluacionesRecibidas || '0'}
               icon={<ClipboardList className="h-6 w-6" />}
             />
             <StatCard
-              title="Evaluaciones aprobadas"
+              title={t('dashboard.approvedEvaluations')}
               value={statsLoading ? '-' : stats.evaluacionesAprobadas || '0'}
               icon={<CheckSquare className="h-6 w-6" />}
               valueClassName="text-green-600"
             />
             <StatCard
-              title="Promedio de calificación"
+              title={t('dashboard.averageScore')}
               value={statsLoading ? '-' : `${stats.promedioCalificacion || '0'}/20`}
               icon={<BarChart4 className="h-6 w-6" />}
               valueClassName="text-blue-600"
             />
             <StatCard
-              title="Incidencias registradas"
+              title={t('dashboard.personalIncidents')}
               value={statsLoading ? '-' : stats.incidenciasPersonales || '0'}
               icon={<AlertCircle className="h-6 w-6" />}
               valueClassName="text-orange-600"
@@ -88,24 +90,24 @@ const Dashboard = () => {
           // Estadísticas para administradores y evaluadores
           <>
             <StatCard
-              title="Total de evaluaciones"
+              title={t('dashboard.totalEvaluations')}
               value={statsLoading ? '-' : stats.totalEvaluaciones || '0'}
               icon={<ClipboardList className="h-6 w-6" />}
             />
             <StatCard
-              title="Evaluaciones pendientes"
+              title={t('dashboard.pendingEvaluations')}
               value={statsLoading ? '-' : stats.evaluacionesPendientes || '0'}
               icon={<AlertCircle className="h-6 w-6" />}
               valueClassName="text-yellow-600"
             />
             <StatCard
-              title="Validaciones pendientes"
+              title={t('dashboard.pendingValidations')}
               value={statsLoading ? '-' : stats.validacionesPendientes || '0'}
               icon={<ShieldCheck className="h-6 w-6" />}
               valueClassName="text-blue-600"
             />
             <StatCard
-              title="Promedio general"
+              title={t('dashboard.generalAverage')}
               value={statsLoading ? '-' : `${stats.promedioGeneral || '0'}/20`}
               icon={<BarChart4 className="h-6 w-6" />}
               valueClassName="text-green-600"
@@ -115,23 +117,23 @@ const Dashboard = () => {
           // Estadísticas por defecto para otros roles
           <>
             <StatCard
-              title="Evaluaciones pendientes"
+              title={t('dashboard.pendingEvaluations')}
               value="0"
               icon={<ClipboardList className="h-6 w-6" />}
             />
             <StatCard
-              title="Incidencias activas"
+              title={t('dashboard.activeIncidents')}
               value="0"
               icon={<AlertCircle className="h-6 w-6" />}
               valueClassName="text-orange-600"
             />
             <StatCard
-              title="Validaciones pendientes"
+              title={t('dashboard.pendingValidations')}
               value="0"
               icon={<ShieldCheck className="h-6 w-6" />}
             />
             <StatCard
-              title="Total de resultados"
+              title={t('dashboard.totalResults')}
               value="0"
               icon={<BarChart4 className="h-6 w-6" />}
             />

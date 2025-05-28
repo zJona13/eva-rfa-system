@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "./contexts/AuthContext";
+import { LanguageProvider } from "./contexts/LanguageContext";
 
 // Pages
 import Index from "./pages/Index";
@@ -34,88 +34,90 @@ const App = () => (
       enableSystem
       disableTransitionOnChange
     >
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
-          <AuthProvider>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/" element={<Index />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register" element={<Register />} />
-              
-              {/* Protected routes */}
-              <Route element={<MainLayout />}>
-                <Route path="/dashboard" element={<Dashboard />} />
+      <LanguageProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/" element={<Index />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register" element={<Register />} />
                 
-                {/* Autoevaluación - Solo admin y evaluados */}
-                <Route 
-                  path="/self-evaluation" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'evaluated']}>
-                      <SelfEvaluation />
-                    </ProtectedRoute>
-                  } 
-                />
+                {/* Protected routes */}
+                <Route element={<MainLayout />}>
+                  <Route path="/dashboard" element={<Dashboard />} />
+                  
+                  {/* Autoevaluación - Solo admin y evaluados */}
+                  <Route 
+                    path="/self-evaluation" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'evaluated']}>
+                        <SelfEvaluation />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Evaluación estudiante - Solo admin y estudiantes */}
+                  <Route 
+                    path="/student-evaluation" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'student']}>
+                        <StudentEvaluation />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Supervisión - Solo admin y evaluadores */}
+                  <Route 
+                    path="/checklist-evaluation" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
+                        <ChecklistEvaluation />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Incidencias - Todos los usuarios autenticados */}
+                  <Route 
+                    path="/incidents" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'evaluator', 'evaluated', 'student', 'validator']}>
+                        <Incidents />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Reportes - Solo admin y evaluadores */}
+                  <Route 
+                    path="/reports" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
+                        <Reports />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Mantenimientos - Solo admin */}
+                  <Route 
+                    path="/roles" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <Roles />
+                      </ProtectedRoute>
+                    } 
+                  />
+                </Route>
                 
-                {/* Evaluación estudiante - Solo admin y estudiantes */}
-                <Route 
-                  path="/student-evaluation" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'student']}>
-                      <StudentEvaluation />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Supervisión - Solo admin y evaluadores */}
-                <Route 
-                  path="/checklist-evaluation" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
-                      <ChecklistEvaluation />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Incidencias - Todos los usuarios autenticados */}
-                <Route 
-                  path="/incidents" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'evaluator', 'evaluated', 'student', 'validator']}>
-                      <Incidents />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Reportes - Solo admin y evaluadores */}
-                <Route 
-                  path="/reports" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
-                      <Reports />
-                    </ProtectedRoute>
-                  } 
-                />
-                
-                {/* Mantenimientos - Solo admin */}
-                <Route 
-                  path="/roles" 
-                  element={
-                    <ProtectedRoute allowedRoles={['admin']}>
-                      <Roles />
-                    </ProtectedRoute>
-                  } 
-                />
-              </Route>
-              
-              {/* 404 route */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </AuthProvider>
-        </BrowserRouter>
-      </TooltipProvider>
+                {/* 404 route */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </LanguageProvider>
     </ThemeProvider>
   </QueryClientProvider>
 );

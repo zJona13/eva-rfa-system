@@ -11,6 +11,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { ArrowLeft } from 'lucide-react';
 import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
@@ -21,6 +22,7 @@ interface AutoevaluacionFormProps {
 
 const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const queryClient = useQueryClient();
   const form = useForm();
   const { apiRequest } = useApiWithToken();
@@ -39,12 +41,12 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
       body: evaluacionData
     }),
     onSuccess: () => {
-      toast.success('Autoevaluación creada exitosamente');
+      toast.success(t('selfEval.created'));
       queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
       onCancel();
     },
     onError: (error: any) => {
-      toast.error(`Error al crear autoevaluación: ${error.message}`);
+      toast.error(`${t('selfEval.createError')}: ${error.message}`);
     },
   });
 
@@ -64,13 +66,13 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
 
   const onSubmit = (data: any) => {
     if (Object.keys(subcriteriosRatings).length !== subcriteriosAutoevaluacion.length) {
-      toast.error('Debe calificar todos los subcriterios');
+      toast.error(t('selfEval.rateAll'));
       return;
     }
 
     const colaborador = colaboradorData?.data?.colaborador;
     if (!colaborador) {
-      toast.error('No se pudo obtener información del colaborador');
+      toast.error(t('selfEval.noColaborador'));
       return;
     }
 
@@ -106,8 +108,8 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Autoevaluación Docente</h1>
-          <p className="text-muted-foreground">Reflexiona sobre tu desempeño y marca la opción que mejor describa tu práctica</p>
+          <h1 className="text-2xl font-bold">{t('selfEval.formTitle')}</h1>
+          <p className="text-muted-foreground">{t('selfEval.formSubtitle')}</p>
         </div>
       </div>
 
@@ -115,16 +117,16 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
         <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Información de la Autoevaluación</CardTitle>
+              <CardTitle>{t('selfEval.evaluationInfo')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <Label>Docente</Label>
-                  <Input value={colaborador?.fullName || 'Cargando...'} disabled />
+                  <Label>{t('selfEval.teacher')}</Label>
+                  <Input value={colaborador?.fullName || t('common.loading')} disabled />
                 </div>
                 <div>
-                  <Label>Fecha</Label>
+                  <Label>{t('common.date')}</Label>
                   <Input value={new Date().toLocaleDateString()} disabled />
                 </div>
               </div>
@@ -132,27 +134,27 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
           </Card>
 
           <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/30 dark:to-indigo-950/30 p-6 rounded-lg border border-blue-200 dark:border-blue-800">
-            <h3 className="font-bold text-lg mb-3 text-blue-900 dark:text-blue-100">Escala de Valoración</h3>
+            <h3 className="font-bold text-lg mb-3 text-blue-900 dark:text-blue-100">{t('scale.title')}</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex items-center gap-2 p-3 bg-green-100 dark:bg-green-900/30 rounded-lg">
                 <div className="w-3 h-3 bg-green-500 rounded-full"></div>
                 <div className="text-sm">
-                  <span className="font-semibold">1 punto:</span>
-                  <br />Logrado Totalmente / Siempre
+                  <span className="font-semibold">{t('scale.points1')}</span>
+                  <br />{t('scale.full')}
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 bg-yellow-100 dark:bg-yellow-900/30 rounded-lg">
                 <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
                 <div className="text-sm">
-                  <span className="font-semibold">0.5 puntos:</span>
-                  <br />Logrado Parcialmente / A Veces
+                  <span className="font-semibold">{t('scale.points05')}</span>
+                  <br />{t('scale.partial')}
                 </div>
               </div>
               <div className="flex items-center gap-2 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg">
                 <div className="w-3 h-3 bg-red-500 rounded-full"></div>
                 <div className="text-sm">
-                  <span className="font-semibold">0 puntos:</span>
-                  <br />No Logrado / Nunca
+                  <span className="font-semibold">{t('scale.points0')}</span>
+                  <br />{t('scale.none')}
                 </div>
               </div>
             </div>
@@ -224,7 +226,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
 
           <Card className="border-2 border-primary">
             <CardHeader className="bg-gradient-to-r from-primary to-primary/80 text-primary-foreground">
-              <CardTitle className="text-center">Puntaje Total Obtenido</CardTitle>
+              <CardTitle className="text-center">{t('selfEval.totalScore')}</CardTitle>
             </CardHeader>
             <CardContent className="p-6">
               <div className="text-4xl font-bold text-center text-primary">
@@ -235,7 +237,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
 
           <Card>
             <CardHeader>
-              <CardTitle>Comentarios Adicionales</CardTitle>
+              <CardTitle>{t('selfEval.additionalComments')}</CardTitle>
             </CardHeader>
             <CardContent>
               <FormField
@@ -245,7 +247,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
                   <FormItem>
                     <FormControl>
                       <Textarea
-                        placeholder="Escriba sus reflexiones y áreas de mejora..."
+                        placeholder={t('selfEval.reflections')}
                         className="min-h-[120px] resize-none"
                         {...field}
                       />
@@ -259,14 +261,14 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
 
           <div className="flex gap-4">
             <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
-              Cancelar
+              {t('common.cancel')}
             </Button>
             <Button 
               type="submit" 
               disabled={createEvaluacionMutation.isPending}
               className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             >
-              {createEvaluacionMutation.isPending ? 'Guardando...' : 'Guardar Autoevaluación'}
+              {createEvaluacionMutation.isPending ? t('selfEval.saving') : t('selfEval.saveEvaluation')}
             </Button>
           </div>
         </form>

@@ -3,17 +3,20 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Moon, Sun } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
 import NotificacionesBadge from '@/components/NotificacionesBadge';
+import LanguageSelector from '@/components/LanguageSelector';
 
 const Header = () => {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
+  const { t } = useLanguage();
 
   const handleLogout = () => {
     logout();
-    toast.success('Sesión cerrada exitosamente');
+    toast.success(t('auth.sessionClosed'));
   };
 
   const toggleTheme = () => {
@@ -29,25 +32,28 @@ const Header = () => {
       <div className="flex h-14 items-center justify-between px-4 md:pl-76">
         <div className="flex items-center space-x-2 min-w-0">
           <h1 className="text-base md:text-lg font-semibold truncate">
-            Sistema de Evaluación para Desempeño del Personal - IES
+            {t('header.systemTitle')}
           </h1>
         </div>
         
         <div className="flex items-center space-x-2 md:space-x-4">
           <NotificacionesBadge />
           
+          <LanguageSelector />
+          
           <Button
             variant="ghost"
             size="sm"
             onClick={toggleTheme}
             className="h-8 w-8 p-0"
+            title={t('header.changeTheme')}
           >
             {theme === 'dark' ? (
               <Sun className="h-4 w-4" />
             ) : (
               <Moon className="h-4 w-4" />
             )}
-            <span className="sr-only">Cambiar tema</span>
+            <span className="sr-only">{t('header.changeTheme')}</span>
           </Button>
           
           <div className="hidden md:flex items-center space-x-2">
@@ -58,7 +64,7 @@ const Header = () => {
           
           <Button variant="ghost" size="sm" onClick={handleLogout}>
             <LogOut className="h-4 w-4 md:mr-2" />
-            <span className="hidden md:inline">Salir</span>
+            <span className="hidden md:inline">{t('header.logout')}</span>
           </Button>
         </div>
       </div>
