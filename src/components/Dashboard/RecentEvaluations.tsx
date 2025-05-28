@@ -3,6 +3,7 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
 
@@ -104,36 +105,38 @@ const RecentEvaluations = () => {
         {evaluaciones.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay evaluaciones recientes</p>
         ) : (
-          <div className="space-y-3">
-            {evaluaciones.map((evaluacion: any) => (
-              <div key={evaluacion.id} className="flex items-center justify-between p-3 border rounded-lg">
-                <div className="flex items-center gap-3">
-                  {getScoreIcon(evaluacion.puntaje)}
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium">{evaluacion.tipo}</span>
-                      <span className="text-sm text-muted-foreground">
-                        {evaluacion.puntaje}/20
-                      </span>
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      {isEvaluated ? (
-                        `Evaluado por: ${evaluacion.evaluadorNombre}`
-                      ) : (
-                        `${evaluacion.evaluadoNombre} - Evaluado por: ${evaluacion.evaluadorNombre}`
-                      )}
-                    </div>
-                    <div className="text-xs text-muted-foreground">
-                      {new Date(evaluacion.fecha).toLocaleDateString()}
+          <ScrollArea className="h-[400px] w-full">
+            <div className="space-y-3 pr-4">
+              {evaluaciones.map((evaluacion: any) => (
+                <div key={evaluacion.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    {getScoreIcon(evaluacion.puntaje)}
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-medium">{evaluacion.tipo}</span>
+                        <span className="text-sm text-muted-foreground">
+                          {evaluacion.puntaje}/20
+                        </span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        {isEvaluated ? (
+                          `Evaluado por: ${evaluacion.evaluadorNombre}`
+                        ) : (
+                          `${evaluacion.evaluadoNombre} - Evaluado por: ${evaluacion.evaluadorNombre}`
+                        )}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {new Date(evaluacion.fecha).toLocaleDateString()}
+                      </div>
                     </div>
                   </div>
+                  <div className="flex items-center gap-2">
+                    {getStatusBadge(evaluacion.estado)}
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  {getStatusBadge(evaluacion.estado)}
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          </ScrollArea>
         )}
       </CardContent>
     </Card>
