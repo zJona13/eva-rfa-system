@@ -1,7 +1,7 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const crypto = require('crypto');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here_change_in_production';
 const JWT_EXPIRATION = '24h';
@@ -28,33 +28,8 @@ const createTokensTable = async () => {
   }
 };
 
-// Crear tabla para códigos de recuperación
-const createPasswordResetTable = async () => {
-  try {
-    await pool.execute(`
-      CREATE TABLE IF NOT EXISTS PASSWORD_RESET_CODES (
-        id INT AUTO_INCREMENT PRIMARY KEY,
-        email VARCHAR(255) NOT NULL,
-        code VARCHAR(6) NOT NULL,
-        reset_token VARCHAR(255) NOT NULL UNIQUE,
-        expiration DATETIME NOT NULL,
-        used BOOLEAN DEFAULT FALSE,
-        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        INDEX idx_email (email),
-        INDEX idx_code (code),
-        INDEX idx_reset_token (reset_token),
-        INDEX idx_expiration (expiration)
-      )
-    `);
-    console.log('✅ Tabla PASSWORD_RESET_CODES verificada/creada');
-  } catch (error) {
-    console.error('❌ Error creando tabla PASSWORD_RESET_CODES:', error);
-  }
-};
-
-// Inicializar tablas al cargar el módulo
+// Inicializar tabla al cargar el módulo
 createTokensTable();
-createPasswordResetTable();
 
 // Crear token de usuario en BD
 const createUserToken = async (userId, token, expiration) => {
@@ -99,169 +74,12 @@ const cleanExpiredTokens = async () => {
 // Limpiar tokens expirados cada hora
 setInterval(cleanExpiredTokens, 60 * 60 * 1000);
 
-// Generar código de verificación de 6 dígitos
-const generateVerificationCode = () => {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-};
-
-// Enviar código de recuperación por email (simulado por consola)
-const sendPasswordResetEmail = async (email, code) => {
-  // En un entorno real, aquí usarías un servicio como SendGrid, Nodemailer, etc.
-  console.log('📧 Enviando email de recuperación:');
-  console.log(`Para: ${email}`);
-  console.log(`Código de verificación: ${code}`);
-  console.log('Asunto: Código de recuperación de contraseña - IES RFA');
-  console.log(`Mensaje: Su código de verificación es: ${code}. Este código expira en 15 minutos.`);
-  
-  // Simular envío exitoso
-  return { success: true };
-};
-
-// Solicitar recuperación de contraseña
-const requestPasswordReset = async (email) => {
-  try {
-    console.log('🔑 Solicitando recuperación de contraseña para:', email);
-    
-    // Verificar que el usuario existe
-    const [users] = await pool.execute(
-      'SELECT idUsuario FROM USUARIO WHERE correo = ? AND vigencia = 1',
-      [email]
-    );
-
-    if (users.length === 0) {
-      console.log('❌ Usuario no encontrado o inactivo:', email);
-      return { success: false, message: 'Usuario no encontrado' };
-    }
-
-    // Generar código de verificación y token de reset
-    const verificationCode = generateVerificationCode();
-    const resetToken = crypto.randomBytes(32).toString('hex');
-    
-    // Calcular fecha de expiración (15 minutos)
-    const expiration = new Date();
-    expiration.setMinutes(expiration.getMinutes() + 15);
-
-    // Limpiar códigos anteriores para este email
-    await pool.execute(
-      'DELETE FROM PASSWORD_RESET_CODES WHERE email = ?',
-      [email]
-    );
-
-    // Guardar código en la base de datos
-    await pool.execute(
-      'INSERT INTO PASSWORD_RESET_CODES (email, code, reset_token, expiration) VALUES (?, ?, ?, ?)',
-      [email, verificationCode, resetToken, expiration]
-    );
-
-    // Enviar email (simulado)
-    const emailResult = await sendPasswordResetEmail(email, verificationCode);
-    
-    if (emailResult.success) {
-      console.log('✅ Código de recuperación enviado para:', email);
-      return { success: true, message: 'Código de verificación enviado' };
-    } else {
-      return { success: false, message: 'Error al enviar el email' };
-    }
-
-  } catch (error) {
-    console.error('❌ Error en solicitud de recuperación:', error);
-    return { success: false, message: 'Error en el servidor' };
-  }
-};
-
-// Verificar código de recuperación
-const verifyResetCode = async (email, code) => {
-  try {
-    console.log('🔍 Verificando código de recuperación para:', email);
-    
-    const [codes] = await pool.execute(
-      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND code = ? AND expiration > NOW() AND used = FALSE',
-      [email, code]
-    );
-
-    if (codes.length === 0) {
-      console.log('❌ Código inválido o expirado para:', email);
-      return { success: false, message: 'Código inválido o expirado' };
-    }
-
-    const resetData = codes[0];
-    console.log('✅ Código verificado correctamente para:', email);
-    
-    return { 
-      success: true, 
-      resetToken: resetData.reset_token,
-      message: 'Código verificado correctamente' 
-    };
-
-  } catch (error) {
-    console.error('❌ Error verificando código:', error);
-    return { success: false, message: 'Error en el servidor' };
-  }
-};
-
-// Restablecer contraseña
-const resetPassword = async (email, resetToken, newPassword) => {
-  try {
-    console.log('🔒 Restableciendo contraseña para:', email);
-    
-    // Verificar token de reset
-    const [codes] = await pool.execute(
-      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND reset_token = ? AND expiration > NOW() AND used = FALSE',
-      [email, resetToken]
-    );
-
-    if (codes.length === 0) {
-      console.log('❌ Token de reset inválido o expirado para:', email);
-      return { success: false, message: 'Token de reset inválido o expirado' };
-    }
-
-    // Hashear nueva contraseña
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(newPassword, saltRounds);
-
-    // Actualizar contraseña del usuario
-    const [updateResult] = await pool.execute(
-      'UPDATE USUARIO SET contrasena = ? WHERE correo = ?',
-      [hashedPassword, email]
-    );
-
-    if (updateResult.affectedRows === 0) {
-      return { success: false, message: 'Usuario no encontrado' };
-    }
-
-    // Marcar código como usado
-    await pool.execute(
-      'UPDATE PASSWORD_RESET_CODES SET used = TRUE WHERE email = ? AND reset_token = ?',
-      [email, resetToken]
-    );
-
-    // Invalidar todos los tokens de sesión del usuario
-    const [users] = await pool.execute(
-      'SELECT idUsuario FROM USUARIO WHERE correo = ?',
-      [email]
-    );
-
-    if (users.length > 0) {
-      await pool.execute(
-        'DELETE FROM USER_TOKENS WHERE idUsuario = ?',
-        [users[0].idUsuario]
-      );
-    }
-
-    console.log('✅ Contraseña restablecida exitosamente para:', email);
-    return { success: true, message: 'Contraseña actualizada correctamente' };
-
-  } catch (error) {
-    console.error('❌ Error restableciendo contraseña:', error);
-    return { success: false, message: 'Error en el servidor' };
-  }
-};
-
 // Iniciar sesión con JWT
 const login = async (correo, contrasena) => {
   try {
     console.log('🔐 Iniciando proceso de login para:', correo);
     
+    // Consulta mejorada para obtener también el nombre del colaborador
     const [users] = await pool.execute(
       `SELECT u.idUsuario, u.nombre, u.correo, u.vigencia, u.contrasena,
               t.nombre as role, t.idTipoUsu as roleId, u.idColaborador,
@@ -296,6 +114,7 @@ const login = async (correo, contrasena) => {
       return { success: false, message: 'Contraseña incorrecta' };
     }
 
+    // Generar token JWT
     const tokenPayload = { 
       id: user.idUsuario, 
       email: user.correo, 
@@ -310,9 +129,11 @@ const login = async (correo, contrasena) => {
       algorithm: 'HS256' 
     });
 
+    // Calcular fecha de expiración
     const expiration = new Date();
     expiration.setHours(expiration.getHours() + 24);
 
+    // Guardar token en BD
     await createUserToken(user.idUsuario, token, expiration);
 
     console.log('✅ Login exitoso para:', correo, 'Token generado y guardado');
@@ -344,17 +165,21 @@ const verifyToken = async (token) => {
       return { valid: false, error: 'Token no proporcionado' };
     }
 
+    // Limpiar Bearer prefix si existe
     const cleanToken = token.replace('Bearer ', '').trim();
 
+    // Verificar token en BD primero
     const tokenInDB = await validateTokenInDB(cleanToken);
     if (!tokenInDB) {
       console.log('❌ Token no encontrado en BD o expirado');
       return { valid: false, error: 'Token no válido o expirado' };
     }
 
+    // Verificar y decodificar el token JWT
     const decoded = jwt.verify(cleanToken, JWT_SECRET);
     console.log('✅ Token JWT verificado para usuario ID:', decoded.id);
     
+    // Obtener información actualizada del usuario
     const userInfo = await getUserInfo(decoded.id);
     
     if (!userInfo.success) {
@@ -445,6 +270,7 @@ const register = async (nombre, correo, contrasena, roleId = 4) => {
       [nombre, correo, hashedPassword, 1, roleId]
     );
 
+    // Generar token para el nuevo usuario
     const tokenPayload = { 
       id: result.insertId, 
       email: correo, 
@@ -459,9 +285,11 @@ const register = async (nombre, correo, contrasena, roleId = 4) => {
       algorithm: 'HS256' 
     });
 
+    // Calcular fecha de expiración
     const expiration = new Date();
     expiration.setHours(expiration.getHours() + 24);
 
+    // Guardar token en BD
     await createUserToken(result.insertId, token, expiration);
 
     console.log('✅ Usuario registrado y token generado para:', correo);
@@ -503,8 +331,5 @@ module.exports = {
   register,
   verifyToken,
   getUserInfo,
-  invalidateToken,
-  requestPasswordReset,
-  verifyResetCode,
-  resetPassword
+  invalidateToken
 };

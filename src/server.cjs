@@ -134,136 +134,7 @@ app.post('/api/auth/login', async (req, res) => {
   }
 });
 
-// Registro de nuevo usuario
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { email, password, nombres, apePat, apeMat, dni, role, contractType } = req.body;
-    
-    console.log('📝 Registro de nuevo usuario:', email);
-    
-    if (!email || !password || !nombres || !apePat || !dni || !role || !contractType) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Email, contraseña, nombres, apellidos, DNI, rol y tipo de contrato son requeridos' 
-      });
-    }
-    
-    const result = await authService.register(email, password, nombres, apePat, apeMat, dni, role, contractType);
-    
-    if (result.success) {
-      console.log('✅ Usuario registrado exitosamente:', email);
-      res.json({
-        success: true,
-        message: 'Usuario registrado exitosamente',
-        token: result.token,
-        user: result.user
-      });
-    } else {
-      console.log('❌ Error al registrar usuario:', email, '-', result.message);
-      res.status(400).json({
-        success: false,
-        message: result.message
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error en registro:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error interno del servidor' 
-    });
-  }
-});
-
-// Solicitar recuperación de contraseña
-app.post('/api/auth/forgot-password', async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        message: 'El correo electrónico es requerido'
-      });
-    }
-
-    console.log('📧 Solicitando recuperación de contraseña para:', email);
-
-    const result = await authService.requestPasswordReset(email);
-
-    if (result.success) {
-      res.status(200).json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  } catch (error) {
-    console.error('❌ Error en forgot-password:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
-// Verificar código de recuperación
-app.post('/api/auth/verify-code', async (req, res) => {
-  try {
-    const { email, code } = req.body;
-
-    if (!email || !code) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email y código son requeridos'
-      });
-    }
-
-    console.log('🔍 Verificando código para:', email);
-
-    const result = await authService.verifyResetCode(email, code);
-
-    if (result.success) {
-      res.status(200).json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  } catch (error) {
-    console.error('❌ Error en verify-code:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
-// Restablecer contraseña
-app.post('/api/auth/reset-password', async (req, res) => {
-  try {
-    const { email, resetToken, newPassword } = req.body;
-
-    if (!email || !resetToken || !newPassword) {
-      return res.status(400).json({
-        success: false,
-        message: 'Email, token de reset y nueva contraseña son requeridos'
-      });
-    }
-
-    console.log('🔒 Restableciendo contraseña para:', email);
-
-    const result = await authService.resetPassword(email, resetToken, newPassword);
-
-    if (result.success) {
-      res.status(200).json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  } catch (error) {
-    console.error('❌ Error en reset-password:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Error interno del servidor'
-    });
-  }
-});
-
+// Logout con invalidación de token
 app.post('/api/auth/logout', async (req, res) => {
   try {
     const authHeader = req.headers['authorization'];
@@ -284,6 +155,7 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
+// Verificar token y obtener usuario actual
 app.get('/api/auth/me', authenticateToken, async (req, res) => {
   try {
     console.log('👤 Obteniendo información del usuario actual');
@@ -1359,7 +1231,6 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
   console.log(`🔐 Autenticación JWT habilitada`);
-  console.log(`📧 Sistema de recuperación de contraseña habilitado`);
 });
 
 module.exports = app;
