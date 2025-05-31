@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear una nueva asignación con las 3 evaluaciones automáticamente
@@ -320,26 +319,20 @@ const deleteAsignacion = async (asignacionId) => {
 // Validar disponibilidad de horario para un evaluador
 const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId = null) => {
   try {
+    console.log('Validando horario:', { fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId });
+    
     let query = `
-      SELECT a.idAsignacion, a.fecha_inicio, a.fecha_fin, u.nombre as evaluador
+      SELECT a.idAsignacion, a.fecha_inicio, a.fecha_fin, u.nombre as evaluador,
+             e.horaEvaluacion as hora_inicio
       FROM ASIGNACION a
       JOIN USUARIO u ON a.idUsuario = u.idUsuario
+      LEFT JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
+      LEFT JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
       WHERE a.idUsuario = ? 
       AND a.estado = 'Activa'
-      AND (
-        (a.fecha_inicio BETWEEN ? AND ?) OR
-        (a.fecha_fin BETWEEN ? AND ?) OR
-        (? BETWEEN a.fecha_inicio AND a.fecha_fin) OR
-        (? BETWEEN a.fecha_inicio AND a.fecha_fin)
-      )
     `;
     
-    const params = [
-      evaluadorId, 
-      fechaInicio, fechaFin, 
-      fechaInicio, fechaFin,
-      fechaInicio, fechaFin
-    ];
+    const params = [evaluadorId];
     
     if (excludeId) {
       query += ' AND a.idAsignacion != ?';
@@ -348,14 +341,49 @@ const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, h
     
     const [rows] = await pool.execute(query, params);
     
-    if (rows.length > 0) {
-      const conflicto = rows[0];
+    console.log('Asignaciones existentes encontradas:', rows);
+    
+    // Si no hay asignaciones existentes, está disponible
+    if (rows.length === 0) {
+      console.log('No hay asignaciones existentes, horario disponible');
       return {
-        disponible: false,
-        message: `El evaluador ${conflicto.evaluador} ya tiene una asignación activa del ${conflicto.fecha_inicio} al ${conflicto.fecha_fin} que se solapa con el horario seleccionado`
+        disponible: true,
+        message: 'Horario disponible'
       };
     }
     
+    // Verificar conflictos de horario
+    for (const row of rows) {
+      const fechaInicioExistente = new Date(row.fecha_inicio);
+      const fechaFinExistente = new Date(row.fecha_fin);
+      const fechaInicioNueva = new Date(fechaInicio);
+      const fechaFinNueva = new Date(fechaFin);
+      
+      console.log('Comparando fechas:', {
+        existente: { inicio: fechaInicioExistente, fin: fechaFinExistente },
+        nueva: { inicio: fechaInicioNueva, fin: fechaFinNueva }
+      });
+      
+      // Verificar si hay solapamiento de fechas
+      const hayTraslapeFechas = (
+        (fechaInicioNueva <= fechaFinExistente) && 
+        (fechaFinNueva >= fechaInicioExistente)
+      );
+      
+      if (hayTraslapeFechas) {
+        console.log('Hay traslape de fechas, verificando horas...');
+        
+        // Si las fechas se traslapan, verificar las horas
+        // Para simplificar, si hay traslape de fechas consideramos conflicto
+        // En un sistema más complejo se verificarían las horas específicas
+        return {
+          disponible: false,
+          message: `El evaluador ${row.evaluador} ya tiene una asignación activa del ${row.fecha_inicio} al ${row.fecha_fin} que se solapa con el período seleccionado`
+        };
+      }
+    }
+    
+    console.log('No se encontraron conflictos, horario disponible');
     return {
       disponible: true,
       message: 'Horario disponible'
