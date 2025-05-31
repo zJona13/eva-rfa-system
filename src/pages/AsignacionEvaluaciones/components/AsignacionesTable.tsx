@@ -23,8 +23,10 @@ interface Asignacion {
   tipoEvaluacion: string;
   estado: string;
   descripcion?: string;
-  evaluadorNombre: string;
-  evaluadorId: number;
+  areaNombre: string;
+  areaId: number;
+  totalEvaluaciones: number;
+  evaluacionesCompletadas: number;
 }
 
 interface AsignacionesTableProps {
@@ -42,7 +44,9 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
       'Pendiente': 'secondary',
       'Activa': 'default',
+      'Abierta': 'default',
       'Completada': 'outline',
+      'Cerrada': 'outline',
       'Inactiva': 'destructive',
     };
     
@@ -53,23 +57,18 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
     );
   };
 
-  const getTipoEvaluacionBadge = (tipo: string) => {
-    const colors: Record<string, string> = {
-      'Checklist': 'bg-blue-100 text-blue-800',
-      'Estudiante': 'bg-green-100 text-green-800',
-      'Autoevaluacion': 'bg-purple-100 text-purple-800',
-    };
-    
-    const labels: Record<string, string> = {
-      'Checklist': 'Supervisión',
-      'Estudiante': 'Est. a Docentes',
-      'Autoevaluacion': 'Autoevaluación',
-    };
+  const getProgresoEvaluaciones = (completadas: number, total: number) => {
+    const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
     
     return (
-      <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[tipo] || 'bg-gray-100 text-gray-800'}`}>
-        {labels[tipo] || tipo}
-      </span>
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">
+          {completadas} / {total}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {porcentaje}% completado
+        </span>
+      </div>
     );
   };
 
@@ -86,7 +85,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
       <div className="text-center py-8 text-muted-foreground">
         <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
         <p>No hay asignaciones de evaluación registradas</p>
-        <p className="text-sm">Crea una nueva asignación para programar las 3 evaluaciones</p>
+        <p className="text-sm">Crea una nueva asignación para programar las 3 evaluaciones por área</p>
       </div>
     );
   }
@@ -98,8 +97,8 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
           <TableRow>
             <TableHead>Período</TableHead>
             <TableHead>Horario</TableHead>
-            <TableHead>Tipo</TableHead>
-            <TableHead>Evaluador</TableHead>
+            <TableHead>Área</TableHead>
+            <TableHead>Progreso</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Descripción</TableHead>
             <TableHead className="w-24">Acciones</TableHead>
@@ -134,12 +133,15 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                 </div>
               </TableCell>
               <TableCell>
-                {getTipoEvaluacionBadge(asignacion.tipoEvaluacion)}
+                <div className="font-medium">
+                  {asignacion.areaNombre}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  3 tipos de evaluación
+                </div>
               </TableCell>
               <TableCell>
-                <div className="font-medium">
-                  {asignacion.evaluadorNombre}
-                </div>
+                {getProgresoEvaluaciones(asignacion.evaluacionesCompletadas, asignacion.totalEvaluaciones)}
               </TableCell>
               <TableCell>
                 {getEstadoBadge(asignacion.estado)}
