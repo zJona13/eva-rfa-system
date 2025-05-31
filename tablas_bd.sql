@@ -77,6 +77,8 @@ CREATE TABLE ASIGNACION (
     fecha_inicio DATE NOT NULL,
     fecha_fin DATE NOT NULL,
     estado VARCHAR(50) DEFAULT 'Activa',
+    idArea INT(10) NOT NULL,
+    FOREIGN KEY (idArea) REFERENCES AREA(idArea) ON DELETE CASCADE,
     FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE
 );
 
