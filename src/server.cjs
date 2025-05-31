@@ -1534,6 +1534,17 @@ app.delete('/api/areas/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Ruta para obtener áreas en lugar de evaluadores
+app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
+  try {
+    const result = await asignacionService.getAreas();
+    res.json({ success: result.success, data: result, error: result.message });
+  } catch (error) {
+    console.error('Error en /api/asignaciones/areas:', error);
+    res.status(500).json({ success: false, error: 'Error del servidor' });
+  }
+});
+
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);

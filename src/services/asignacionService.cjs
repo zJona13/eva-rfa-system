@@ -1,7 +1,6 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
-// Crear una nueva asignación con las 3 evaluaciones automáticamente
+// Crear una nueva asignación basada en área con las 3 evaluaciones automáticamente
 const createAsignacion = async (asignacionData) => {
   const connection = await pool.getConnection();
   
@@ -19,78 +18,160 @@ const createAsignacion = async (asignacionData) => {
       };
     }
     
-    // Validar que la hora de fin no sea anterior a la hora de inicio en la misma fecha
-    if (asignacionData.fechaInicio === asignacionData.fechaFin) {
-      if (asignacionData.horaFin <= asignacionData.horaInicio) {
-        await connection.rollback();
-        return {
-          success: false,
-          message: 'La hora de finalización debe ser posterior a la hora de inicio cuando es el mismo día'
-        };
-      }
-    }
-    
-    // Simplificar la validación - solo verificar si el evaluador existe y está activo
-    const [evaluadorExists] = await connection.execute(
-      'SELECT idUsuario, nombre FROM USUARIO WHERE idUsuario = ? AND vigencia = 1',
-      [asignacionData.evaluadorId]
+    // Validar que el área existe
+    const [areaExists] = await connection.execute(
+      'SELECT idArea, nombre FROM AREA WHERE idArea = ?',
+      [asignacionData.areaId]
     );
     
-    if (evaluadorExists.length === 0) {
+    if (areaExists.length === 0) {
       await connection.rollback();
       return {
         success: false,
-        message: 'El evaluador seleccionado no existe o no está activo'
+        message: 'El área seleccionada no existe'
       };
     }
     
     // Crear la asignación principal con estado 'Activa'
     const [asignacionResult] = await connection.execute(
-      `INSERT INTO ASIGNACION (idUsuario, periodo, fecha_inicio, fecha_fin, estado) 
-       VALUES (?, ?, ?, ?, ?)`,
+      `INSERT INTO ASIGNACION (idUsuario, periodo, fecha_inicio, fecha_fin, estado, idArea) 
+       VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        asignacionData.evaluadorId,
-        new Date().getFullYear(), // Año actual como periodo
+        1, // Usuario administrador por defecto
+        new Date().getFullYear(),
         asignacionData.fechaInicio,
         asignacionData.fechaFin,
-        'Activa'
+        'Activa',
+        asignacionData.areaId
       ]
     );
     
     const asignacionId = asignacionResult.insertId;
     
-    // Los 3 tipos de evaluación que se crearán automáticamente
-    const tiposEvaluacion = ['Autoevaluacion', 'Estudiante', 'Checklist'];
+    // Obtener todos los docentes del área
+    const [docentes] = await connection.execute(
+      `SELECT c.idColaborador, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre,
+       u.idUsuario
+       FROM COLABORADOR c
+       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
+       LEFT JOIN USUARIO u ON c.idColaborador = u.idColaborador
+       WHERE c.idArea = ? AND c.estado = 1 AND tc.nombre = 'Docente'`,
+      [asignacionData.areaId]
+    );
+    
+    // Obtener todos los estudiantes
+    const [estudiantes] = await connection.execute(
+      `SELECT c.idColaborador, u.idUsuario
+       FROM COLABORADOR c
+       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
+       JOIN USUARIO u ON c.idColaborador = u.idColaborador
+       WHERE c.estado = 1 AND tc.nombre = 'Estudiante'`
+    );
+    
     const evaluacionesCreadas = [];
     
-    // Crear las 3 evaluaciones
-    for (const tipo of tiposEvaluacion) {
-      const [evaluacionResult] = await connection.execute(
-        `INSERT INTO EVALUACION 
-         (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
-         VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [
-          asignacionData.fechaInicio,
-          asignacionData.horaInicio,
-          tipo,
-          'Pendiente',
-          asignacionData.evaluadorId,
-          1, // Por defecto colaborador 1, esto se puede ajustar según necesidad
-          asignacionData.descripcion || `Evaluación ${tipo} programada`
-        ]
-      );
-      
-      // Crear el detalle de asignación
-      await connection.execute(
-        `INSERT INTO DETALLE_ASIGNACION (idEvaluacion, idAsignacion) 
-         VALUES (?, ?)`,
-        [evaluacionResult.insertId, asignacionId]
-      );
-      
-      evaluacionesCreadas.push({
-        id: evaluacionResult.insertId,
-        tipo: tipo
-      });
+    // 1. Crear autoevaluaciones para cada docente del área
+    for (const docente of docentes) {
+      if (docente.idUsuario) { // Solo si el docente tiene usuario
+        const [evaluacionResult] = await connection.execute(
+          `INSERT INTO EVALUACION 
+           (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            asignacionData.fechaInicio,
+            asignacionData.horaInicio,
+            'Autoevaluacion',
+            'Pendiente',
+            docente.idUsuario,
+            docente.idColaborador,
+            `Autoevaluación programada para ${docente.nombre}`
+          ]
+        );
+        
+        // Crear detalle de asignación
+        await connection.execute(
+          `INSERT INTO DETALLE_ASIGNACION (idEvaluacion, idAsignacion) 
+           VALUES (?, ?)`,
+          [evaluacionResult.insertId, asignacionId]
+        );
+        
+        evaluacionesCreadas.push({
+          id: evaluacionResult.insertId,
+          tipo: 'Autoevaluacion',
+          evaluador: docente.nombre,
+          evaluado: docente.nombre
+        });
+      }
+    }
+    
+    // 2. Crear evaluaciones evaluador-evaluado (cada docente evalúa a otros docentes del área)
+    for (const evaluador of docentes) {
+      if (evaluador.idUsuario) {
+        for (const evaluado of docentes) {
+          if (evaluador.idColaborador !== evaluado.idColaborador) { // No se evalúa a sí mismo
+            const [evaluacionResult] = await connection.execute(
+              `INSERT INTO EVALUACION 
+               (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
+               VALUES (?, ?, ?, ?, ?, ?, ?)`,
+              [
+                asignacionData.fechaInicio,
+                asignacionData.horaInicio,
+                'Evaluador-Evaluado',
+                'Pendiente',
+                evaluador.idUsuario,
+                evaluado.idColaborador,
+                `Evaluación de ${evaluador.nombre} a ${evaluado.nombre}`
+              ]
+            );
+            
+            await connection.execute(
+              `INSERT INTO DETALLE_ASIGNACION (idEvaluacion, idAsignacion) 
+               VALUES (?, ?)`,
+              [evaluacionResult.insertId, asignacionId]
+            );
+            
+            evaluacionesCreadas.push({
+              id: evaluacionResult.insertId,
+              tipo: 'Evaluador-Evaluado',
+              evaluador: evaluador.nombre,
+              evaluado: evaluado.nombre
+            });
+          }
+        }
+      }
+    }
+    
+    // 3. Crear evaluaciones estudiante-docente (cada estudiante evalúa a cada docente del área)
+    for (const estudiante of estudiantes) {
+      for (const docente of docentes) {
+        const [evaluacionResult] = await connection.execute(
+          `INSERT INTO EVALUACION 
+           (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            asignacionData.fechaInicio,
+            asignacionData.horaInicio,
+            'Estudiante-Docente',
+            'Pendiente',
+            estudiante.idUsuario,
+            docente.idColaborador,
+            `Evaluación de estudiante a ${docente.nombre}`
+          ]
+        );
+        
+        await connection.execute(
+          `INSERT INTO DETALLE_ASIGNACION (idEvaluacion, idAsignacion) 
+           VALUES (?, ?)`,
+          [evaluacionResult.insertId, asignacionId]
+        );
+        
+        evaluacionesCreadas.push({
+          id: evaluacionResult.insertId,
+          tipo: 'Estudiante-Docente',
+          evaluador: 'Estudiante',
+          evaluado: docente.nombre
+        });
+      }
     }
     
     // Cambiar el estado de la asignación a 'Abierta' después de crear las evaluaciones
@@ -107,7 +188,7 @@ const createAsignacion = async (asignacionData) => {
         id: asignacionId,
         evaluaciones: evaluacionesCreadas
       },
-      message: 'Asignación creada exitosamente con las 3 evaluaciones'
+      message: `Asignación creada exitosamente con ${evaluacionesCreadas.length} evaluaciones`
     };
     
   } catch (error) {
@@ -128,13 +209,11 @@ const getAllAsignaciones = async () => {
     const [rows] = await pool.execute(
       `SELECT a.idAsignacion as id, a.periodo, a.fecha_inicio as fechaInicio, 
        a.fecha_fin as fechaFin, a.estado as estadoAsignacion,
-       u.nombre as evaluadorNombre, u.idUsuario as evaluadorId,
-       GROUP_CONCAT(
-         CONCAT(e.idEvaluacion, ':', e.tipo, ':', e.estado, ':', e.horaEvaluacion)
-         SEPARATOR '|'
-       ) as evaluaciones
+       ar.nombre as areaNombre, ar.idArea as areaId,
+       COUNT(da.idEvaluacion) as totalEvaluaciones,
+       SUM(CASE WHEN e.estado = 'Completada' THEN 1 ELSE 0 END) as evaluacionesCompletadas
        FROM ASIGNACION a
-       JOIN USUARIO u ON a.idUsuario = u.idUsuario
+       LEFT JOIN AREA ar ON a.idArea = ar.idArea
        LEFT JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
        LEFT JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
        WHERE a.estado IN ('Activa', 'Abierta', 'Cerrada')
@@ -142,39 +221,22 @@ const getAllAsignaciones = async () => {
        ORDER BY a.fecha_inicio DESC`
     );
     
-    // Procesar los datos para estructurar mejor las evaluaciones
-    const asignaciones = rows.map(row => {
-      const evaluaciones = [];
-      if (row.evaluaciones) {
-        const evalData = row.evaluaciones.split('|');
-        evalData.forEach(eval => {
-          const [id, tipo, estado, hora] = eval.split(':');
-          evaluaciones.push({
-            id: parseInt(id),
-            tipo,
-            estado,
-            horaInicio: hora,
-            horaFin: hora // Para compatibilidad con el frontend
-          });
-        });
-      }
-      
-      return {
-        id: row.id,
-        periodo: row.periodo,
-        fechaInicio: row.fechaInicio,
-        fechaFin: row.fechaFin,
-        evaluadorId: row.evaluadorId,
-        evaluadorNombre: row.evaluadorNombre,
-        estado: row.estadoAsignacion,
-        evaluaciones: evaluaciones,
-        // Para compatibilidad con el frontend existente
-        horaInicio: evaluaciones[0]?.horaInicio || '',
-        horaFin: evaluaciones[0]?.horaFin || '',
-        tipoEvaluacion: evaluaciones.map(e => e.tipo).join(', '),
-        descripcion: `Asignación del periodo ${row.periodo}`
-      };
-    });
+    const asignaciones = rows.map(row => ({
+      id: row.id,
+      periodo: row.periodo,
+      fechaInicio: row.fechaInicio,
+      fechaFin: row.fechaFin,
+      areaId: row.areaId,
+      areaNombre: row.areaNombre,
+      estado: row.estadoAsignacion,
+      totalEvaluaciones: row.totalEvaluaciones,
+      evaluacionesCompletadas: row.evaluacionesCompletadas,
+      // Para compatibilidad con el frontend existente
+      horaInicio: '08:00',
+      horaFin: '18:00',
+      tipoEvaluacion: 'Todas las evaluaciones',
+      descripcion: `Asignación del área ${row.areaNombre} - Periodo ${row.periodo}`
+    }));
     
     return {
       success: true,
@@ -219,31 +281,17 @@ const updateAsignacion = async (asignacionId, asignacionData) => {
     // Actualizar la asignación
     await connection.execute(
       `UPDATE ASIGNACION 
-       SET fecha_inicio = ?, fecha_fin = ?, idUsuario = ?
+       SET fecha_inicio = ?, fecha_fin = ?, idArea = ?
        WHERE idAsignacion = ?`,
       [
         asignacionData.fechaInicio,
         asignacionData.fechaFin,
-        asignacionData.evaluadorId,
+        asignacionData.areaId,
         asignacionId
       ]
     );
     
-    // Actualizar las evaluaciones relacionadas
-    await connection.execute(
-      `UPDATE EVALUACION e
-       JOIN DETALLE_ASIGNACION da ON e.idEvaluacion = da.idEvaluacion
-       SET e.fechaEvaluacion = ?, e.horaEvaluacion = ?, e.idUsuario = ?,
-           e.comentario = ?
-       WHERE da.idAsignacion = ?`,
-      [
-        asignacionData.fechaInicio,
-        asignacionData.horaInicio,
-        asignacionData.evaluadorId,
-        asignacionData.descripcion || 'Evaluación actualizada',
-        asignacionId
-      ]
-    );
+    // No es necesario actualizar las evaluaciones individuales ya que se crean automáticamente
     
     await connection.commit();
     
@@ -348,60 +396,61 @@ const cerrarAsignacion = async (asignacionId) => {
   }
 };
 
-// Validar disponibilidad de horario para un evaluador (simplificada)
-const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId = null) => {
+// Obtener áreas disponibles para asignación
+const getAreas = async () => {
   try {
-    // Verificar que el evaluador existe y está activo
-    const [evaluador] = await pool.execute(
-      'SELECT idUsuario, nombre FROM USUARIO WHERE idUsuario = ? AND vigencia = 1',
-      [evaluadorId]
+    const [rows] = await pool.execute(
+      `SELECT a.idArea as id, a.nombre, a.descripcion,
+       COUNT(c.idColaborador) as totalDocentes
+       FROM AREA a
+       LEFT JOIN COLABORADOR c ON a.idArea = c.idArea 
+       LEFT JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
+       AND c.estado = 1 AND tc.nombre = 'Docente'
+       GROUP BY a.idArea
+       ORDER BY a.nombre`
     );
     
-    if (evaluador.length === 0) {
+    return {
+      success: true,
+      areas: rows
+    };
+  } catch (error) {
+    console.error('Error al obtener áreas:', error);
+    return { 
+      success: false, 
+      message: 'Error al obtener las áreas' 
+    };
+  }
+};
+
+// Validar disponibilidad simplificada (solo verificar que el área existe)
+const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, horaFin, areaId, excludeId = null) => {
+  try {
+    // Verificar que el área existe
+    const [area] = await pool.execute(
+      'SELECT idArea, nombre FROM AREA WHERE idArea = ?',
+      [areaId]
+    );
+    
+    if (area.length === 0) {
       return {
         disponible: false,
-        message: 'El evaluador seleccionado no existe o no está activo'
+        message: 'El área seleccionada no existe'
       };
     }
     
-    // Por ahora, permitir todas las asignaciones - la validación de conflictos se puede agregar después
-    console.log('Validación simplificada - evaluador válido:', evaluador[0].nombre);
+    console.log('Validación - área válida:', area[0].nombre);
     
     return {
       disponible: true,
-      message: 'Horario disponible'
+      message: 'Área disponible para asignación'
     };
     
   } catch (error) {
     console.error('Error al validar disponibilidad:', error);
     return {
       disponible: false,
-      message: 'Error al validar la disponibilidad del horario'
-    };
-  }
-};
-
-// Obtener usuarios evaluadores
-const getEvaluadores = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT u.idUsuario as id, u.nombre, tu.nombre as rol
-       FROM USUARIO u
-       JOIN TIPO_USUARIO tu ON u.idTipoUsu = tu.idTipoUsu
-       WHERE u.vigencia = 1 
-       AND (tu.nombre = 'Evaluador' OR tu.nombre = 'Administrador')
-       ORDER BY u.nombre`
-    );
-    
-    return {
-      success: true,
-      evaluadores: rows
-    };
-  } catch (error) {
-    console.error('Error al obtener evaluadores:', error);
-    return { 
-      success: false, 
-      message: 'Error al obtener los evaluadores' 
+      message: 'Error al validar la disponibilidad'
     };
   }
 };
@@ -443,6 +492,6 @@ module.exports = {
   deleteAsignacion,
   cerrarAsignacion,
   validarDisponibilidadHorario,
-  getEvaluadores,
+  getAreas, // Cambio de getEvaluadores a getAreas
   getAsignacionesByEvaluador
 };

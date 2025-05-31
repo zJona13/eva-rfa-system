@@ -2,12 +2,12 @@
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
+import * as z from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
@@ -26,51 +26,35 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import useApiWithToken from '@/hooks/useApiWithToken';
-import { toast } from 'sonner';
 
-const asignacionSchema = z.object({
-  fechaInicio: z.date({
-    required_error: 'La fecha de inicio es requerida',
-  }),
-  fechaFin: z.date({
-    required_error: 'La fecha de fin es requerida',
-  }),
-  horaInicio: z.string().min(1, 'La hora de inicio es requerida'),
-  horaFin: z.string().min(1, 'La hora de fin es requerida'),
-  evaluadorId: z.string().min(1, 'El evaluador responsable es requerido'),
+const formSchema = z.object({
+  fechaInicio: z.string().min(1, 'La fecha de inicio es obligatoria'),
+  fechaFin: z.string().min(1, 'La fecha de fin es obligatoria'),
+  horaInicio: z.string().min(1, 'La hora de inicio es obligatoria'),
+  horaFin: z.string().min(1, 'La hora de fin es obligatoria'),
+  areaId: z.string().min(1, 'Debe seleccionar un área'),
   descripcion: z.string().optional(),
-}).refine((data) => {
-  return data.fechaFin >= data.fechaInicio;
-}, {
-  message: "La fecha de fin no puede ser anterior a la fecha de inicio",
-  path: ["fechaFin"],
-}).refine((data) => {
-  if (data.fechaInicio.toDateString() === data.fechaFin.toDateString()) {
-    return data.horaFin > data.horaInicio;
-  }
-  return true;
-}, {
-  message: "La hora de fin debe ser posterior a la hora de inicio en el mismo día",
-  path: ["horaFin"],
 });
+
+interface Area {
+  id: number;
+  nombre: string;
+  descripcion?: string;
+  totalDocentes: number;
+}
 
 interface AsignacionDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   asignacionData?: any;
-  evaluadores: any[];
-  onSubmit: (values: any) => void;
+  areas: Area[];
+  onSubmit: (values: any) => Promise<void>;
   isSubmitting: boolean;
 }
 
@@ -78,132 +62,111 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   open,
   onOpenChange,
   asignacionData,
-  evaluadores,
+  areas,
   onSubmit,
   isSubmitting,
 }) => {
-  const { apiRequest } = useApiWithToken();
-  
-  const form = useForm<z.infer<typeof asignacionSchema>>({
-    resolver: zodResolver(asignacionSchema),
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
-      fechaInicio: new Date(),
-      fechaFin: new Date(),
+      fechaInicio: '',
+      fechaFin: '',
       horaInicio: '08:00',
-      horaFin: '17:00',
-      evaluadorId: '',
+      horaFin: '18:00',
+      areaId: '',
       descripcion: '',
     },
   });
 
   useEffect(() => {
-    if (asignacionData && open) {
+    if (asignacionData) {
+      const fechaInicio = asignacionData.fechaInicio ? format(new Date(asignacionData.fechaInicio), 'yyyy-MM-dd') : '';
+      const fechaFin = asignacionData.fechaFin ? format(new Date(asignacionData.fechaFin), 'yyyy-MM-dd') : '';
+      
       form.reset({
-        fechaInicio: new Date(asignacionData.fechaInicio),
-        fechaFin: new Date(asignacionData.fechaFin),
-        horaInicio: asignacionData.horaInicio,
-        horaFin: asignacionData.horaFin,
-        evaluadorId: asignacionData.evaluadorId?.toString() || '',
+        fechaInicio,
+        fechaFin,
+        horaInicio: asignacionData.horaInicio || '08:00',
+        horaFin: asignacionData.horaFin || '18:00',
+        areaId: asignacionData.areaId?.toString() || '',
         descripcion: asignacionData.descripcion || '',
       });
-    } else if (!asignacionData && open) {
+    } else {
       form.reset({
-        fechaInicio: new Date(),
-        fechaFin: new Date(),
+        fechaInicio: '',
+        fechaFin: '',
         horaInicio: '08:00',
-        horaFin: '17:00',
-        evaluadorId: '',
+        horaFin: '18:00',
+        areaId: '',
         descripcion: '',
       });
     }
-  }, [asignacionData, open, form]);
+  }, [asignacionData, form]);
 
-  const validateHorario = async (values: any) => {
-    const response = await apiRequest('/asignaciones/validar-horario?' + new URLSearchParams({
-      fechaInicio: format(values.fechaInicio, 'yyyy-MM-dd'),
-      fechaFin: format(values.fechaFin, 'yyyy-MM-dd'),
-      horaInicio: values.horaInicio,
-      horaFin: values.horaFin,
-      evaluadorId: values.evaluadorId,
-      excludeId: asignacionData?.id || ''
-    }));
-
-    if (!response.success || !response.data.disponible) {
-      toast.error(response.data?.message || 'Conflicto de horario detectado');
-      return false;
-    }
-    return true;
-  };
-
-  const handleSubmit = async (values: z.infer<typeof asignacionSchema>) => {
-    // Solo validar horario para nuevas asignaciones
-    if (!asignacionData) {
-      const isValidHorario = await validateHorario(values);
-      if (!isValidHorario) return;
-    }
-
-    const formattedValues = {
+  const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    const submissionData = {
       ...values,
-      fechaInicio: format(values.fechaInicio, 'yyyy-MM-dd'),
-      fechaFin: format(values.fechaFin, 'yyyy-MM-dd'),
-      evaluadorId: parseInt(values.evaluadorId),
+      areaId: parseInt(values.areaId),
     };
-
-    onSubmit(formattedValues);
+    
+    await onSubmit(submissionData);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
-            {asignacionData ? 'Editar' : 'Nueva'} Asignación de Evaluaciones
+            {asignacionData ? 'Editar Asignación' : 'Nueva Asignación'}
           </DialogTitle>
-          {!asignacionData && (
-            <p className="text-sm text-muted-foreground">
-              Se asignarán automáticamente las 3 evaluaciones: Evluación a docentes, Autoevaluación y Evaluación de Estudiantes
-            </p>
-          )}
+          <DialogDescription>
+            {asignacionData 
+              ? 'Modifica los datos de la asignación de evaluaciones por área.'
+              : 'Crea una nueva asignación de evaluaciones para un área específica.'
+            }
+          </DialogDescription>
         </DialogHeader>
-        
+
         <Form {...form}>
           <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="areaId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Área</FormLabel>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar área" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {areas.map((area) => (
+                        <SelectItem key={area.id} value={area.id.toString()}>
+                          {area.nombre} ({area.totalDocentes} docentes)
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
                 name="fechaInicio"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem>
                     <FormLabel>Fecha de Inicio</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -213,40 +176,14 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 control={form.control}
                 name="fechaFin"
                 render={({ field }) => (
-                  <FormItem className="flex flex-col">
+                  <FormItem>
                     <FormLabel>Fecha de Fin</FormLabel>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <FormControl>
-                          <Button
-                            variant="outline"
-                            className={cn(
-                              "pl-3 text-left font-normal",
-                              !field.value && "text-muted-foreground"
-                            )}
-                          >
-                            {field.value ? (
-                              format(field.value, "PPP")
-                            ) : (
-                              <span>Seleccionar fecha</span>
-                            )}
-                            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                          </Button>
-                        </FormControl>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={field.value}
-                          onSelect={field.onChange}
-                          disabled={(date) => {
-                            const fechaInicio = form.getValues('fechaInicio');
-                            return date < fechaInicio;
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                    </Popover>
+                    <FormControl>
+                      <Input
+                        type="date"
+                        {...field}
+                      />
+                    </FormControl>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -291,38 +228,13 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
 
             <FormField
               control={form.control}
-              name="evaluadorId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Evaluador Responsable</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar evaluador" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {evaluadores.map((evaluador) => (
-                        <SelectItem key={evaluador.id} value={evaluador.id.toString()}>
-                          {evaluador.nombre} ({evaluador.rol})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-
-            <FormField
-              control={form.control}
               name="descripcion"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Descripción (Opcional)</FormLabel>
                   <FormControl>
-                    <Textarea
-                      placeholder="Descripción adicional para las asignaciones..."
+                    <Input
+                      placeholder="Descripción de la asignación..."
                       {...field}
                     />
                   </FormControl>
@@ -331,7 +243,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               )}
             />
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-2">
               <Button
                 type="button"
                 variant="outline"
@@ -341,7 +253,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Guardando...' : asignacionData ? 'Actualizar' : 'Asignar las 3 Evaluaciones'}
+                {isSubmitting ? 'Guardando...' : asignacionData ? 'Actualizar' : 'Crear'}
               </Button>
             </div>
           </form>

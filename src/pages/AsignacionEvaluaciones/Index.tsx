@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,19 +17,22 @@ interface Asignacion {
   tipoEvaluacion: string;
   estado: string;
   descripcion?: string;
-  evaluadorNombre: string;
-  evaluadorId: number;
+  areaNombre: string;
+  areaId: number;
+  totalEvaluaciones: number;
+  evaluacionesCompletadas: number;
 }
 
-interface Evaluador {
+interface Area {
   id: number;
   nombre: string;
-  rol: string;
+  descripcion?: string;
+  totalDocentes: number;
 }
 
 const AsignacionEvaluaciones = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
-  const [evaluadores, setEvaluadores] = useState<Evaluador[]>([]);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -36,7 +40,7 @@ const AsignacionEvaluaciones = () => {
 
   useEffect(() => {
     fetchAsignaciones();
-    fetchEvaluadores();
+    fetchAreas();
   }, []);
 
   const fetchAsignaciones = async () => {
@@ -48,12 +52,12 @@ const AsignacionEvaluaciones = () => {
     }
   };
 
-  const fetchEvaluadores = async () => {
-    const response = await apiRequest('/asignaciones/evaluadores');
+  const fetchAreas = async () => {
+    const response = await apiRequest('/asignaciones/areas');
     if (response.success) {
-      setEvaluadores(response.data.evaluadores || []);
+      setAreas(response.data.areas || []);
     } else {
-      toast.error('Error al cargar los evaluadores');
+      toast.error('Error al cargar las áreas');
     }
   };
 
@@ -117,9 +121,9 @@ const AsignacionEvaluaciones = () => {
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Asignación de Evaluaciones</h1>
+          <h1 className="text-3xl font-bold">Asignación de Evaluaciones por Área</h1>
           <p className="text-muted-foreground">
-            Gestiona los períodos y horarios para las evaluaciones
+            Gestiona los períodos y horarios para las evaluaciones organizadas por área
           </p>
         </div>
         <Button onClick={handleNewAsignacion}>
@@ -132,7 +136,8 @@ const AsignacionEvaluaciones = () => {
         <CardHeader>
           <CardTitle>Asignaciones de Evaluación</CardTitle>
           <CardDescription>
-            Lista de todas las asignaciones de evaluación programadas
+            Lista de todas las asignaciones de evaluación programadas por área. 
+            Cada asignación crea automáticamente autoevaluaciones, evaluaciones evaluador-evaluado y evaluaciones estudiante-docente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -148,7 +153,7 @@ const AsignacionEvaluaciones = () => {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         asignacionData={editingAsignacion}
-        evaluadores={evaluadores}
+        areas={areas}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />
