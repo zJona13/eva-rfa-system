@@ -3,8 +3,11 @@ const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear asignaciones para las 3 evaluaciones de una vez
 const createAsignacion = async (asignacionData) => {
+  const connection = await pool.getConnection();
   try {
-    console.log('Creando asignaciones con datos:', asignacionData);
+    await connection.beginTransaction();
+    
+    console.log('Creando asignación con datos:', asignacionData);
     
     // Validar que la fecha de fin no sea anterior a la fecha de inicio
     if (new Date(asignacionData.fechaFin) < new Date(asignacionData.fechaInicio)) {
@@ -14,17 +17,7 @@ const createAsignacion = async (asignacionData) => {
       };
     }
     
-    // Validar que la hora de fin no sea anterior a la hora de inicio en la misma fecha
-    if (asignacionData.fechaInicio === asignacionData.fechaFin) {
-      if (asignacionData.horaFin <= asignacionData.horaInicio) {
-        return {
-          success: false,
-          message: 'La hora de finalización debe ser posterior a la hora de inicio cuando es el mismo día'
-        };
-      }
-    }
-    
-    // Validar que no haya conflictos de horario con otras asignaciones del mismo evaluador
+    // Validar disponibilidad de horario
     const conflicto = await validarDisponibilidadHorario(
       asignacionData.fechaInicio,
       asignacionData.fechaFin,
@@ -40,13 +33,28 @@ const createAsignacion = async (asignacionData) => {
       };
     }
     
+    // Crear la asignación principal
+    const [asignacionResult] = await connection.execute(
+      `INSERT INTO ASIGNACION (idUsuario, periodo, fecha_inicio, fecha_fin, estado) 
+       VALUES (?, ?, ?, ?, ?)`,
+      [
+        asignacionData.evaluadorId,
+        new Date().getFullYear(), // Periodo basado en el año actual
+        asignacionData.fechaInicio,
+        asignacionData.fechaFin,
+        'Activa'
+      ]
+    );
+    
+    const asignacionId = asignacionResult.insertId;
+    
     // Los 3 tipos de evaluación que se crearán automáticamente
     const tiposEvaluacion = ['Autoevaluacion', 'Estudiante', 'Checklist'];
-    const asignacionesCreadas = [];
+    const evaluacionesCreadas = [];
     
-    // Crear las 3 evaluaciones programadas usando la tabla EVALUACION
+    // Crear las 3 evaluaciones programadas
     for (const tipo of tiposEvaluacion) {
-      const [result] = await pool.execute(
+      const [evaluacionResult] = await connection.execute(
         `INSERT INTO EVALUACION 
          (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
          VALUES (?, ?, ?, ?, ?, ?, ?)`,
@@ -57,39 +65,56 @@ const createAsignacion = async (asignacionData) => {
           'Pendiente',
           asignacionData.evaluadorId,
           1, // Por defecto colaborador 1, esto se puede ajustar según necesidad
-          asignacionData.descripcion || `Evaluación ${tipo} programada para ${asignacionData.fechaInicio}`
+          asignacionData.descripcion || `Evaluación ${tipo} programada`
         ]
       );
       
-      asignacionesCreadas.push({
-        id: result.insertId,
+      const evaluacionId = evaluacionResult.insertId;
+      
+      // Crear el detalle de asignación
+      await connection.execute(
+        `INSERT INTO DETALLE_ASIGNACION (idEvaluacion, idAsignacion) VALUES (?, ?)`,
+        [evaluacionId, asignacionId]
+      );
+      
+      evaluacionesCreadas.push({
+        id: evaluacionId,
         tipo: tipo
       });
     }
     
+    await connection.commit();
+    
     return {
       success: true,
-      asignaciones: asignacionesCreadas,
+      asignacionId: asignacionId,
+      evaluaciones: evaluacionesCreadas,
       message: 'Las 3 evaluaciones han sido asignadas exitosamente'
     };
   } catch (error) {
+    await connection.rollback();
     console.error('Error al crear asignaciones:', error);
     return { success: false, message: 'Error al crear las asignaciones de evaluación' };
+  } finally {
+    connection.release();
   }
 };
 
-// Obtener todas las asignaciones (evaluaciones programadas)
+// Obtener todas las asignaciones con sus evaluaciones
 const getAllAsignaciones = async () => {
   try {
     const [rows] = await pool.execute(
-      `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fechaInicio, e.fechaEvaluacion as fechaFin, 
-       e.horaEvaluacion as horaInicio, e.horaEvaluacion as horaFin, 
+      `SELECT a.idAsignacion as id, a.fecha_inicio as fechaInicio, a.fecha_fin as fechaFin,
+       a.periodo, a.estado as estadoAsignacion,
+       e.idEvaluacion, e.horaEvaluacion as horaInicio, e.horaEvaluacion as horaFin,
        e.tipo as tipoEvaluacion, e.estado, e.comentario as descripcion,
-       u.nombre as evaluadorNombre, e.idUsuario as evaluadorId
-       FROM EVALUACION e
-       JOIN USUARIO u ON e.idUsuario = u.idUsuario
-       WHERE e.estado = 'Pendiente'
-       ORDER BY e.fechaEvaluacion DESC, e.horaEvaluacion ASC`
+       u.nombre as evaluadorNombre, a.idUsuario as evaluadorId
+       FROM ASIGNACION a
+       JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
+       JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
+       JOIN USUARIO u ON a.idUsuario = u.idUsuario
+       WHERE a.estado = 'Activa'
+       ORDER BY a.fecha_inicio DESC, e.horaEvaluacion ASC`
     );
     
     return {
@@ -102,9 +127,12 @@ const getAllAsignaciones = async () => {
   }
 };
 
-// Actualizar una asignación (evaluación programada)
-const updateAsignacion = async (asignacionId, asignacionData) => {
+// Actualizar una asignación
+const updateAsignacion = async (evaluacionId, asignacionData) => {
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+    
     // Validar fechas
     if (new Date(asignacionData.fechaFin) < new Date(asignacionData.fechaInicio)) {
       return {
@@ -113,34 +141,35 @@ const updateAsignacion = async (asignacionId, asignacionData) => {
       };
     }
     
-    // Validar horas en el mismo día
-    if (asignacionData.fechaInicio === asignacionData.fechaFin) {
-      if (asignacionData.horaFin <= asignacionData.horaInicio) {
-        return {
-          success: false,
-          message: 'La hora de finalización debe ser posterior a la hora de inicio cuando es el mismo día'
-        };
-      }
-    }
-    
-    // Validar disponibilidad (excluyendo la asignación actual)
-    const conflicto = await validarDisponibilidadHorario(
-      asignacionData.fechaInicio,
-      asignacionData.fechaFin,
-      asignacionData.horaInicio,
-      asignacionData.horaFin,
-      asignacionData.evaluadorId,
-      asignacionId
+    // Obtener la asignación asociada a esta evaluación
+    const [asignacionInfo] = await connection.execute(
+      `SELECT da.idAsignacion FROM DETALLE_ASIGNACION da WHERE da.idEvaluacion = ?`,
+      [evaluacionId]
     );
     
-    if (!conflicto.disponible) {
+    if (asignacionInfo.length === 0) {
       return {
         success: false,
-        message: conflicto.message
+        message: 'No se encontró la asignación asociada'
       };
     }
     
-    await pool.execute(
+    const asignacionId = asignacionInfo[0].idAsignacion;
+    
+    // Actualizar la asignación principal
+    await connection.execute(
+      `UPDATE ASIGNACION 
+       SET fecha_inicio = ?, fecha_fin = ?
+       WHERE idAsignacion = ?`,
+      [
+        asignacionData.fechaInicio,
+        asignacionData.fechaFin,
+        asignacionId
+      ]
+    );
+    
+    // Actualizar la evaluación específica
+    await connection.execute(
       `UPDATE EVALUACION 
        SET fechaEvaluacion = ?, horaEvaluacion = ?, comentario = ?
        WHERE idEvaluacion = ?`,
@@ -148,32 +177,84 @@ const updateAsignacion = async (asignacionId, asignacionData) => {
         asignacionData.fechaInicio,
         asignacionData.horaInicio,
         asignacionData.descripcion,
-        asignacionId
+        evaluacionId
       ]
     );
+    
+    await connection.commit();
     
     return {
       success: true,
       message: 'Asignación actualizada exitosamente'
     };
   } catch (error) {
+    await connection.rollback();
     console.error('Error al actualizar asignación:', error);
     return { success: false, message: 'Error al actualizar la asignación' };
+  } finally {
+    connection.release();
   }
 };
 
 // Eliminar una asignación (evaluación programada)
-const deleteAsignacion = async (asignacionId) => {
+const deleteAsignacion = async (evaluacionId) => {
+  const connection = await pool.getConnection();
   try {
-    await pool.execute('DELETE FROM EVALUACION WHERE idEvaluacion = ? AND estado = "Pendiente"', [asignacionId]);
+    await connection.beginTransaction();
+    
+    // Obtener la asignación asociada
+    const [asignacionInfo] = await connection.execute(
+      `SELECT da.idAsignacion FROM DETALLE_ASIGNACION da WHERE da.idEvaluacion = ?`,
+      [evaluacionId]
+    );
+    
+    if (asignacionInfo.length === 0) {
+      return {
+        success: false,
+        message: 'No se encontró la asignación asociada'
+      };
+    }
+    
+    const asignacionId = asignacionInfo[0].idAsignacion;
+    
+    // Eliminar el detalle de asignación
+    await connection.execute(
+      'DELETE FROM DETALLE_ASIGNACION WHERE idEvaluacion = ?', 
+      [evaluacionId]
+    );
+    
+    // Eliminar la evaluación
+    await connection.execute(
+      'DELETE FROM EVALUACION WHERE idEvaluacion = ? AND estado = "Pendiente"', 
+      [evaluacionId]
+    );
+    
+    // Verificar si quedan más evaluaciones en esta asignación
+    const [remainingEvaluations] = await connection.execute(
+      'SELECT COUNT(*) as count FROM DETALLE_ASIGNACION WHERE idAsignacion = ?',
+      [asignacionId]
+    );
+    
+    // Si no quedan evaluaciones, eliminar la asignación
+    if (remainingEvaluations[0].count === 0) {
+      await connection.execute(
+        'DELETE FROM ASIGNACION WHERE idAsignacion = ?',
+        [asignacionId]
+      );
+    }
+    
+    await connection.commit();
     
     return {
       success: true,
       message: 'Asignación eliminada exitosamente'
     };
   } catch (error) {
+    await connection.rollback();
     console.error('Error al eliminar asignación:', error);
     return { success: false, message: 'Error al eliminar la asignación' };
+  } finally {
+    connection.release();
   }
 };
 
@@ -181,33 +262,40 @@ const deleteAsignacion = async (asignacionId) => {
 const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId = null) => {
   try {
     let query = `
-      SELECT idEvaluacion, fechaEvaluacion, horaEvaluacion, tipo
-      FROM EVALUACION 
-      WHERE idUsuario = ? 
-      AND estado = 'Pendiente'
-      AND fechaEvaluacion BETWEEN ? AND ?
+      SELECT a.idAsignacion, a.fecha_inicio, a.fecha_fin, e.horaEvaluacion, e.tipo
+      FROM ASIGNACION a
+      JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
+      JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
+      WHERE a.idUsuario = ? 
+      AND a.estado = 'Activa'
+      AND e.estado = 'Pendiente'
+      AND (
+        (a.fecha_inicio BETWEEN ? AND ?) OR
+        (a.fecha_fin BETWEEN ? AND ?) OR
+        (? BETWEEN a.fecha_inicio AND a.fecha_fin)
+      )
     `;
     
-    const params = [evaluadorId, fechaInicio, fechaFin];
+    const params = [evaluadorId, fechaInicio, fechaFin, fechaInicio, fechaFin, fechaInicio];
     
     if (excludeId) {
-      query += ' AND idEvaluacion != ?';
+      query += ' AND e.idEvaluacion != ?';
       params.push(excludeId);
     }
     
     const [rows] = await pool.execute(query, params);
     
     // Verificar conflictos de horario específicos
-    for (const evaluacion of rows) {
-      const fechaEvaluacion = evaluacion.fechaEvaluacion.toISOString().split('T')[0];
-      const horaEvaluacion = evaluacion.horaEvaluacion;
+    for (const asignacion of rows) {
+      const fechaAsignacion = asignacion.fecha_inicio.toISOString().split('T')[0];
+      const horaAsignacion = asignacion.horaEvaluacion;
       
-      // Si es el mismo día, verificar solapamiento de horarios
-      if (fechaEvaluacion >= fechaInicio && fechaEvaluacion <= fechaFin) {
-        if (horaEvaluacion >= horaInicio && horaEvaluacion <= horaFin) {
+      // Si hay solapamiento de fechas y horarios
+      if (fechaAsignacion >= fechaInicio && fechaAsignacion <= fechaFin) {
+        if (horaAsignacion >= horaInicio && horaAsignacion <= horaFin) {
           return {
             disponible: false,
-            message: `Ya existe una evaluación de ${evaluacion.tipo} programada para el ${fechaEvaluacion} a las ${horaEvaluacion} que se solapa con el horario seleccionado`
+            message: `Ya existe una evaluación de ${asignacion.tipo} programada que se solapa con el horario seleccionado`
           };
         }
       }
