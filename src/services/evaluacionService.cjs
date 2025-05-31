@@ -156,6 +156,7 @@ const deleteEvaluacion = async (evaluacionId) => {
 };
 
 // Obtener colaboradores disponibles para evaluar con información completa
+// MODIFICADO: Solo mostrar colaboradores con rol "Docente" 
 const getColaboradoresParaEvaluar = async () => {
   try {
     const [rows] = await pool.execute(
@@ -165,7 +166,8 @@ const getColaboradoresParaEvaluar = async () => {
       tc.nombre as roleName
       FROM COLABORADOR c
       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-      WHERE c.estado = 1
+      WHERE c.estado = 1 
+      AND (tc.nombre = 'Docente' OR tc.nombre = 'Evaluado')
       ORDER BY c.nombres, c.apePat`
     );
     
