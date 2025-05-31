@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear asignaciones para las 3 evaluaciones de una vez
@@ -231,22 +232,16 @@ const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, h
   }
 };
 
-// Obtener usuarios evaluadores (colaboradores con rol de evaluator)
+// Obtener usuarios evaluadores (con rol de evaluator)
 const getEvaluadores = async () => {
   try {
     const [rows] = await pool.execute(
-      `SELECT u.idUsuario as id, 
-       CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre,
-       tu.nombre as rol,
-       c.idColaborador,
-       u.correo
+      `SELECT u.idUsuario as id, u.nombre, tu.nombre as rol
        FROM USUARIO u
        JOIN TIPO_USUARIO tu ON u.idTipoUsu = tu.idTipoUsu
-       JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
        WHERE u.estado = 1 
        AND tu.nombre = 'evaluator'
-       AND c.estado = 1
-       ORDER BY c.nombres, c.apePat, c.apeMat`
+       ORDER BY u.nombre`
     );
     
     return {
