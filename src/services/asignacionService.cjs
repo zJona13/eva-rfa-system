@@ -407,10 +407,12 @@ const getAreas = async () => {
        LEFT JOIN USUARIO u ON a.idArea = u.idArea 
        LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
        LEFT JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-       AND c.estado = 1
-       GROUP BY a.idArea
+       WHERE c.estado = 1 OR c.estado IS NULL
+       GROUP BY a.idArea, a.nombre, a.descripcion
        ORDER BY a.nombre`
     );
+    
+    console.log('Áreas obtenidas:', rows);
     
     return {
       success: true,
