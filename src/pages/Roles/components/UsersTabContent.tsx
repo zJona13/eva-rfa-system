@@ -30,6 +30,8 @@ interface User {
   roleId: number;
   colaboradorId?: number;
   colaboradorName?: string;
+  areaId?: number;
+  areaName?: string;
 }
 
 interface Role {
@@ -59,9 +61,11 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
       password: userData.password,
       active: userData.active,
       roleId: parseInt(userData.roleId),
-      // Convertir cadena vacía o 'none' a null
       colaboradorId: userData.colaboradorId && userData.colaboradorId !== 'none' 
         ? parseInt(userData.colaboradorId) 
+        : null,
+      areaId: userData.areaId && userData.areaId !== 'none'
+        ? parseInt(userData.areaId)
         : null
     })
   });
@@ -89,9 +93,11 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
       password: userData.password,
       active: userData.active,
       roleId: parseInt(userData.roleId),
-      // Convertir cadena vacía o 'none' a null
       colaboradorId: userData.colaboradorId && userData.colaboradorId !== 'none' 
         ? parseInt(userData.colaboradorId) 
+        : null,
+      areaId: userData.areaId && userData.areaId !== 'none'
+        ? parseInt(userData.areaId)
         : null
     })
   });
@@ -208,7 +214,8 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       email: user.email,
       active: !user.active,
       roleId: String(user.roleId),
-      colaboradorId: user.colaboradorId ? String(user.colaboradorId) : undefined
+      colaboradorId: user.colaboradorId ? String(user.colaboradorId) : undefined,
+      areaId: user.areaId ? String(user.areaId) : undefined
     };
     
     updateUserMutation.mutate(updatedUser);
@@ -220,7 +227,8 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.colaboradorName && user.colaboradorName.toLowerCase().includes(searchQuery.toLowerCase()))
+      (user.colaboradorName && user.colaboradorName.toLowerCase().includes(searchQuery.toLowerCase())) ||
+      (user.areaName && user.areaName.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   return (
@@ -245,6 +253,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                 <TableHead>Correo electrónico</TableHead>
                 <TableHead>Rol</TableHead>
                 <TableHead>Colaborador</TableHead>
+                <TableHead>Área</TableHead>
                 <TableHead>Estado</TableHead>
                 <TableHead className="text-right">Acciones</TableHead>
               </TableRow>
@@ -252,13 +261,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     Cargando usuarios...
                   </TableCell>
                 </TableRow>
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-24 text-center">
+                  <TableCell colSpan={7} className="h-24 text-center">
                     No se encontraron resultados.
                   </TableCell>
                 </TableRow>
@@ -275,6 +284,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                     <TableCell>
                       {user.colaboradorName ? (
                         <span className="text-sm">{user.colaboradorName}</span>
+                      ) : (
+                        <span className="text-sm text-muted-foreground">Sin asignar</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {user.areaName ? (
+                        <span className="text-sm">{user.areaName}</span>
                       ) : (
                         <span className="text-sm text-muted-foreground">Sin asignar</span>
                       )}
