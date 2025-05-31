@@ -44,21 +44,20 @@ const createAsignacion = async (asignacionData) => {
     const tiposEvaluacion = ['Autoevaluacion', 'Estudiante', 'Checklist'];
     const asignacionesCreadas = [];
     
-    // Crear las 3 asignaciones
+    // Crear las 3 evaluaciones programadas usando la tabla EVALUACION
     for (const tipo of tiposEvaluacion) {
       const [result] = await pool.execute(
-        `INSERT INTO ASIGNACION_EVALUACION 
-         (fechaInicio, fechaFin, horaInicio, horaFin, tipoEvaluacion, estado, idUsuarioEvaluador, descripcion) 
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        `INSERT INTO EVALUACION 
+         (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
+         VALUES (?, ?, ?, ?, ?, ?, ?)`,
         [
           asignacionData.fechaInicio,
-          asignacionData.fechaFin,
           asignacionData.horaInicio,
-          asignacionData.horaFin,
           tipo,
           'Pendiente',
           asignacionData.evaluadorId,
-          asignacionData.descripcion || `Evaluación ${tipo} programada`
+          1, // Por defecto colaborador 1, esto se puede ajustar según necesidad
+          asignacionData.descripcion || `Evaluación ${tipo} programada para ${asignacionData.fechaInicio}`
         ]
       );
       
@@ -79,16 +78,18 @@ const createAsignacion = async (asignacionData) => {
   }
 };
 
-// Obtener todas las asignaciones
+// Obtener todas las asignaciones (evaluaciones programadas)
 const getAllAsignaciones = async () => {
   try {
     const [rows] = await pool.execute(
-      `SELECT a.idAsignacion as id, a.fechaInicio, a.fechaFin, 
-       a.horaInicio, a.horaFin, a.tipoEvaluacion, a.estado, a.descripcion,
-       u.nombre as evaluadorNombre, a.idUsuarioEvaluador as evaluadorId
-       FROM ASIGNACION_EVALUACION a
-       JOIN USUARIO u ON a.idUsuarioEvaluador = u.idUsuario
-       ORDER BY a.fechaInicio DESC, a.horaInicio ASC`
+      `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fechaInicio, e.fechaEvaluacion as fechaFin, 
+       e.horaEvaluacion as horaInicio, e.horaEvaluacion as horaFin, 
+       e.tipo as tipoEvaluacion, e.estado, e.comentario as descripcion,
+       u.nombre as evaluadorNombre, e.idUsuario as evaluadorId
+       FROM EVALUACION e
+       JOIN USUARIO u ON e.idUsuario = u.idUsuario
+       WHERE e.estado = 'Pendiente'
+       ORDER BY e.fechaEvaluacion DESC, e.horaEvaluacion ASC`
     );
     
     return {
@@ -101,7 +102,7 @@ const getAllAsignaciones = async () => {
   }
 };
 
-// Actualizar una asignación
+// Actualizar una asignación (evaluación programada)
 const updateAsignacion = async (asignacionId, asignacionData) => {
   try {
     // Validar fechas
@@ -140,15 +141,12 @@ const updateAsignacion = async (asignacionId, asignacionData) => {
     }
     
     await pool.execute(
-      `UPDATE ASIGNACION_EVALUACION 
-       SET fechaInicio = ?, fechaFin = ?, horaInicio = ?, horaFin = ?, 
-           descripcion = ?
-       WHERE idAsignacion = ?`,
+      `UPDATE EVALUACION 
+       SET fechaEvaluacion = ?, horaEvaluacion = ?, comentario = ?
+       WHERE idEvaluacion = ?`,
       [
         asignacionData.fechaInicio,
-        asignacionData.fechaFin,
         asignacionData.horaInicio,
-        asignacionData.horaFin,
         asignacionData.descripcion,
         asignacionId
       ]
@@ -164,10 +162,10 @@ const updateAsignacion = async (asignacionId, asignacionData) => {
   }
 };
 
-// Eliminar una asignación
+// Eliminar una asignación (evaluación programada)
 const deleteAsignacion = async (asignacionId) => {
   try {
-    await pool.execute('DELETE FROM ASIGNACION_EVALUACION WHERE idAsignacion = ?', [asignacionId]);
+    await pool.execute('DELETE FROM EVALUACION WHERE idEvaluacion = ? AND estado = "Pendiente"', [asignacionId]);
     
     return {
       success: true,
@@ -183,39 +181,35 @@ const deleteAsignacion = async (asignacionId) => {
 const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId = null) => {
   try {
     let query = `
-      SELECT idAsignacion, fechaInicio, fechaFin, horaInicio, horaFin, tipoEvaluacion
-      FROM ASIGNACION_EVALUACION 
-      WHERE idUsuarioEvaluador = ? 
-      AND estado IN ('Pendiente', 'Activa')
-      AND (
-        (fechaInicio <= ? AND fechaFin >= ?) OR
-        (fechaInicio <= ? AND fechaFin >= ?) OR
-        (fechaInicio >= ? AND fechaFin <= ?)
-      )
+      SELECT idEvaluacion, fechaEvaluacion, horaEvaluacion, tipo
+      FROM EVALUACION 
+      WHERE idUsuario = ? 
+      AND estado = 'Pendiente'
+      AND fechaEvaluacion BETWEEN ? AND ?
     `;
     
-    const params = [evaluadorId, fechaFin, fechaInicio, fechaInicio, fechaInicio, fechaFin, fechaInicio, fechaFin];
+    const params = [evaluadorId, fechaInicio, fechaFin];
     
     if (excludeId) {
-      query += ' AND idAsignacion != ?';
+      query += ' AND idEvaluacion != ?';
       params.push(excludeId);
     }
     
     const [rows] = await pool.execute(query, params);
     
     // Verificar conflictos de horario específicos
-    for (const asignacion of rows) {
-      const inicioConflicto = new Date(`${asignacion.fechaInicio}T${asignacion.horaInicio}`);
-      const finConflicto = new Date(`${asignacion.fechaFin}T${asignacion.horaFin}`);
-      const inicioNuevo = new Date(`${fechaInicio}T${horaInicio}`);
-      const finNuevo = new Date(`${fechaFin}T${horaFin}`);
+    for (const evaluacion of rows) {
+      const fechaEvaluacion = evaluacion.fechaEvaluacion.toISOString().split('T')[0];
+      const horaEvaluacion = evaluacion.horaEvaluacion;
       
-      // Verificar solapamiento
-      if (inicioNuevo < finConflicto && finNuevo > inicioConflicto) {
-        return {
-          disponible: false,
-          message: `Ya existe una asignación de ${asignacion.tipoEvaluacion} del ${asignacion.fechaInicio} al ${asignacion.fechaFin} de ${asignacion.horaInicio} a ${asignacion.horaFin} que se solapa con el horario seleccionado`
-        };
+      // Si es el mismo día, verificar solapamiento de horarios
+      if (fechaEvaluacion >= fechaInicio && fechaEvaluacion <= fechaFin) {
+        if (horaEvaluacion >= horaInicio && horaEvaluacion <= horaFin) {
+          return {
+            disponible: false,
+            message: `Ya existe una evaluación de ${evaluacion.tipo} programada para el ${fechaEvaluacion} a las ${horaEvaluacion} que se solapa con el horario seleccionado`
+          };
+        }
       }
     }
     
@@ -232,15 +226,15 @@ const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, h
   }
 };
 
-// Obtener usuarios evaluadores (con rol de evaluator)
+// Obtener usuarios evaluadores (con rol de Evaluador)
 const getEvaluadores = async () => {
   try {
     const [rows] = await pool.execute(
       `SELECT u.idUsuario as id, u.nombre, tu.nombre as rol
        FROM USUARIO u
        JOIN TIPO_USUARIO tu ON u.idTipoUsu = tu.idTipoUsu
-       WHERE u.estado = 1 
-       AND tu.nombre = 'evaluator'
+       WHERE u.vigencia = 1 
+       AND tu.nombre = 'Evaluador'
        ORDER BY u.nombre`
     );
     
