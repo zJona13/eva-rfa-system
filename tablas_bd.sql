@@ -69,6 +69,17 @@ CREATE TABLE USUARIO (
     FOREIGN KEY (idColaborador) REFERENCES COLABORADOR(idColaborador) ON DELETE CASCADE
 );
 
+-- Nueva tabla ASIGNACION según el diagrama
+CREATE TABLE ASIGNACION (
+    idAsignacion INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    idUsuario INT(10) NOT NULL,
+    periodo INT(10) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    estado VARCHAR(50) DEFAULT 'Activa',
+    FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE
+);
+
 CREATE TABLE EVALUACION (
     idEvaluacion INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fechaEvaluacion DATE,
@@ -81,6 +92,15 @@ CREATE TABLE EVALUACION (
     idColaborador INT(10) NOT NULL,
     FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE,
     FOREIGN KEY (idColaborador) REFERENCES COLABORADOR(idColaborador) ON DELETE CASCADE
+);
+
+-- Nueva tabla DETALLE_ASIGNACION según el diagrama
+CREATE TABLE DETALLE_ASIGNACION (
+    idEvaluacion INT(10) NOT NULL,
+    idAsignacion INT(10) NOT NULL,
+    PRIMARY KEY (idEvaluacion, idAsignacion),
+    FOREIGN KEY (idEvaluacion) REFERENCES EVALUACION(idEvaluacion) ON DELETE CASCADE,
+    FOREIGN KEY (idAsignacion) REFERENCES ASIGNACION(idAsignacion) ON DELETE CASCADE
 );
 
 CREATE TABLE REPORTE (
@@ -124,6 +144,7 @@ CREATE TABLE NOTIFICACION (
     FOREIGN KEY (idIncidencia) REFERENCES INCIDENCIA(idIncidencia) ON DELETE SET NULL
 );
 
+-- Datos iniciales
 INSERT INTO TIPO_USUARIO (nombre) VALUES
 ('Administrador'), ('Evaluador'), ('Evaluado'), ('Estudiante');
 
