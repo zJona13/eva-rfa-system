@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Users, UserCog, UserSquare2, FileText, Building } from 'lucide-react';
@@ -11,6 +12,7 @@ import TipoColaboradorTabContent from './components/TipoColaboradorTabContent';
 import TipoContratoTabContent from './components/TipoContratoTabContent';
 import UsersTabContent from './components/UsersTabContent';
 import ColaboradoresTabContent from './components/ColaboradoresTabContent';
+import AreasTabContent from './components/AreasTabContent';
 
 // Tipos
 interface Role {
@@ -35,6 +37,8 @@ interface User {
   active: boolean;
   role: string;
   roleId: number;
+  areaId?: number;
+  areaName?: string;
 }
 
 interface Colaborador {
@@ -57,6 +61,12 @@ interface Colaborador {
   contractActive: boolean;
   contractTypeId: number;
   contractType: string;
+}
+
+interface Area {
+  id: number;
+  name: string;
+  description?: string;
 }
 
 // Servicios API - Updated port from 5000 to 3306
@@ -140,6 +150,22 @@ const fetchColaboradores = async (): Promise<Colaborador[]> => {
   return data.colaboradores;
 };
 
+const fetchAreas = async (): Promise<Area[]> => {
+  const token = localStorage.getItem('iesrfa_token');
+  const response = await fetch('http://localhost:3306/api/areas', {
+    headers: {
+      'Authorization': `Bearer ${token}`
+    }
+  });
+  
+  if (!response.ok) {
+    throw new Error('Error al cargar áreas');
+  }
+  
+  const data = await response.json();
+  return data.areas;
+};
+
 // Componente principal
 const Roles = () => {
   // State
@@ -191,6 +217,15 @@ const Roles = () => {
     queryKey: ['colaboradores'],
     queryFn: fetchColaboradores
   });
+
+  const { 
+    data: areas = [], 
+    isLoading: areasLoading,
+    error: areasError
+  } = useQuery({
+    queryKey: ['areas'],
+    queryFn: fetchAreas
+  });
   
   // Manejo de errores
   if (rolesError && activeTab === 'roles') {
@@ -213,12 +248,16 @@ const Roles = () => {
     toast.error('Error al cargar los colaboradores');
   }
 
+  if (areasError && activeTab === 'areas') {
+    toast.error('Error al cargar las áreas');
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-3xl font-bold tracking-tight">Mantenimientos</h1>
         <p className="text-muted-foreground mt-2">
-          Gestione los roles, tipos de colaborador, tipos de contrato, usuarios y colaboradores en el sistema
+          Gestione los roles, tipos de colaborador, tipos de contrato, usuarios, colaboradores y áreas en el sistema
         </p>
       </div>
 
@@ -236,6 +275,10 @@ const Roles = () => {
             <TabsTrigger value="tiposContrato" className="flex items-center gap-1">
               <FileText className="h-4 w-4" />
               <span>Tipos Contrato</span>
+            </TabsTrigger>
+            <TabsTrigger value="areas" className="flex items-center gap-1">
+              <Building className="h-4 w-4" />
+              <span>Áreas</span>
             </TabsTrigger>
             <TabsTrigger value="colaboradores" className="flex items-center gap-1">
               <UserSquare2 className="h-4 w-4" />
@@ -287,6 +330,15 @@ const Roles = () => {
           />
         </TabsContent>
 
+        {/* Tab de Áreas */}
+        <TabsContent value="areas" className="space-y-4">
+          <AreasTabContent 
+            areas={areas}
+            isLoading={areasLoading}
+            searchQuery={searchQuery}
+          />
+        </TabsContent>
+
         {/* Tab de Colaboradores */}
         <TabsContent value="colaboradores" className="space-y-4">
           <ColaboradoresTabContent 
@@ -305,6 +357,7 @@ const Roles = () => {
             isLoading={usersLoading}
             searchQuery={searchQuery}
             roles={roles}
+            areas={areas}
           />
         </TabsContent>
       </Tabs>
