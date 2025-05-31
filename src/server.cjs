@@ -1416,21 +1416,39 @@ app.delete('/api/asignaciones/:id', async (req, res) => {
   }
 });
 
+// Endpoint para validar disponibilidad de horario
 app.get('/api/asignaciones/validar-horario', async (req, res) => {
   try {
     const { fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId } = req.query;
+    
+    console.log('Validando horario con parámetros:', req.query);
+    
+    if (!fechaInicio || !fechaFin || !horaInicio || !horaFin || !evaluadorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Todos los parámetros son requeridos'
+      });
+    }
+    
     const result = await asignacionService.validarDisponibilidadHorario(
       fechaInicio,
       fechaFin,
       horaInicio,
       horaFin,
-      evaluadorId,
-      excludeId || null
+      parseInt(evaluadorId),
+      excludeId ? parseInt(excludeId) : null
     );
-    res.json({ success: true, data: result });
+    
+    res.json({
+      success: true,
+      data: result
+    });
   } catch (error) {
-    console.error('Error en GET /api/asignaciones/validar-horario:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+    console.error('Error en validación de horario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
   }
 });
 

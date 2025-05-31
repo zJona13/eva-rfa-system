@@ -320,25 +320,22 @@ const deleteAsignacion = async (asignacionId) => {
 // Validar disponibilidad de horario para un evaluador
 const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId = null) => {
   try {
+    // Corregir la lógica de validación de solapamiento
     let query = `
       SELECT a.idAsignacion, a.fecha_inicio, a.fecha_fin, u.nombre as evaluador
       FROM ASIGNACION a
       JOIN USUARIO u ON a.idUsuario = u.idUsuario
       WHERE a.idUsuario = ? 
       AND a.estado = 'Activa'
-      AND (
-        (a.fecha_inicio BETWEEN ? AND ?) OR
-        (a.fecha_fin BETWEEN ? AND ?) OR
-        (? BETWEEN a.fecha_inicio AND a.fecha_fin) OR
-        (? BETWEEN a.fecha_inicio AND a.fecha_fin)
+      AND NOT (
+        ? > a.fecha_fin OR ? < a.fecha_inicio
       )
     `;
     
     const params = [
-      evaluadorId, 
-      fechaInicio, fechaFin, 
-      fechaInicio, fechaFin,
-      fechaInicio, fechaFin
+      evaluadorId,
+      fechaInicio, // Nueva fecha inicio
+      fechaFin     // Nueva fecha fin
     ];
     
     if (excludeId) {
@@ -346,7 +343,12 @@ const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, h
       params.push(excludeId);
     }
     
+    console.log('Validando disponibilidad con query:', query);
+    console.log('Parámetros:', params);
+    
     const [rows] = await pool.execute(query, params);
+    
+    console.log('Resultados de validación:', rows);
     
     if (rows.length > 0) {
       const conflicto = rows[0];
