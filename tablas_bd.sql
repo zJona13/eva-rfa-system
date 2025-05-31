@@ -116,6 +116,14 @@ CREATE TABLE NOTIFICACION (
     FOREIGN KEY (idIncidencia) REFERENCES INCIDENCIA(idIncidencia) ON DELETE SET NULL
 );
 
+CREATE TABLE AREA (
+    idArea INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    descripcion VARCHAR(255),
+    idUsuario INT(10) NOT NULL,
+    FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE
+);
+
 INSERT INTO TIPO_USUARIO (nombre) VALUES
 ('Administrador'), ('Evaluador'), ('Evaluado'), ('Estudiante');
 
