@@ -320,48 +320,63 @@ const deleteAsignacion = async (asignacionId) => {
 // Validar disponibilidad de horario para un evaluador
 const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId = null) => {
   try {
-    // Corregir la lógica de validación de solapamiento
-    let query = `
-      SELECT a.idAsignacion, a.fecha_inicio, a.fecha_fin, u.nombre as evaluador
+    // Primero verificar si hay asignaciones existentes para el evaluador
+    let baseQuery = `
+      SELECT a.idAsignacion, a.fecha_inicio, a.fecha_fin, a.estado, u.nombre as evaluador
       FROM ASIGNACION a
       JOIN USUARIO u ON a.idUsuario = u.idUsuario
       WHERE a.idUsuario = ? 
       AND a.estado = 'Activa'
-      AND NOT (
-        ? > a.fecha_fin OR ? < a.fecha_inicio
-      )
     `;
     
-    const params = [
-      evaluadorId,
-      fechaInicio, // Nueva fecha inicio
-      fechaFin     // Nueva fecha fin
-    ];
+    let baseParams = [evaluadorId];
     
     if (excludeId) {
-      query += ' AND a.idAsignacion != ?';
-      params.push(excludeId);
+      baseQuery += ' AND a.idAsignacion != ?';
+      baseParams.push(excludeId);
     }
     
-    console.log('Validando disponibilidad con query:', query);
-    console.log('Parámetros:', params);
+    console.log('Consultando asignaciones existentes para evaluador:', evaluadorId);
+    const [existingAssignments] = await pool.execute(baseQuery, baseParams);
+    console.log('Asignaciones existentes:', existingAssignments);
     
-    const [rows] = await pool.execute(query, params);
-    
-    console.log('Resultados de validación:', rows);
-    
-    if (rows.length > 0) {
-      const conflicto = rows[0];
+    // Si no hay asignaciones existentes, está disponible
+    if (existingAssignments.length === 0) {
       return {
-        disponible: false,
-        message: `El evaluador ${conflicto.evaluador} ya tiene una asignación activa del ${conflicto.fecha_inicio} al ${conflicto.fecha_fin} que se solapa con el horario seleccionado`
+        disponible: true,
+        message: 'Horario disponible'
       };
+    }
+    
+    // Verificar solapamiento con cada asignación existente
+    const fechaInicioNueva = new Date(fechaInicio);
+    const fechaFinNueva = new Date(fechaFin);
+    
+    for (const asignacion of existingAssignments) {
+      const fechaInicioExistente = new Date(asignacion.fecha_inicio);
+      const fechaFinExistente = new Date(asignacion.fecha_fin);
+      
+      console.log('Comparando fechas:');
+      console.log('Nueva:', fechaInicioNueva, 'a', fechaFinNueva);
+      console.log('Existente:', fechaInicioExistente, 'a', fechaFinExistente);
+      
+      // Verificar si hay solapamiento
+      // Hay solapamiento si: fechaInicio <= fechaFinExistente AND fechaFin >= fechaInicioExistente
+      const haySolapamiento = fechaInicioNueva <= fechaFinExistente && fechaFinNueva >= fechaInicioExistente;
+      
+      if (haySolapamiento) {
+        return {
+          disponible: false,
+          message: `El evaluador ${asignacion.evaluador} ya tiene una asignación activa del ${asignacion.fecha_inicio} al ${asignacion.fecha_fin} que se solapa con el horario seleccionado (${fechaInicio} al ${fechaFin})`
+        };
+      }
     }
     
     return {
       disponible: true,
       message: 'Horario disponible'
     };
+    
   } catch (error) {
     console.error('Error al validar disponibilidad:', error);
     return {
