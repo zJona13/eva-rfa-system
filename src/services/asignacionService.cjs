@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear una nueva asignación basada en área con las 3 evaluaciones automáticamente
@@ -54,8 +55,8 @@ const createAsignacion = async (asignacionData) => {
        u.idUsuario
        FROM COLABORADOR c
        JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-       LEFT JOIN USUARIO u ON c.idColaborador = u.idColaborador
-       WHERE c.idArea = ? AND c.estado = 1 AND tc.nombre = 'Docente'`,
+       JOIN USUARIO u ON c.idColaborador = u.idColaborador
+       WHERE u.idArea = ? AND c.estado = 1 AND tc.nombre = 'Docente'`,
       [asignacionData.areaId]
     );
     
@@ -401,11 +402,12 @@ const getAreas = async () => {
   try {
     const [rows] = await pool.execute(
       `SELECT a.idArea as id, a.nombre, a.descripcion,
-       COUNT(c.idColaborador) as totalDocentes
+       COUNT(CASE WHEN tc.nombre = 'Docente' THEN 1 END) as totalDocentes
        FROM AREA a
-       LEFT JOIN COLABORADOR c ON a.idArea = c.idArea 
+       LEFT JOIN USUARIO u ON a.idArea = u.idArea 
+       LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
        LEFT JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-       AND c.estado = 1 AND tc.nombre = 'Docente'
+       AND c.estado = 1
        GROUP BY a.idArea
        ORDER BY a.nombre`
     );
@@ -492,6 +494,6 @@ module.exports = {
   deleteAsignacion,
   cerrarAsignacion,
   validarDisponibilidadHorario,
-  getAreas, // Cambio de getEvaluadores a getAreas
+  getAreas,
   getAsignacionesByEvaluador
 };
