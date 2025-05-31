@@ -13,6 +13,7 @@ const incidenciaService = require('./services/incidenciaService.cjs');
 const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
+const asignacionService = require('./services/asignacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -1358,6 +1359,71 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
       success: false,
       message: 'Error al obtener las evaluaciones recientes'
     });
+  }
+});
+
+// Asignación de evaluaciones
+app.post('/api/asignaciones', async (req, res) => {
+  try {
+    const result = await asignacionService.createAsignacion(req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('Error en POST /api/asignaciones:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.get('/api/asignaciones', async (req, res) => {
+  try {
+    const result = await asignacionService.getAllAsignaciones();
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/asignaciones:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.put('/api/asignaciones/:id', async (req, res) => {
+  try {
+    const result = await asignacionService.updateAsignacion(req.params.id, req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('Error en PUT /api/asignaciones:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.delete('/api/asignaciones/:id', async (req, res) => {
+  try {
+    const result = await asignacionService.deleteAsignacion(req.params.id);
+    res.json(result);
+  } catch (error) {
+    console.error('Error en DELETE /api/asignaciones:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.get('/api/asignaciones/validar-horario', async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId } = req.query;
+    const result = await asignacionService.validarDisponibilidadHorario(
+      fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId
+    );
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/asignaciones/validar-horario:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+// Asignaciones para evaluadores
+app.get('/api/asignaciones/evaluadores', async (req, res) => {
+  try {
+    const result = await asignacionService.getEvaluadores();
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/asignaciones/evaluadores:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
