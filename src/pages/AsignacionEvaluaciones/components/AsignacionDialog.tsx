@@ -161,7 +161,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
           </DialogTitle>
           {!asignacionData && (
             <p className="text-sm text-muted-foreground">
-              Se asignarán automáticamente las 3 evaluaciones: Evluación a docentes, Autoevaluación y Evaluación de Estudiantes
+              Se asignarán automáticamente las 3 evaluaciones: Evaluación a docentes, Autoevaluación y Evaluación de Estudiantes
             </p>
           )}
         </DialogHeader>
