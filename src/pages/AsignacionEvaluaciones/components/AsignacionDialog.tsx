@@ -28,18 +28,71 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Calendar } from '@/components/ui/calendar';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon } from 'lucide-react';
-import { cn } from '@/lib/utils';
 
+// Validaciones comprehensivas para fechas y horas
 const formSchema = z.object({
-  fechaInicio: z.string().min(1, 'La fecha de inicio es obligatoria'),
-  fechaFin: z.string().min(1, 'La fecha de fin es obligatoria'),
-  horaInicio: z.string().min(1, 'La hora de inicio es obligatoria'),
-  horaFin: z.string().min(1, 'La hora de fin es obligatoria'),
-  areaId: z.string().min(1, 'Debe seleccionar un área'),
+  fechaInicio: z.string()
+    .min(1, 'La fecha de inicio es obligatoria')
+    .refine((date) => {
+      const selectedDate = new Date(date);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      return selectedDate >= today;
+    }, 'La fecha de inicio no puede ser anterior a hoy'),
+  
+  fechaFin: z.string()
+    .min(1, 'La fecha de fin es obligatoria')
+    .refine((date) => {
+      const selectedDate = new Date(date);
+      const maxDate = new Date();
+      maxDate.setFullYear(maxDate.getFullYear() + 1);
+      return selectedDate <= maxDate;
+    }, 'La fecha de fin no puede ser mayor a un año desde hoy'),
+  
+  horaInicio: z.string()
+    .min(1, 'La hora de inicio es obligatoria')
+    .refine((time) => {
+      const [hour, minute] = time.split(':').map(Number);
+      return hour >= 6 && hour <= 22;
+    }, 'La hora de inicio debe estar entre 06:00 y 22:00'),
+  
+  horaFin: z.string()
+    .min(1, 'La hora de fin es obligatoria')
+    .refine((time) => {
+      const [hour, minute] = time.split(':').map(Number);
+      return hour >= 6 && hour <= 22;
+    }, 'La hora de fin debe estar entre 06:00 y 22:00'),
+  
+  areaId: z.string()
+    .min(1, 'Debe seleccionar un área')
+    .refine((val) => !isNaN(parseInt(val)), 'Área inválida'),
+  
   descripcion: z.string().optional(),
+}).refine((data) => {
+  const fechaInicio = new Date(data.fechaInicio);
+  const fechaFin = new Date(data.fechaFin);
+  return fechaFin >= fechaInicio;
+}, {
+  message: 'La fecha de fin debe ser igual o posterior a la fecha de inicio',
+  path: ['fechaFin'],
+}).refine((data) => {
+  // Si es el mismo día, validar que la hora de fin sea posterior a la hora de inicio
+  const fechaInicio = new Date(data.fechaInicio);
+  const fechaFin = new Date(data.fechaFin);
+  
+  if (fechaInicio.toDateString() === fechaFin.toDateString()) {
+    const [horaInicioHour, horaInicioMinute] = data.horaInicio.split(':').map(Number);
+    const [horaFinHour, horaFinMinute] = data.horaFin.split(':').map(Number);
+    
+    const minutosInicio = horaInicioHour * 60 + horaInicioMinute;
+    const minutosFin = horaFinHour * 60 + horaFinMinute;
+    
+    return minutosFin > minutosInicio + 30; // Mínimo 30 minutos de diferencia
+  }
+  return true;
+}, {
+  message: 'La hora de fin debe ser al menos 30 minutos posterior a la hora de inicio cuando es el mismo día',
+  path: ['horaFin'],
 });
 
 interface Area {
@@ -66,6 +119,8 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   onSubmit,
   isSubmitting,
 }) => {
+  console.log('AsignacionDialog - Areas recibidas:', areas);
+  
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {
@@ -104,6 +159,8 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   }, [asignacionData, form]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
+    console.log('Enviando datos:', values);
+    
     const submissionData = {
       ...values,
       areaId: parseInt(values.areaId),
@@ -114,15 +171,15 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {asignacionData ? 'Editar Asignación' : 'Nueva Asignación'}
+            {asignacionData ? 'Editar Asignación' : 'Nueva Asignación de Evaluaciones'}
           </DialogTitle>
           <DialogDescription>
             {asignacionData 
               ? 'Modifica los datos de la asignación de evaluaciones por área.'
-              : 'Crea una nueva asignación de evaluaciones para un área específica.'
+              : 'Crea una nueva asignación de evaluaciones para un área específica. Se crearán automáticamente todas las evaluaciones (autoevaluaciones, evaluaciones entre docentes y evaluaciones de estudiantes a docentes).'
             }
           </DialogDescription>
         </DialogHeader>
@@ -134,19 +191,25 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               name="areaId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Área</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <FormLabel>Área *</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger>
+                      <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccionar área" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent>
-                      {areas.map((area) => (
-                        <SelectItem key={area.id} value={area.id.toString()}>
-                          {area.nombre} ({area.totalDocentes} docentes)
+                    <SelectContent className="bg-white z-50">
+                      {areas && areas.length > 0 ? (
+                        areas.map((area) => (
+                          <SelectItem key={area.id} value={area.id.toString()}>
+                            {area.nombre} ({area.totalDocentes} docentes)
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="" disabled>
+                          No hay áreas disponibles
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
@@ -160,11 +223,13 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 name="fechaInicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fecha de Inicio</FormLabel>
+                    <FormLabel>Fecha de Inicio *</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
                         {...field}
+                        min={format(new Date(), 'yyyy-MM-dd')}
+                        max={format(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -177,11 +242,13 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 name="fechaFin"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Fecha de Fin</FormLabel>
+                    <FormLabel>Fecha de Fin *</FormLabel>
                     <FormControl>
                       <Input
                         type="date"
                         {...field}
+                        min={form.watch('fechaInicio') || format(new Date(), 'yyyy-MM-dd')}
+                        max={format(new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), 'yyyy-MM-dd')}
                       />
                     </FormControl>
                     <FormMessage />
@@ -196,11 +263,14 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 name="horaInicio"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Hora de Inicio</FormLabel>
+                    <FormLabel>Hora de Inicio *</FormLabel>
                     <FormControl>
                       <Input
                         type="time"
                         {...field}
+                        min="06:00"
+                        max="22:00"
+                        step="900" // 15 minutos
                       />
                     </FormControl>
                     <FormMessage />
@@ -213,11 +283,14 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 name="horaFin"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Hora de Fin</FormLabel>
+                    <FormLabel>Hora de Fin *</FormLabel>
                     <FormControl>
                       <Input
                         type="time"
                         {...field}
+                        min="06:00"
+                        max="22:00"
+                        step="900" // 15 minutos
                       />
                     </FormControl>
                     <FormMessage />
@@ -236,6 +309,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <Input
                       placeholder="Descripción de la asignación..."
                       {...field}
+                      maxLength={255}
                     />
                   </FormControl>
                   <FormMessage />
@@ -243,7 +317,16 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               )}
             />
 
-            <div className="flex justify-end space-x-2">
+            <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-700">
+              <strong>Nota:</strong> Al crear esta asignación se generarán automáticamente:
+              <ul className="mt-1 ml-4 list-disc">
+                <li>Autoevaluaciones para cada docente del área</li>
+                <li>Evaluaciones cruzadas entre docentes</li>
+                <li>Evaluaciones de estudiantes a docentes</li>
+              </ul>
+            </div>
+
+            <div className="flex justify-end space-x-2 pt-4">
               <Button
                 type="button"
                 variant="outline"
@@ -253,7 +336,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Guardando...' : asignacionData ? 'Actualizar' : 'Crear'}
+                {isSubmitting ? 'Guardando...' : asignacionData ? 'Actualizar' : 'Crear Asignación'}
               </Button>
             </div>
           </form>
