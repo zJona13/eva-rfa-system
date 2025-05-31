@@ -1407,7 +1407,12 @@ app.get('/api/asignaciones/validar-horario', async (req, res) => {
   try {
     const { fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId } = req.query;
     const result = await asignacionService.validarDisponibilidadHorario(
-      fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId
+      fechaInicio,
+      fechaFin,
+      horaInicio,
+      horaFin,
+      evaluadorId,
+      excludeId || null
     );
     res.json(result);
   } catch (error) {
