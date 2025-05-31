@@ -1383,9 +1383,21 @@ app.get('/api/asignaciones', async (req, res) => {
   }
 });
 
+app.get('/api/asignaciones/evaluador/:evaluadorId', authenticateToken, async (req, res) => {
+  try {
+    const { evaluadorId } = req.params;
+    const result = await asignacionService.getAsignacionesByEvaluador(evaluadorId);
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/asignaciones/evaluador:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
 app.put('/api/asignaciones/:id', async (req, res) => {
   try {
-    const result = await asignacionService.updateAsignacion(req.params.id, req.body);
+    const { id } = req.params;
+    const result = await asignacionService.updateAsignacion(id, req.body);
     res.json(result);
   } catch (error) {
     console.error('Error en PUT /api/asignaciones:', error);
@@ -1395,7 +1407,8 @@ app.put('/api/asignaciones/:id', async (req, res) => {
 
 app.delete('/api/asignaciones/:id', async (req, res) => {
   try {
-    const result = await asignacionService.deleteAsignacion(req.params.id);
+    const { id } = req.params;
+    const result = await asignacionService.deleteAsignacion(id);
     res.json(result);
   } catch (error) {
     console.error('Error en DELETE /api/asignaciones:', error);
@@ -1414,14 +1427,14 @@ app.get('/api/asignaciones/validar-horario', async (req, res) => {
       evaluadorId,
       excludeId || null
     );
-    res.json(result);
+    res.json({ success: true, data: result });
   } catch (error) {
     console.error('Error en GET /api/asignaciones/validar-horario:', error);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
-// Asignaciones para evaluadores
+// Obtener evaluadores disponibles
 app.get('/api/asignaciones/evaluadores', async (req, res) => {
   try {
     const result = await asignacionService.getEvaluadores();
