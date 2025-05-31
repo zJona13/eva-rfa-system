@@ -48,9 +48,7 @@ const asignacionSchema = z.object({
   }),
   horaInicio: z.string().min(1, 'La hora de inicio es requerida'),
   horaFin: z.string().min(1, 'La hora de fin es requerida'),
-  tipoEvaluacion: z.string().min(1, 'El tipo de evaluación es requerido'),
-  evaluadorId: z.string().min(1, 'El evaluador es requerido'),
-  estado: z.string().min(1, 'El estado es requerido'),
+  evaluadorId: z.string().min(1, 'El evaluador responsable es requerido'),
   descripcion: z.string().optional(),
 }).refine((data) => {
   return data.fechaFin >= data.fechaInicio;
@@ -93,9 +91,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
       fechaFin: new Date(),
       horaInicio: '08:00',
       horaFin: '17:00',
-      tipoEvaluacion: '',
       evaluadorId: '',
-      estado: 'Activa',
       descripcion: '',
     },
   });
@@ -107,9 +103,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
         fechaFin: new Date(asignacionData.fechaFin),
         horaInicio: asignacionData.horaInicio,
         horaFin: asignacionData.horaFin,
-        tipoEvaluacion: asignacionData.tipoEvaluacion,
         evaluadorId: asignacionData.evaluadorId?.toString() || '',
-        estado: asignacionData.estado,
         descripcion: asignacionData.descripcion || '',
       });
     } else if (!asignacionData && open) {
@@ -118,9 +112,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
         fechaFin: new Date(),
         horaInicio: '08:00',
         horaFin: '17:00',
-        tipoEvaluacion: '',
         evaluadorId: '',
-        estado: 'Activa',
         descripcion: '',
       });
     }
@@ -144,9 +136,11 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   };
 
   const handleSubmit = async (values: z.infer<typeof asignacionSchema>) => {
-    // Validar horario antes de enviar
-    const isValidHorario = await validateHorario(values);
-    if (!isValidHorario) return;
+    // Solo validar horario para nuevas asignaciones
+    if (!asignacionData) {
+      const isValidHorario = await validateHorario(values);
+      if (!isValidHorario) return;
+    }
 
     const formattedValues = {
       ...values,
@@ -158,26 +152,18 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
     onSubmit(formattedValues);
   };
 
-  const tiposEvaluacion = [
-    { value: 'Checklist', label: 'Evaluación Checklist' },
-    { value: 'Estudiante', label: 'Evaluación de Estudiante' },
-    { value: 'Autoevaluacion', label: 'Autoevaluación' },
-    { value: 'Supervision', label: 'Supervisión' },
-  ];
-
-  const estados = [
-    { value: 'Activa', label: 'Activa' },
-    { value: 'Inactiva', label: 'Inactiva' },
-    { value: 'Completada', label: 'Completada' },
-  ];
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>
-            {asignacionData ? 'Editar' : 'Nueva'} Asignación de Evaluación
+            {asignacionData ? 'Editar' : 'Nueva'} Asignación de Evaluaciones
           </DialogTitle>
+          {!asignacionData && (
+            <p className="text-sm text-muted-foreground">
+              Se asignarán automáticamente las 3 evaluaciones: Autoevaluación, Evaluación de Estudiantes y Checklist
+            </p>
+          )}
         </DialogHeader>
         
         <Form {...form}>
@@ -215,7 +201,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                           onSelect={field.onChange}
                           disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
                           initialFocus
-                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -259,7 +244,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                             return date < fechaInicio;
                           }}
                           initialFocus
-                          className="pointer-events-auto"
                         />
                       </PopoverContent>
                     </Popover>
@@ -305,74 +289,22 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="tipoEvaluacion"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Evaluación</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar tipo" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {tiposEvaluacion.map((tipo) => (
-                          <SelectItem key={tipo.value} value={tipo.value}>
-                            {tipo.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="evaluadorId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Evaluador Responsable</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccionar evaluador" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {evaluadores.map((evaluador) => (
-                          <SelectItem key={evaluador.id} value={evaluador.id.toString()}>
-                            {evaluador.nombre} ({evaluador.rol})
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-
             <FormField
               control={form.control}
-              name="estado"
+              name="evaluadorId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Estado</FormLabel>
+                  <FormLabel>Evaluador Responsable</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
-                        <SelectValue placeholder="Seleccionar estado" />
+                        <SelectValue placeholder="Seleccionar evaluador" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {estados.map((estado) => (
-                        <SelectItem key={estado.value} value={estado.value}>
-                          {estado.label}
+                      {evaluadores.map((evaluador) => (
+                        <SelectItem key={evaluador.id} value={evaluador.id.toString()}>
+                          {evaluador.nombre} ({evaluador.rol})
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -390,7 +322,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                   <FormLabel>Descripción (Opcional)</FormLabel>
                   <FormControl>
                     <Textarea
-                      placeholder="Descripción adicional de la asignación..."
+                      placeholder="Descripción adicional para las asignaciones..."
                       {...field}
                     />
                   </FormControl>
@@ -409,7 +341,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Guardando...' : 'Guardar Asignación'}
+                {isSubmitting ? 'Guardando...' : asignacionData ? 'Actualizar' : 'Asignar las 3 Evaluaciones'}
               </Button>
             </div>
           </form>

@@ -24,6 +24,7 @@ interface Asignacion {
   estado: string;
   descripcion?: string;
   evaluadorNombre: string;
+  evaluadorId: number;
 }
 
 interface AsignacionesTableProps {
@@ -39,9 +40,10 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
 }) => {
   const getEstadoBadge = (estado: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
+      'Pendiente': 'secondary',
       'Activa': 'default',
-      'Inactiva': 'secondary',
       'Completada': 'outline',
+      'Inactiva': 'destructive',
     };
     
     return (
@@ -56,12 +58,17 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
       'Checklist': 'bg-blue-100 text-blue-800',
       'Estudiante': 'bg-green-100 text-green-800',
       'Autoevaluacion': 'bg-purple-100 text-purple-800',
-      'Supervision': 'bg-orange-100 text-orange-800',
+    };
+    
+    const labels: Record<string, string> = {
+      'Checklist': 'Supervisión',
+      'Estudiante': 'Est. a Docentes',
+      'Autoevaluacion': 'Autoevaluación',
     };
     
     return (
       <span className={`px-2 py-1 rounded-full text-xs font-medium ${colors[tipo] || 'bg-gray-100 text-gray-800'}`}>
-        {tipo}
+        {labels[tipo] || tipo}
       </span>
     );
   };
@@ -79,7 +86,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
       <div className="text-center py-8 text-muted-foreground">
         <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
         <p>No hay asignaciones de evaluación registradas</p>
-        <p className="text-sm">Crea una nueva asignación para comenzar</p>
+        <p className="text-sm">Crea una nueva asignación para programar las 3 evaluaciones</p>
       </div>
     );
   }
@@ -150,6 +157,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => onEdit(asignacion)}
+                    title="Editar asignación"
                   >
                     <Edit className="h-4 w-4" />
                   </Button>
@@ -157,6 +165,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                     variant="ghost"
                     size="sm"
                     onClick={() => onDelete(asignacion.id)}
+                    title="Eliminar asignación"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

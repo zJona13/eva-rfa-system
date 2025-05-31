@@ -1,10 +1,10 @@
 
 const { pool } = require('../utils/dbConnection.cjs');
 
-// Crear una nueva asignación de evaluación
+// Crear asignaciones para las 3 evaluaciones de una vez
 const createAsignacion = async (asignacionData) => {
   try {
-    console.log('Creando asignación con datos:', asignacionData);
+    console.log('Creando asignaciones con datos:', asignacionData);
     
     // Validar que la fecha de fin no sea anterior a la fecha de inicio
     if (new Date(asignacionData.fechaFin) < new Date(asignacionData.fechaInicio)) {
@@ -40,31 +40,42 @@ const createAsignacion = async (asignacionData) => {
       };
     }
     
-    // Crear la asignación
-    const [result] = await pool.execute(
-      `INSERT INTO ASIGNACION_EVALUACION 
-       (fechaInicio, fechaFin, horaInicio, horaFin, tipoEvaluacion, estado, idUsuarioEvaluador, descripcion) 
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        asignacionData.fechaInicio,
-        asignacionData.fechaFin,
-        asignacionData.horaInicio,
-        asignacionData.horaFin,
-        asignacionData.tipoEvaluacion,
-        asignacionData.estado || 'Activa',
-        asignacionData.evaluadorId,
-        asignacionData.descripcion || null
-      ]
-    );
+    // Los 3 tipos de evaluación que se crearán automáticamente
+    const tiposEvaluacion = ['Autoevaluacion', 'Estudiante', 'Checklist'];
+    const asignacionesCreadas = [];
+    
+    // Crear las 3 asignaciones
+    for (const tipo of tiposEvaluacion) {
+      const [result] = await pool.execute(
+        `INSERT INTO ASIGNACION_EVALUACION 
+         (fechaInicio, fechaFin, horaInicio, horaFin, tipoEvaluacion, estado, idUsuarioEvaluador, descripcion) 
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          asignacionData.fechaInicio,
+          asignacionData.fechaFin,
+          asignacionData.horaInicio,
+          asignacionData.horaFin,
+          tipo,
+          'Pendiente',
+          asignacionData.evaluadorId,
+          asignacionData.descripcion || `Evaluación ${tipo} programada`
+        ]
+      );
+      
+      asignacionesCreadas.push({
+        id: result.insertId,
+        tipo: tipo
+      });
+    }
     
     return {
       success: true,
-      asignacionId: result.insertId,
-      message: 'Asignación de evaluación creada exitosamente'
+      asignaciones: asignacionesCreadas,
+      message: 'Las 3 evaluaciones han sido asignadas exitosamente'
     };
   } catch (error) {
-    console.error('Error al crear asignación:', error);
-    return { success: false, message: 'Error al crear la asignación de evaluación' };
+    console.error('Error al crear asignaciones:', error);
+    return { success: false, message: 'Error al crear las asignaciones de evaluación' };
   }
 };
 
@@ -74,7 +85,7 @@ const getAllAsignaciones = async () => {
     const [rows] = await pool.execute(
       `SELECT a.idAsignacion as id, a.fechaInicio, a.fechaFin, 
        a.horaInicio, a.horaFin, a.tipoEvaluacion, a.estado, a.descripcion,
-       u.nombre as evaluadorNombre
+       u.nombre as evaluadorNombre, a.idUsuarioEvaluador as evaluadorId
        FROM ASIGNACION_EVALUACION a
        JOIN USUARIO u ON a.idUsuarioEvaluador = u.idUsuario
        ORDER BY a.fechaInicio DESC, a.horaInicio ASC`
@@ -131,15 +142,13 @@ const updateAsignacion = async (asignacionId, asignacionData) => {
     await pool.execute(
       `UPDATE ASIGNACION_EVALUACION 
        SET fechaInicio = ?, fechaFin = ?, horaInicio = ?, horaFin = ?, 
-           tipoEvaluacion = ?, estado = ?, descripcion = ?
+           descripcion = ?
        WHERE idAsignacion = ?`,
       [
         asignacionData.fechaInicio,
         asignacionData.fechaFin,
         asignacionData.horaInicio,
         asignacionData.horaFin,
-        asignacionData.tipoEvaluacion,
-        asignacionData.estado,
         asignacionData.descripcion,
         asignacionId
       ]
@@ -177,7 +186,7 @@ const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, h
       SELECT idAsignacion, fechaInicio, fechaFin, horaInicio, horaFin, tipoEvaluacion
       FROM ASIGNACION_EVALUACION 
       WHERE idUsuarioEvaluador = ? 
-      AND estado = 'Activa'
+      AND estado IN ('Pendiente', 'Activa')
       AND (
         (fechaInicio <= ? AND fechaFin >= ?) OR
         (fechaInicio <= ? AND fechaFin >= ?) OR
@@ -223,16 +232,15 @@ const validarDisponibilidadHorario = async (fechaInicio, fechaFin, horaInicio, h
   }
 };
 
-// Obtener usuarios evaluadores (administradores y supervisores)
+// Obtener usuarios evaluadores (con rol de evaluator)
 const getEvaluadores = async () => {
   try {
     const [rows] = await pool.execute(
-      `SELECT u.idUsuario as id, u.nombre, tc.nombre as rol
+      `SELECT u.idUsuario as id, u.nombre, tu.nombre as rol
        FROM USUARIO u
-       JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
-       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
+       JOIN TIPO_USUARIO tu ON u.idTipoUsu = tu.idTipoUsu
        WHERE u.estado = 1 
-       AND tc.nombre IN ('Administrador', 'Supervisor')
+       AND tu.nombre = 'evaluator'
        ORDER BY u.nombre`
     );
     
