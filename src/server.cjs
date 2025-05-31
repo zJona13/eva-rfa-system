@@ -1416,7 +1416,19 @@ app.delete('/api/asignaciones/:id', async (req, res) => {
   }
 });
 
-// Endpoint para validar disponibilidad de horario
+// Nueva ruta para cerrar asignaciones
+app.put('/api/asignaciones/:id/cerrar', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await asignacionService.cerrarAsignacion(id);
+    res.json(result);
+  } catch (error) {
+    console.error('Error en PUT /api/asignaciones/cerrar:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+// Endpoint para validar disponibilidad de horario (simplificado)
 app.get('/api/asignaciones/validar-horario', async (req, res) => {
   try {
     const { fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId } = req.query;
