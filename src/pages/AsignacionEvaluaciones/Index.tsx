@@ -44,27 +44,35 @@ const AsignacionEvaluaciones = () => {
   }, []);
 
   const fetchAsignaciones = async () => {
+    console.log('🔄 Obteniendo asignaciones...');
     const response = await apiRequest('/asignaciones');
     if (response.success) {
+      console.log('✅ Asignaciones obtenidas:', response.data.asignaciones);
       setAsignaciones(response.data.asignaciones || []);
     } else {
+      console.error('❌ Error al obtener asignaciones:', response.error);
       toast.error('Error al cargar las asignaciones');
     }
   };
 
   const fetchAreas = async () => {
+    console.log('🔄 Obteniendo áreas...');
     const response = await apiRequest('/asignaciones/areas');
     if (response.success) {
+      console.log('✅ Áreas obtenidas:', response.data.areas);
       setAreas(response.data.areas || []);
     } else {
+      console.error('❌ Error al obtener áreas:', response.error);
       toast.error('Error al cargar las áreas');
     }
   };
 
   const handleSubmit = async (values: any) => {
+    console.log('🚀 Iniciando handleSubmit en Index con valores:', values);
     setIsSubmitting(true);
     
     try {
+      console.log('📤 Enviando petición API...');
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
@@ -75,22 +83,35 @@ const AsignacionEvaluaciones = () => {
             body: values,
           });
 
+      console.log('📥 Respuesta del servidor:', response);
+
       if (response.success) {
+        console.log('✅ Asignación guardada exitosamente');
         toast.success(response.data.message || 'Asignación guardada exitosamente');
+        
+        // Cerrar el diálogo y limpiar estado solo si fue exitoso
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        fetchAsignaciones();
+        
+        // Recargar las asignaciones
+        await fetchAsignaciones();
       } else {
+        console.error('❌ Error del servidor:', response.error);
         toast.error(response.error || 'Error al guardar la asignación');
+        // NO cerrar el diálogo en caso de error
       }
     } catch (error) {
-      toast.error('Error de conexión');
+      console.error('❌ Error de conexión en handleSubmit:', error);
+      toast.error('Error de conexión con el servidor');
+      // NO cerrar el diálogo en caso de error
     } finally {
+      console.log('🏁 Finalizando handleSubmit, estableciendo isSubmitting a false');
       setIsSubmitting(false);
     }
   };
 
   const handleEdit = (asignacion: Asignacion) => {
+    console.log('✏️ Editando asignación:', asignacion);
     setEditingAsignacion(asignacion);
     setIsDialogOpen(true);
   };
@@ -100,22 +121,28 @@ const AsignacionEvaluaciones = () => {
       return;
     }
 
+    console.log('🗑️ Eliminando asignación:', id);
     const response = await apiRequest(`/asignaciones/${id}`, {
       method: 'DELETE',
     });
 
     if (response.success) {
+      console.log('✅ Asignación eliminada');
       toast.success('Asignación eliminada exitosamente');
       fetchAsignaciones();
     } else {
+      console.error('❌ Error al eliminar:', response.error);
       toast.error('Error al eliminar la asignación');
     }
   };
 
   const handleNewAsignacion = () => {
+    console.log('➕ Creando nueva asignación');
     setEditingAsignacion(null);
     setIsDialogOpen(true);
   };
+
+  console.log('🎨 Renderizando AsignacionEvaluaciones, isDialogOpen:', isDialogOpen, 'isSubmitting:', isSubmitting);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -151,7 +178,13 @@ const AsignacionEvaluaciones = () => {
 
       <AsignacionDialog
         open={isDialogOpen}
-        onOpenChange={setIsDialogOpen}
+        onOpenChange={(open) => {
+          console.log('🔄 Cambiando estado del diálogo a:', open);
+          setIsDialogOpen(open);
+          if (!open) {
+            setEditingAsignacion(null);
+          }
+        }}
         asignacionData={editingAsignacion}
         areas={areas}
         onSubmit={handleSubmit}

@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -120,6 +119,8 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   isSubmitting,
 }) => {
   console.log('AsignacionDialog - Areas recibidas:', areas);
+  console.log('AsignacionDialog - isSubmitting:', isSubmitting);
+  console.log('AsignacionDialog - open:', open);
   
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -134,6 +135,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   });
 
   useEffect(() => {
+    console.log('AsignacionDialog - useEffect triggered, asignacionData:', asignacionData);
     if (asignacionData) {
       const fechaInicio = asignacionData.fechaInicio ? format(new Date(asignacionData.fechaInicio), 'yyyy-MM-dd') : '';
       const fechaFin = asignacionData.fechaFin ? format(new Date(asignacionData.fechaFin), 'yyyy-MM-dd') : '';
@@ -159,15 +161,32 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   }, [asignacionData, form]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    console.log('Enviando datos:', values);
+    console.log('🚀 Iniciando handleSubmit con valores:', values);
     
-    const submissionData = {
-      ...values,
-      areaId: parseInt(values.areaId),
-    };
-    
-    await onSubmit(submissionData);
+    try {
+      const submissionData = {
+        ...values,
+        areaId: parseInt(values.areaId),
+      };
+      
+      console.log('📤 Datos preparados para envío:', submissionData);
+      
+      // Llamar a la función onSubmit del componente padre
+      await onSubmit(submissionData);
+      
+      console.log('✅ onSubmit completado exitosamente');
+      
+    } catch (error) {
+      console.error('❌ Error en handleSubmit:', error);
+      // No cerrar el diálogo si hay error
+      throw error;
+    }
   };
+
+  // Prevenir el cierre del diálogo si ocurre un error
+  const handleFormSubmit = form.handleSubmit(handleSubmit, (errors) => {
+    console.error('❌ Errores de validación del formulario:', errors);
+  });
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -185,14 +204,20 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
         </DialogHeader>
 
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <form onSubmit={handleFormSubmit} className="space-y-4">
             <FormField
               control={form.control}
               name="areaId"
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Área *</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select 
+                    onValueChange={(value) => {
+                      console.log('📋 Área seleccionada:', value);
+                      field.onChange(value);
+                    }} 
+                    value={field.value}
+                  >
                     <FormControl>
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Seleccionar área" />
@@ -330,12 +355,19 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => onOpenChange(false)}
+                onClick={() => {
+                  console.log('❌ Cancelando diálogo');
+                  onOpenChange(false);
+                }}
                 disabled={isSubmitting}
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting}
+                onClick={() => console.log('🔄 Click en botón submit, isSubmitting:', isSubmitting)}
+              >
                 {isSubmitting ? 'Guardando...' : asignacionData ? 'Actualizar' : 'Crear Asignación'}
               </Button>
             </div>
