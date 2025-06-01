@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
 import EvaluacionEstudianteForm from './EvaluacionEstudianteForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
+import { useEvaluationPermissions } from '@/hooks/useEvaluationPermissions';
 
 const StudentEvaluation = () => {
   const { user } = useAuth();
@@ -17,11 +17,18 @@ const StudentEvaluation = () => {
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
 
+  // Use evaluation permissions
+  const { 
+    canAccessStudentEvaluation, 
+    userAreas, 
+    isLoading: isLoadingPermissions 
+  } = useEvaluationPermissions();
+
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-estudiante', user?.id],
     queryFn: () => apiRequest(`/evaluaciones/evaluador/${user?.id}`),
-    enabled: !!user?.id,
+    enabled: !!user?.id && canAccessStudentEvaluation,
   });
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
@@ -51,6 +58,36 @@ const StudentEvaluation = () => {
     // El estudiante puede generar incidencias para docentes que evaluó
     return evaluacion.score < 11;
   };
+
+  if (isLoadingPermissions) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!canAccessStudentEvaluation) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Evaluación del Estudiante al Docente</h1>
+          <p className="text-muted-foreground mt-2">
+            Consulta las evaluaciones que has realizado a los docentes.
+          </p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                No tienes permisos para acceder a evaluaciones de docentes o no tienes asignaciones activas en tu área.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (showForm) {
     return <EvaluacionEstudianteForm onCancel={() => setShowForm(false)} />;

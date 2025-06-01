@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
 import EvaluacionSupervisionForm from './EvaluacionSupervisionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
+import { useEvaluationPermissions } from '@/hooks/useEvaluationPermissions';
 
 const ChecklistEvaluation = () => {
   const { user } = useAuth();
@@ -17,11 +17,18 @@ const ChecklistEvaluation = () => {
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
 
+  // Use evaluation permissions
+  const { 
+    canAccessSupervisionEvaluation, 
+    userAreas, 
+    isLoading: isLoadingPermissions 
+  } = useEvaluationPermissions();
+
   // Fetch evaluaciones realizadas por este evaluador
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-evaluador', user?.id],
     queryFn: () => apiRequest(`/evaluaciones/evaluador/${user?.id}`),
-    enabled: !!user?.id,
+    enabled: !!user?.id && canAccessSupervisionEvaluation,
   });
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
@@ -50,6 +57,36 @@ const ChecklistEvaluation = () => {
   const canGenerateIncidencia = (evaluacion: any) => {
     return evaluacion.score < 11;
   };
+
+  if (isLoadingPermissions) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+      </div>
+    );
+  }
+
+  if (!canAccessSupervisionEvaluation) {
+    return (
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Supervisión Docente</h1>
+          <p className="text-muted-foreground mt-2">
+            Consulta las evaluaciones de supervisión que has realizado utilizando criterios predefinidos.
+          </p>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                No tienes permisos para acceder a supervisiones o no tienes asignaciones activas como evaluador.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (showForm) {
     return <EvaluacionSupervisionForm onCancel={() => setShowForm(false)} />;
