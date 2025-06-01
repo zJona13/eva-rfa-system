@@ -176,11 +176,6 @@ const AsignacionEvaluaciones = () => {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />
-
-      {/* Debug info */}
-      <div className="text-xs text-muted-foreground">
-        Áreas cargadas: {areas.length}
-      </div>
     </div>
   );
 };

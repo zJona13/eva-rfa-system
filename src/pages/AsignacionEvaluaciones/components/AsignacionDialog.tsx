@@ -162,11 +162,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               )}
             />
 
-            {/* Debug info */}
-            <div className="text-xs text-muted-foreground">
-              Áreas disponibles: {areas?.length || 0}
-            </div>
-
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
