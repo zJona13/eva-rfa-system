@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,33 +35,46 @@ const AsignacionEvaluaciones = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
-    fetchAsignaciones();
-    fetchAreas();
+    loadInitialData();
   }, []);
+
+  const loadInitialData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchAsignaciones(), fetchAreas()]);
+    setIsLoading(false);
+  };
 
   const fetchAsignaciones = async () => {
     try {
+      console.log('Obteniendo asignaciones...');
       const response = await apiRequest('/asignaciones');
-      console.log('Response asignaciones:', response);
-      if (response.success) {
-        setAsignaciones(response.data.asignaciones || []);
+      console.log('Respuesta asignaciones:', response);
+      
+      if (response.success && response.data) {
+        const asignacionesData = response.data.asignaciones || [];
+        console.log('Asignaciones recibidas:', asignacionesData);
+        setAsignaciones(asignacionesData);
       } else {
+        console.error('Error en respuesta de asignaciones:', response);
         toast.error('Error al cargar las asignaciones');
+        setAsignaciones([]);
       }
     } catch (error) {
-      console.error('Error fetching asignaciones:', error);
+      console.error('Error al obtener asignaciones:', error);
       toast.error('Error de conexión al cargar asignaciones');
+      setAsignaciones([]);
     }
   };
 
   const fetchAreas = async () => {
     try {
-      console.log('Iniciando fetchAreas...');
+      console.log('Obteniendo áreas...');
       const response = await apiRequest('/areas');
-      console.log('Response areas:', response);
+      console.log('Respuesta áreas:', response);
       
       if (response.success && response.data) {
         const areasData = response.data.areas || [];
@@ -71,12 +85,14 @@ const AsignacionEvaluaciones = () => {
           toast.error('No hay áreas disponibles');
         }
       } else {
-        console.error('Error en la respuesta de áreas:', response);
+        console.error('Error en respuesta de áreas:', response);
         toast.error('Error al cargar las áreas');
+        setAreas([]);
       }
     } catch (error) {
-      console.error('Error fetching areas:', error);
+      console.error('Error al obtener áreas:', error);
       toast.error('Error de conexión al cargar áreas');
+      setAreas([]);
     }
   };
 
@@ -84,6 +100,8 @@ const AsignacionEvaluaciones = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('Enviando datos de asignación:', values);
+      
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
@@ -94,22 +112,33 @@ const AsignacionEvaluaciones = () => {
             body: values,
           });
 
+      console.log('Respuesta del servidor:', response);
+
       if (response.success) {
-        toast.success(response.data.message || 'Asignación guardada exitosamente');
+        const message = editingAsignacion 
+          ? 'Asignación actualizada exitosamente'
+          : 'Asignación creada exitosamente';
+        
+        toast.success(response.data?.message || message);
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        fetchAsignaciones();
+        
+        // Recargar las asignaciones después de crear/editar
+        await fetchAsignaciones();
       } else {
+        console.error('Error en la respuesta:', response);
         toast.error(response.error || 'Error al guardar la asignación');
       }
     } catch (error) {
-      toast.error('Error de conexión');
+      console.error('Error al enviar asignación:', error);
+      toast.error('Error de conexión al guardar');
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleEdit = (asignacion: Asignacion) => {
+    console.log('Editando asignación:', asignacion);
     setEditingAsignacion(asignacion);
     setIsDialogOpen(true);
   };
@@ -119,15 +148,22 @@ const AsignacionEvaluaciones = () => {
       return;
     }
 
-    const response = await apiRequest(`/asignaciones/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      console.log('Eliminando asignación ID:', id);
+      const response = await apiRequest(`/asignaciones/${id}`, {
+        method: 'DELETE',
+      });
 
-    if (response.success) {
-      toast.success('Asignación eliminada exitosamente');
-      fetchAsignaciones();
-    } else {
-      toast.error('Error al eliminar la asignación');
+      if (response.success) {
+        toast.success('Asignación eliminada exitosamente');
+        await fetchAsignaciones();
+      } else {
+        console.error('Error al eliminar:', response);
+        toast.error(response.error || 'Error al eliminar la asignación');
+      }
+    } catch (error) {
+      console.error('Error al eliminar asignación:', error);
+      toast.error('Error de conexión al eliminar');
     }
   };
 
@@ -135,6 +171,19 @@ const AsignacionEvaluaciones = () => {
     setEditingAsignacion(null);
     setIsDialogOpen(true);
   };
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Cargando asignaciones...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">

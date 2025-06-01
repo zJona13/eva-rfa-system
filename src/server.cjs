@@ -1365,6 +1365,7 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
 // Asignaciones routes
 app.get('/api/asignaciones', authenticateToken, async (req, res) => {
   try {
+    console.log('GET /api/asignaciones - Usuario:', req.user?.idUsuario);
     const result = await asignacionService.getAllAsignaciones();
     
     if (result.success) {
@@ -1381,33 +1382,7 @@ app.get('/api/asignaciones', authenticateToken, async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('Error en /api/asignaciones:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Error interno del servidor'
-    });
-  }
-});
-
-app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
-  try {
-    const result = await asignacionService.getAreas();
-    
-    if (result.success) {
-      res.json({
-        success: true,
-        data: {
-          areas: result.areas
-        }
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        error: result.message
-      });
-    }
-  } catch (error) {
-    console.error('Error en /api/asignaciones/areas:', error);
+    console.error('Error en GET /api/asignaciones:', error);
     res.status(500).json({
       success: false,
       error: 'Error interno del servidor'
@@ -1417,12 +1392,23 @@ app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
 
 app.post('/api/asignaciones', authenticateToken, async (req, res) => {
   try {
-    const result = await asignacionService.createAsignacion(req.body);
+    console.log('POST /api/asignaciones - Datos:', req.body);
+    console.log('Usuario:', req.user?.idUsuario);
+    
+    const asignacionData = {
+      ...req.body,
+      idUsuario: req.user.idUsuario
+    };
+    
+    const result = await asignacionService.createAsignacion(asignacionData);
     
     if (result.success) {
       res.json({
         success: true,
-        data: result
+        data: {
+          asignacion: result.asignacion,
+          message: result.message
+        }
       });
     } else {
       res.status(400).json({
@@ -1442,12 +1428,16 @@ app.post('/api/asignaciones', authenticateToken, async (req, res) => {
 app.put('/api/asignaciones/:id', authenticateToken, async (req, res) => {
   try {
     const asignacionId = req.params.id;
+    console.log('PUT /api/asignaciones/' + asignacionId + ' - Datos:', req.body);
+    
     const result = await asignacionService.updateAsignacion(asignacionId, req.body);
     
     if (result.success) {
       res.json({
         success: true,
-        data: result
+        data: {
+          message: result.message
+        }
       });
     } else {
       res.status(400).json({
@@ -1467,12 +1457,16 @@ app.put('/api/asignaciones/:id', authenticateToken, async (req, res) => {
 app.delete('/api/asignaciones/:id', authenticateToken, async (req, res) => {
   try {
     const asignacionId = req.params.id;
+    console.log('DELETE /api/asignaciones/' + asignacionId);
+    
     const result = await asignacionService.deleteAsignacion(asignacionId);
     
     if (result.success) {
       res.json({
         success: true,
-        data: result
+        data: {
+          message: result.message
+        }
       });
     } else {
       res.status(400).json({
