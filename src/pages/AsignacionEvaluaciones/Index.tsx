@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,6 @@ interface Asignacion {
   areaId: number;
   totalEvaluaciones: number;
   evaluacionesCompletadas: number;
-  periodo: number;
 }
 
 interface Area {
@@ -36,7 +34,6 @@ const AsignacionEvaluaciones = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
@@ -45,31 +42,17 @@ const AsignacionEvaluaciones = () => {
   }, []);
 
   const fetchAsignaciones = async () => {
-    setIsLoading(true);
     try {
-      console.log('Obteniendo asignaciones...');
       const response = await apiRequest('/asignaciones');
       console.log('Response asignaciones:', response);
-      
-      if (response.success && response.data) {
-        const asignacionesData = response.data.asignaciones || [];
-        console.log('Asignaciones obtenidas:', asignacionesData);
-        setAsignaciones(asignacionesData);
-        
-        if (asignacionesData.length === 0) {
-          console.log('No hay asignaciones disponibles');
-        }
+      if (response.success) {
+        setAsignaciones(response.data.asignaciones || []);
       } else {
-        console.error('Error en la respuesta de asignaciones:', response);
         toast.error('Error al cargar las asignaciones');
-        setAsignaciones([]);
       }
     } catch (error) {
       console.error('Error fetching asignaciones:', error);
       toast.error('Error de conexión al cargar asignaciones');
-      setAsignaciones([]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -82,17 +65,9 @@ const AsignacionEvaluaciones = () => {
       if (response.success && response.data) {
         const areasData = response.data.areas || [];
         console.log('Áreas recibidas:', areasData);
+        setAreas(areasData);
         
-        // Mapear los datos para que coincidan con la interfaz Area
-        const mappedAreas = areasData.map((area: any) => ({
-          id: area.id,
-          name: area.nombre || area.name,
-          description: area.descripcion || area.description
-        }));
-        
-        setAreas(mappedAreas);
-        
-        if (mappedAreas.length === 0) {
+        if (areasData.length === 0) {
           toast.error('No hay áreas disponibles');
         }
       } else {
@@ -109,8 +84,6 @@ const AsignacionEvaluaciones = () => {
     setIsSubmitting(true);
     
     try {
-      console.log('Enviando datos de asignación:', values);
-      
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
@@ -121,24 +94,15 @@ const AsignacionEvaluaciones = () => {
             body: values,
           });
 
-      console.log('Response submit:', response);
-
       if (response.success) {
-        const message = response.data?.message || 
-                       (editingAsignacion ? 'Asignación actualizada exitosamente' : 'Asignación creada exitosamente');
-        toast.success(message);
+        toast.success(response.data.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        
-        // Recargar las asignaciones para mostrar los cambios
-        await fetchAsignaciones();
+        fetchAsignaciones();
       } else {
-        const errorMessage = response.error || response.message || 'Error al guardar la asignación';
-        console.error('Error al guardar:', errorMessage);
-        toast.error(errorMessage);
+        toast.error(response.error || 'Error al guardar la asignación');
       }
     } catch (error) {
-      console.error('Error en submit:', error);
       toast.error('Error de conexión');
     } finally {
       setIsSubmitting(false);
@@ -146,32 +110,24 @@ const AsignacionEvaluaciones = () => {
   };
 
   const handleEdit = (asignacion: Asignacion) => {
-    console.log('Editando asignación:', asignacion);
     setEditingAsignacion(asignacion);
     setIsDialogOpen(true);
   };
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta asignación? Esto eliminará todas las evaluaciones pendientes asociadas.')) {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
       return;
     }
 
-    try {
-      console.log('Eliminando asignación:', id);
-      const response = await apiRequest(`/asignaciones/${id}`, {
-        method: 'DELETE',
-      });
+    const response = await apiRequest(`/asignaciones/${id}`, {
+      method: 'DELETE',
+    });
 
-      if (response.success) {
-        toast.success('Asignación eliminada exitosamente');
-        await fetchAsignaciones(); // Recargar la lista
-      } else {
-        const errorMessage = response.error || response.message || 'Error al eliminar la asignación';
-        toast.error(errorMessage);
-      }
-    } catch (error) {
-      console.error('Error al eliminar:', error);
-      toast.error('Error de conexión');
+    if (response.success) {
+      toast.success('Asignación eliminada exitosamente');
+      fetchAsignaciones();
+    } else {
+      toast.error('Error al eliminar la asignación');
     }
   };
 
@@ -204,20 +160,11 @@ const AsignacionEvaluaciones = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          {isLoading ? (
-            <div className="flex items-center justify-center py-8">
-              <div className="text-center">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Cargando asignaciones...</p>
-              </div>
-            </div>
-          ) : (
-            <AsignacionesTable
-              asignaciones={asignaciones}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
-          )}
+          <AsignacionesTable
+            asignaciones={asignaciones}
+            onEdit={handleEdit}
+            onDelete={handleDelete}
+          />
         </CardContent>
       </Card>
 
