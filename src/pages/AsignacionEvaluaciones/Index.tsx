@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -25,9 +24,8 @@ interface Asignacion {
 
 interface Area {
   id: number;
-  nombre: string;
-  descripcion?: string;
-  totalDocentes: number;
+  name: string;
+  description?: string;
 }
 
 const AsignacionEvaluaciones = () => {
@@ -44,20 +42,41 @@ const AsignacionEvaluaciones = () => {
   }, []);
 
   const fetchAsignaciones = async () => {
-    const response = await apiRequest('/asignaciones');
-    if (response.success) {
-      setAsignaciones(response.data.asignaciones || []);
-    } else {
-      toast.error('Error al cargar las asignaciones');
+    try {
+      const response = await apiRequest('/asignaciones');
+      console.log('Response asignaciones:', response);
+      if (response.success) {
+        setAsignaciones(response.data.asignaciones || []);
+      } else {
+        toast.error('Error al cargar las asignaciones');
+      }
+    } catch (error) {
+      console.error('Error fetching asignaciones:', error);
+      toast.error('Error de conexión al cargar asignaciones');
     }
   };
 
   const fetchAreas = async () => {
-    const response = await apiRequest('/asignaciones/areas');
-    if (response.success) {
-      setAreas(response.data.areas || []);
-    } else {
-      toast.error('Error al cargar las áreas');
+    try {
+      console.log('Iniciando fetchAreas...');
+      const response = await apiRequest('/areas');
+      console.log('Response areas:', response);
+      
+      if (response.success && response.data) {
+        const areasData = response.data.areas || [];
+        console.log('Áreas recibidas:', areasData);
+        setAreas(areasData);
+        
+        if (areasData.length === 0) {
+          toast.error('No hay áreas disponibles');
+        }
+      } else {
+        console.error('Error en la respuesta de áreas:', response);
+        toast.error('Error al cargar las áreas');
+      }
+    } catch (error) {
+      console.error('Error fetching areas:', error);
+      toast.error('Error de conexión al cargar áreas');
     }
   };
 
@@ -157,6 +176,11 @@ const AsignacionEvaluaciones = () => {
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />
+
+      {/* Debug info */}
+      <div className="text-xs text-muted-foreground">
+        Áreas cargadas: {areas.length}
+      </div>
     </div>
   );
 };

@@ -44,9 +44,8 @@ const formSchema = z.object({
 
 interface Area {
   id: number;
-  nombre: string;
-  descripcion?: string;
-  totalDocentes: number;
+  name: string;
+  description?: string;
 }
 
 interface AsignacionDialogProps {
@@ -77,6 +76,9 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
       descripcion: '',
     },
   });
+
+  // Debug para verificar las áreas
+  console.log('Areas en AsignacionDialog:', areas);
 
   useEffect(() => {
     if (asignacionData) {
@@ -135,24 +137,35 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Área</FormLabel>
-                  <Select onValueChange={field.onChange} defaultValue={field.value}>
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Seleccionar área" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {areas.map((area) => (
-                        <SelectItem key={area.id} value={area.id.toString()}>
-                          {area.nombre} ({area.totalDocentes} docentes)
+                      {areas && areas.length > 0 ? (
+                        areas.map((area) => (
+                          <SelectItem key={area.id} value={area.id.toString()}>
+                            {area.name}
+                          </SelectItem>
+                        ))
+                      ) : (
+                        <SelectItem value="no-areas" disabled>
+                          No hay áreas disponibles
                         </SelectItem>
-                      ))}
+                      )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Debug info */}
+            <div className="text-xs text-muted-foreground">
+              Áreas disponibles: {areas?.length || 0}
+            </div>
 
             <div className="grid grid-cols-2 gap-4">
               <FormField

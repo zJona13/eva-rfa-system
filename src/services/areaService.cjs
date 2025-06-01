@@ -8,6 +8,8 @@ const getAllAreas = async () => {
       'SELECT idArea as id, nombre as name, descripcion as description FROM AREA ORDER BY nombre'
     );
     
+    console.log('Áreas obtenidas desde la base de datos:', rows);
+    
     return {
       success: true,
       areas: rows
