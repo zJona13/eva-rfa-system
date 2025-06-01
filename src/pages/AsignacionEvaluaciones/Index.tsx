@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { Plus, Calendar, Users, CheckCircle, Clock } from 'lucide-react';
+import { Plus, Calendar, Users, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -14,22 +14,18 @@ interface Asignacion {
   id: number;
   fechaInicio: string;
   fechaFin: string;
-  horaInicio: string;
-  horaFin: string;
-  tipoEvaluacion: string;
   estado: string;
-  descripcion?: string;
   areaNombre: string;
   areaId: number;
   totalEvaluaciones: number;
   evaluacionesCompletadas: number;
-  periodo?: number;
+  periodo: number;
 }
 
 interface Area {
   id: number;
-  name: string;
-  description?: string;
+  nombre: string;
+  descripcion?: string;
 }
 
 const AsignacionEvaluaciones = () => {
@@ -47,96 +43,75 @@ const AsignacionEvaluaciones = () => {
 
   const loadData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchAsignaciones(), fetchAreas()]);
-    setIsLoading(false);
+    try {
+      await Promise.all([fetchAsignaciones(), fetchAreas()]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchAsignaciones = async () => {
     try {
-      console.log('🔍 Obteniendo asignaciones...');
+      console.log('🔍 Cargando asignaciones...');
       const response = await apiRequest('/asignaciones');
-      console.log('📋 Respuesta completa de asignaciones:', response);
+      console.log('📋 Respuesta del servidor:', response);
       
       if (response.success) {
-        // Buscar los datos en diferentes posibles estructuras
-        let asignacionesData = [];
+        // Extraer datos de diferentes estructuras posibles
+        let data = response.data;
         
-        if (response.data) {
-          if (Array.isArray(response.data)) {
-            asignacionesData = response.data;
-          } else if (response.data.asignaciones && Array.isArray(response.data.asignaciones)) {
-            asignacionesData = response.data.asignaciones;
-          } else if (response.data.data && Array.isArray(response.data.data)) {
-            asignacionesData = response.data.data;
-          }
+        // Si viene envuelto en otra propiedad
+        if (data && data.asignaciones) {
+          data = data.asignaciones;
         }
         
-        console.log('✅ Datos de asignaciones extraídos:', asignacionesData);
-        console.log('📊 Número de asignaciones:', asignacionesData.length);
-        
-        // Validar y limpiar los datos
-        const asignacionesLimpias = asignacionesData.map((item: any) => ({
-          id: item.id || item.idAsignacion,
-          fechaInicio: item.fechaInicio || item.fecha_inicio,
-          fechaFin: item.fechaFin || item.fecha_fin,
-          horaInicio: item.horaInicio || '08:00',
-          horaFin: item.horaFin || '18:00',
-          tipoEvaluacion: item.tipoEvaluacion || 'Múltiples evaluaciones',
-          estado: item.estado || item.estadoAsignacion || 'Pendiente',
-          descripcion: item.descripcion || `Evaluaciones del área ${item.areaNombre || 'Sin área'}`,
-          areaNombre: item.areaNombre || item.area_nombre || 'Área sin nombre',
-          areaId: item.areaId || item.idArea || 0,
-          totalEvaluaciones: parseInt(item.totalEvaluaciones) || 0,
-          evaluacionesCompletadas: parseInt(item.evaluacionesCompletadas) || 0,
-          periodo: item.periodo || new Date().getFullYear()
-        }));
-        
-        console.log('🧹 Asignaciones procesadas:', asignacionesLimpias);
-        setAsignaciones(asignacionesLimpias);
-        
+        // Si es un array, usarlo directamente
+        if (Array.isArray(data)) {
+          console.log('✅ Asignaciones encontradas:', data.length);
+          setAsignaciones(data);
+        } else {
+          console.log('⚠️ Los datos no son un array:', data);
+          setAsignaciones([]);
+        }
       } else {
-        console.error('❌ Error en la respuesta:', response.error);
-        toast.error('Error al cargar las asignaciones: ' + response.error);
+        console.error('❌ Error en respuesta:', response.error);
+        toast.error('Error al cargar asignaciones');
         setAsignaciones([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching asignaciones:', error);
-      toast.error('Error de conexión al cargar asignaciones');
+      console.error('❌ Error en fetchAsignaciones:', error);
+      toast.error('Error de conexión');
       setAsignaciones([]);
     }
   };
 
   const fetchAreas = async () => {
     try {
-      console.log('🏢 Obteniendo áreas...');
       const response = await apiRequest('/areas');
-      console.log('📋 Respuesta de áreas:', response);
       
-      if (response.success && response.data) {
-        let areasData = [];
+      if (response.success) {
+        let data = response.data;
         
-        if (Array.isArray(response.data)) {
-          areasData = response.data;
-        } else if (response.data.areas && Array.isArray(response.data.areas)) {
-          areasData = response.data.areas;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          areasData = response.data.data;
+        if (data && data.areas) {
+          data = data.areas;
         }
         
-        const areasLimpias = areasData.map((area: any) => ({
-          id: area.id || area.idArea,
-          name: area.name || area.nombre,
-          description: area.description || area.descripcion
-        }));
-        
-        console.log('✅ Áreas procesadas:', areasLimpias);
-        setAreas(areasLimpias);
+        if (Array.isArray(data)) {
+          // Mapear para asegurar la estructura correcta
+          const areasFormateadas = data.map((area: any) => ({
+            id: area.id || area.idArea,
+            nombre: area.nombre || area.name,
+            descripcion: area.descripcion || area.description
+          }));
+          setAreas(areasFormateadas);
+        } else {
+          setAreas([]);
+        }
       } else {
-        console.error('❌ Error en la respuesta de áreas:', response.error);
         setAreas([]);
       }
     } catch (error) {
-      console.error('❌ Error fetching areas:', error);
+      console.error('❌ Error en fetchAreas:', error);
       setAreas([]);
     }
   };
@@ -156,10 +131,11 @@ const AsignacionEvaluaciones = () => {
           });
 
       if (response.success) {
-        toast.success(response.data?.message || 'Asignación guardada exitosamente');
+        toast.success('Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        fetchAsignaciones();
+        // Recargar inmediatamente después de guardar
+        await fetchAsignaciones();
       } else {
         toast.error(response.error || 'Error al guardar la asignación');
       }
@@ -180,15 +156,20 @@ const AsignacionEvaluaciones = () => {
       return;
     }
 
-    const response = await apiRequest(`/asignaciones/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      const response = await apiRequest(`/asignaciones/${id}`, {
+        method: 'DELETE',
+      });
 
-    if (response.success) {
-      toast.success('Asignación eliminada exitosamente');
-      fetchAsignaciones();
-    } else {
-      toast.error('Error al eliminar la asignación');
+      if (response.success) {
+        toast.success('Asignación eliminada exitosamente');
+        // Recargar inmediatamente después de eliminar
+        await fetchAsignaciones();
+      } else {
+        toast.error('Error al eliminar la asignación');
+      }
+    } catch (error) {
+      toast.error('Error de conexión');
     }
   };
 
@@ -253,9 +234,7 @@ const AsignacionEvaluaciones = () => {
           
           <div className="flex items-center space-x-2 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
-            <span>
-              {asignacion.horaInicio} - {asignacion.horaFin}
-            </span>
+            <span>08:00 - 18:00</span>
           </div>
 
           <div className="flex items-center space-x-2 text-sm">
@@ -279,12 +258,6 @@ const AsignacionEvaluaciones = () => {
               <span>{asignacion.totalEvaluaciones} total</span>
             </div>
           </div>
-
-          {asignacion.descripcion && (
-            <p className="text-sm text-muted-foreground">
-              {asignacion.descripcion}
-            </p>
-          )}
 
           <div className="flex space-x-2 pt-2">
             <Button 
@@ -339,11 +312,11 @@ const AsignacionEvaluaciones = () => {
 
       {/* Información de debug */}
       <div className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-lg">
-        <p>Estado: {asignaciones.length} asignaciones encontradas</p>
+        <p>Asignaciones cargadas: {asignaciones.length}</p>
         <p>Áreas disponibles: {areas.length}</p>
       </div>
 
-      {/* Lista de asignaciones como cards */}
+      {/* Lista de asignaciones */}
       {asignaciones.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
