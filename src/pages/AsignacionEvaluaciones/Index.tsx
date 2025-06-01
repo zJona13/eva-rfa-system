@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, Users, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -28,10 +27,8 @@ interface Asignacion {
 
 interface Area {
   id: number;
-  nombre?: string;
-  name?: string;
+  name: string;
   description?: string;
-  descripcion?: string;
 }
 
 const AsignacionEvaluaciones = () => {
@@ -54,8 +51,10 @@ const AsignacionEvaluaciones = () => {
       console.log('📋 Response completa asignaciones:', response);
       
       if (response.success && response.data) {
-        // Verificar si las asignaciones están en response.data.asignaciones o directamente en response.data
-        const asignacionesData = response.data.asignaciones || response.data || [];
+        const asignacionesData = Array.isArray(response.data) ? response.data : 
+                               response.data.asignaciones ? response.data.asignaciones : 
+                               response.data.data ? response.data.data : [];
+        
         console.log('✅ Asignaciones encontradas:', asignacionesData.length);
         console.log('📊 Datos de asignaciones:', asignacionesData);
         
@@ -81,12 +80,22 @@ const AsignacionEvaluaciones = () => {
       console.log('🏢 Response areas:', response);
       
       if (response.success && response.data) {
-        const areasData = response.data.areas || response.data || [];
-        console.log('✅ Áreas encontradas:', areasData.length);
-        console.log('🏢 Datos de áreas:', areasData);
-        setAreas(areasData);
+        const areasData = Array.isArray(response.data) ? response.data :
+                         response.data.areas ? response.data.areas :
+                         response.data.data ? response.data.data : [];
         
-        if (areasData.length === 0) {
+        // Mapear los datos para asegurar compatibilidad con la interfaz Area
+        const mappedAreas = areasData.map((area: any) => ({
+          id: area.id || area.idArea,
+          name: area.name || area.nombre,
+          description: area.description || area.descripcion
+        }));
+        
+        console.log('✅ Áreas encontradas:', mappedAreas.length);
+        console.log('🏢 Datos de áreas mapeadas:', mappedAreas);
+        setAreas(mappedAreas);
+        
+        if (mappedAreas.length === 0) {
           toast.error('No hay áreas disponibles');
         }
       } else {
@@ -114,7 +123,7 @@ const AsignacionEvaluaciones = () => {
           });
 
       if (response.success) {
-        toast.success(response.data.message || 'Asignación guardada exitosamente');
+        toast.success(response.data?.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
         fetchAsignaciones();
