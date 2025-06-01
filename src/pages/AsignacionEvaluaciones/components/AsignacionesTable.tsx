@@ -31,18 +31,14 @@ interface Asignacion {
 
 interface AsignacionesTableProps {
   asignaciones: Asignacion[];
-  onEdit?: (asignacion: Asignacion) => void;
-  onDelete?: (id: number) => void;
-  onSelect?: (asignacion: Asignacion) => void;
-  selectedId?: number;
+  onEdit: (asignacion: Asignacion) => void;
+  onDelete: (id: number) => void;
 }
 
 const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
   asignaciones,
   onEdit,
   onDelete,
-  onSelect,
-  selectedId,
 }) => {
   const getEstadoBadge = (estado: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -110,11 +106,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
         </TableHeader>
         <TableBody>
           {asignaciones.map((asignacion) => (
-            <TableRow 
-              key={asignacion.id}
-              className={`cursor-pointer ${selectedId === asignacion.id ? 'bg-muted' : ''}`}
-              onClick={() => onSelect?.(asignacion)}
-            >
+            <TableRow key={asignacion.id}>
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -163,32 +155,22 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
               </TableCell>
               <TableCell>
                 <div className="flex space-x-1">
-                  {onEdit && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onEdit(asignacion);
-                      }}
-                      title="Editar asignación"
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                  )}
-                  {onDelete && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onDelete(asignacion.id);
-                      }}
-                      title="Eliminar asignación"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  )}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onEdit(asignacion)}
+                    title="Editar asignación"
+                  >
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onDelete(asignacion.id)}
+                    title="Eliminar asignación"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </div>
               </TableCell>
             </TableRow>

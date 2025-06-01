@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -27,6 +28,10 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { CalendarIcon } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 const formSchema = z.object({
   fechaInicio: z.string().min(1, 'La fecha de inicio es obligatoria'),
@@ -35,21 +40,6 @@ const formSchema = z.object({
   horaFin: z.string().min(1, 'La hora de fin es obligatoria'),
   areaId: z.string().min(1, 'Debe seleccionar un área'),
   descripcion: z.string().optional(),
-}).refine((data) => {
-  const fechaInicio = new Date(data.fechaInicio);
-  const fechaFin = new Date(data.fechaFin);
-  return fechaFin >= fechaInicio;
-}, {
-  message: "La fecha de fin debe ser posterior o igual a la fecha de inicio",
-  path: ["fechaFin"],
-}).refine((data) => {
-  if (data.fechaInicio === data.fechaFin) {
-    return data.horaFin > data.horaInicio;
-  }
-  return true;
-}, {
-  message: "La hora de fin debe ser posterior a la hora de inicio",
-  path: ["horaFin"],
 });
 
 interface Area {
@@ -89,9 +79,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   });
 
   useEffect(() => {
-    console.log('Areas recibidas en AsignacionDialog:', areas);
-    console.log('Cantidad de áreas:', areas?.length || 0);
-    
     if (asignacionData) {
       const fechaInicio = asignacionData.fechaInicio ? format(new Date(asignacionData.fechaInicio), 'yyyy-MM-dd') : '';
       const fechaFin = asignacionData.fechaFin ? format(new Date(asignacionData.fechaFin), 'yyyy-MM-dd') : '';
@@ -114,26 +101,20 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
         descripcion: '',
       });
     }
-  }, [asignacionData, form, areas]);
+  }, [asignacionData, form]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
-    try {
-      console.log('Enviando datos:', values);
-      
-      const submissionData = {
-        ...values,
-        areaId: parseInt(values.areaId),
-      };
-      
-      await onSubmit(submissionData);
-    } catch (error) {
-      console.error('Error en handleSubmit:', error);
-    }
+    const submissionData = {
+      ...values,
+      areaId: parseInt(values.areaId),
+    };
+    
+    await onSubmit(submissionData);
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>
             {asignacionData ? 'Editar Asignación' : 'Nueva Asignación'}
@@ -141,7 +122,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
           <DialogDescription>
             {asignacionData 
               ? 'Modifica los datos de la asignación de evaluaciones por área.'
-              : 'Crea una nueva asignación de evaluaciones para un área específica. Esto habilitará automáticamente las tres evaluaciones: Autoevaluación, Evaluación Docente-Docente y Evaluación Estudiante-Docente.'
+              : 'Crea una nueva asignación de evaluaciones para un área específica.'
             }
           </DialogDescription>
         </DialogHeader>
@@ -154,39 +135,21 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Área</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
+                  <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-white border border-gray-300">
-                        <SelectValue placeholder="Seleccionar área..." />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccionar área" />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-white border shadow-lg max-h-[200px] overflow-y-auto z-[9999]">
-                      {areas && areas.length > 0 ? (
-                        areas.map((area) => {
-                          console.log('Renderizando área:', area);
-                          return (
-                            <SelectItem 
-                              key={area.id} 
-                              value={area.id.toString()}
-                              className="hover:bg-gray-100 cursor-pointer"
-                            >
-                              {area.nombre} ({area.totalDocentes || 0} docentes)
-                            </SelectItem>
-                          );
-                        })
-                      ) : (
-                        <SelectItem value="no-areas" disabled>
-                          {areas?.length === 0 ? 'No hay áreas disponibles' : 'Cargando áreas...'}
+                    <SelectContent>
+                      {areas.map((area) => (
+                        <SelectItem key={area.id} value={area.id.toString()}>
+                          {area.nombre} ({area.totalDocentes} docentes)
                         </SelectItem>
-                      )}
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />
-                  {areas && areas.length === 0 && (
-                    <p className="text-sm text-muted-foreground mt-1">
-                      No hay áreas con docentes disponibles para asignar evaluaciones.
-                    </p>
-                  )}
                 </FormItem>
               )}
             />
@@ -201,7 +164,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="date"
-                        min={new Date().toISOString().split('T')[0]}
                         {...field}
                       />
                     </FormControl>
@@ -219,7 +181,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="date"
-                        min={form.watch('fechaInicio') || new Date().toISOString().split('T')[0]}
                         {...field}
                       />
                     </FormControl>
@@ -239,8 +200,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="time"
-                        min="06:00"
-                        max="22:00"
                         {...field}
                       />
                     </FormControl>
@@ -258,8 +217,6 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="time"
-                        min="06:00"
-                        max="22:00"
                         {...field}
                       />
                     </FormControl>
@@ -286,7 +243,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               )}
             />
 
-            <div className="flex justify-end space-x-2 pt-4">
+            <div className="flex justify-end space-x-2">
               <Button
                 type="button"
                 variant="outline"
@@ -295,11 +252,8 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               >
                 Cancelar
               </Button>
-              <Button 
-                type="submit" 
-                disabled={isSubmitting || !areas || areas.length === 0}
-              >
-                {isSubmitting ? 'Creando...' : asignacionData ? 'Actualizar' : 'Crear Asignación'}
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting ? 'Guardando...' : asignacionData ? 'Actualizar' : 'Crear'}
               </Button>
             </div>
           </form>

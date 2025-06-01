@@ -412,7 +412,7 @@ const getAreas = async () => {
        ORDER BY a.nombre`
     );
     
-    console.log('Áreas obtenidas en asignacionService:', rows);
+    console.log('Áreas obtenidas:', rows);
     
     return {
       success: true,

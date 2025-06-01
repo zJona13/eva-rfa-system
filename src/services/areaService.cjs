@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todas las áreas
@@ -14,37 +15,6 @@ const getAllAreas = async () => {
   } catch (error) {
     console.error('Error al obtener áreas:', error);
     return { success: false, message: 'Error al obtener las áreas' };
-  }
-};
-
-// Obtener áreas con conteo de docentes para asignaciones
-const getAreasForAsignacion = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT a.idArea as id, a.nombre, a.descripcion,
-       COUNT(CASE WHEN tc.nombre = 'Docente' THEN 1 END) as totalDocentes
-       FROM AREA a
-       LEFT JOIN USUARIO u ON a.idArea = u.idArea 
-       LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
-       LEFT JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-       WHERE c.estado = 1 OR c.estado IS NULL
-       GROUP BY a.idArea, a.nombre, a.descripcion
-       HAVING COUNT(CASE WHEN tc.nombre = 'Docente' THEN 1 END) > 0
-       ORDER BY a.nombre`
-    );
-    
-    console.log('Áreas para asignación obtenidas:', rows);
-    
-    return {
-      success: true,
-      areas: rows
-    };
-  } catch (error) {
-    console.error('Error al obtener áreas para asignación:', error);
-    return { 
-      success: false, 
-      message: 'Error al obtener las áreas para asignación' 
-    };
   }
 };
 
@@ -116,7 +86,6 @@ const deleteArea = async (areaId) => {
 
 module.exports = {
   getAllAreas,
-  getAreasForAsignacion,
   createArea,
   updateArea,
   deleteArea
