@@ -10,7 +10,7 @@ import {
   Home,
   Settings,
   FileText,
-  CalendarCheck
+  Calendar
 } from 'lucide-react';
 
 export interface NavItem {
@@ -51,9 +51,13 @@ export const navItems: NavItem[] = [
   },
   {
     title: 'Asignación de Evaluaciones',
-    href: '/assignments',
-    icon: CalendarCheck,
+    href: '/asignacion-evaluaciones',
+    icon: Calendar,
     roles: ['admin'],
+    badge: {
+      text: 'Admin',
+      variant: 'destructive',
+    },
   },
   {
     title: 'Incidencias',
@@ -118,15 +122,6 @@ export const modulesData = [
   },
   {
     id: 5,
-    title: 'Asignación de Evaluaciones',
-    description: 'Gestión de asignaciones de evaluación por área',
-    href: '/assignments',
-    icon: CalendarCheck,
-    color: 'bg-ies-blue-100 text-ies-blue-600',
-    roles: ['admin'],
-  },
-  {
-    id: 6,
     title: 'Mantenimientos',
     description: 'Gestión de usuarios, roles y parámetros del sistema',
     href: '/roles',

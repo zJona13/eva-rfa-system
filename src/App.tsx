@@ -18,9 +18,9 @@ import SelfEvaluation from "./pages/SelfEvaluation/Index";
 import StudentEvaluation from "./pages/StudentEvaluation/Index";
 import Incidents from "./pages/Incidents/Index";
 import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
-import Assignments from "./pages/Assignments/Index";
 import Roles from "./pages/Roles/Index";
 import Reports from "./pages/Reports/Index";
+import AsignacionEvaluaciones from "./pages/AsignacionEvaluaciones/Index";
 
 // Layout and Protection
 import MainLayout from "./components/Layout/MainLayout";
@@ -82,12 +82,12 @@ const App = () => (
                     } 
                   />
                   
-                  {/* Asignaciones - Solo admin */}
+                  {/* Asignación de Evaluaciones - Solo admin */}
                   <Route 
-                    path="/assignments" 
+                    path="/asignacion-evaluaciones" 
                     element={
                       <ProtectedRoute allowedRoles={['admin']}>
-                        <Assignments />
+                        <AsignacionEvaluaciones />
                       </ProtectedRoute>
                     } 
                   />
