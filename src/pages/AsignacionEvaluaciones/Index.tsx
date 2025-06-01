@@ -1,11 +1,12 @@
+
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
 import AsignacionDialog from './components/AsignacionDialog';
-import AsignacionesTable from './components/AsignacionesTable';
+import AsignacionesList from './components/AsignacionesList';
 
 interface Asignacion {
   id: number;
@@ -30,65 +31,36 @@ interface Area {
 }
 
 const AsignacionEvaluaciones = () => {
-  const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
+  const [areas, setAreas] = useState<Area[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
+  const [refreshKey, setRefreshKey] = useState(0);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
-    fetchAsignaciones();
-    fetchAreas();
+    loadAreas();
   }, []);
 
-  const fetchAsignaciones = async () => {
+  const loadAreas = async () => {
     try {
-      setIsLoading(true);
-      console.log('🔄 Cargando asignaciones...');
-      const response = await apiRequest('/asignaciones');
-      console.log('Response asignaciones:', response);
-      
-      if (response.success && response.data) {
-        const asignacionesData = response.data.asignaciones || [];
-        console.log('✅ Asignaciones cargadas:', asignacionesData);
-        setAsignaciones(asignacionesData);
-      } else {
-        console.error('❌ Error en respuesta de asignaciones:', response);
-        toast.error('Error al cargar las asignaciones');
-        setAsignaciones([]);
-      }
-    } catch (error) {
-      console.error('❌ Error fetching asignaciones:', error);
-      toast.error('Error de conexión al cargar asignaciones');
-      setAsignaciones([]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const fetchAreas = async () => {
-    try {
-      console.log('Iniciando fetchAreas...');
+      console.log('🔄 Cargando áreas...');
       const response = await apiRequest('/areas');
-      console.log('Response areas:', response);
+      console.log('Response áreas:', response);
       
       if (response.success && response.data) {
         const areasData = response.data.areas || [];
-        console.log('Áreas recibidas:', areasData);
+        console.log('✅ Áreas cargadas:', areasData);
         setAreas(areasData);
-        
-        if (areasData.length === 0) {
-          toast.error('No hay áreas disponibles');
-        }
       } else {
-        console.error('Error en la respuesta de áreas:', response);
+        console.error('❌ Error en respuesta de áreas:', response);
         toast.error('Error al cargar las áreas');
+        setAreas([]);
       }
     } catch (error) {
-      console.error('Error fetching areas:', error);
+      console.error('❌ Error loading areas:', error);
       toast.error('Error de conexión al cargar áreas');
+      setAreas([]);
     }
   };
 
@@ -96,6 +68,8 @@ const AsignacionEvaluaciones = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('📝 Enviando datos de asignación:', values);
+      
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
@@ -106,15 +80,19 @@ const AsignacionEvaluaciones = () => {
             body: values,
           });
 
+      console.log('📤 Respuesta del servidor:', response);
+
       if (response.success) {
-        toast.success(response.data.message || 'Asignación guardada exitosamente');
+        toast.success(response.data?.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        fetchAsignaciones();
+        // Forzar recarga de la lista
+        setRefreshKey(prev => prev + 1);
       } else {
         toast.error(response.error || 'Error al guardar la asignación');
       }
     } catch (error) {
+      console.error('❌ Error al guardar:', error);
       toast.error('Error de conexión');
     } finally {
       setIsSubmitting(false);
@@ -122,6 +100,7 @@ const AsignacionEvaluaciones = () => {
   };
 
   const handleEdit = (asignacion: Asignacion) => {
+    console.log('✏️ Editando asignación:', asignacion);
     setEditingAsignacion(asignacion);
     setIsDialogOpen(true);
   };
@@ -131,21 +110,33 @@ const AsignacionEvaluaciones = () => {
       return;
     }
 
-    const response = await apiRequest(`/asignaciones/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      console.log('🗑️ Eliminando asignación:', id);
+      const response = await apiRequest(`/asignaciones/${id}`, {
+        method: 'DELETE',
+      });
 
-    if (response.success) {
-      toast.success('Asignación eliminada exitosamente');
-      fetchAsignaciones();
-    } else {
-      toast.error('Error al eliminar la asignación');
+      if (response.success) {
+        toast.success('Asignación eliminada exitosamente');
+        // Forzar recarga de la lista
+        setRefreshKey(prev => prev + 1);
+      } else {
+        toast.error('Error al eliminar la asignación');
+      }
+    } catch (error) {
+      console.error('❌ Error al eliminar:', error);
+      toast.error('Error de conexión');
     }
   };
 
   const handleNewAsignacion = () => {
     setEditingAsignacion(null);
     setIsDialogOpen(true);
+  };
+
+  const handleRefresh = () => {
+    setRefreshKey(prev => prev + 1);
+    toast.success('Lista actualizada');
   };
 
   return (
@@ -157,10 +148,16 @@ const AsignacionEvaluaciones = () => {
             Gestiona los períodos y horarios para las evaluaciones organizadas por área
           </p>
         </div>
-        <Button onClick={handleNewAsignacion}>
-          <Plus className="mr-2 h-4 w-4" />
-          Nueva Asignación
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleRefresh}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Actualizar
+          </Button>
+          <Button onClick={handleNewAsignacion}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nueva Asignación
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -172,11 +169,10 @@ const AsignacionEvaluaciones = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AsignacionesTable
-            asignaciones={asignaciones}
+          <AsignacionesList
+            key={refreshKey}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            isLoading={isLoading}
           />
         </CardContent>
       </Card>
