@@ -1,21 +1,23 @@
-
 import React, { useState, useEffect } from 'react';
-import { Plus, RefreshCw } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
-import AsignacionForm from './components/AsignacionForm';
+import AsignacionDialog from './components/AsignacionDialog';
 import AsignacionesTable from './components/AsignacionesTable';
 
 interface Asignacion {
   id: number;
-  periodo: number;
   fechaInicio: string;
   fechaFin: string;
+  horaInicio: string;
+  horaFin: string;
+  tipoEvaluacion: string;
+  estado: string;
+  descripcion?: string;
   areaNombre: string;
   areaId: number;
-  estado: string;
   totalEvaluaciones: number;
   evaluacionesCompletadas: number;
 }
@@ -29,97 +31,72 @@ interface Area {
 const AsignacionEvaluaciones = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [areas, setAreas] = useState<Area[]>([]);
-  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
-    loadData();
+    fetchAsignaciones();
+    fetchAreas();
   }, []);
-
-  const loadData = async () => {
-    setIsLoading(true);
-    await Promise.all([fetchAsignaciones(), fetchAreas()]);
-    setIsLoading(false);
-  };
 
   const fetchAsignaciones = async () => {
     try {
       const response = await apiRequest('/asignaciones');
-      if (response.success && response.data) {
+      console.log('Response asignaciones:', response);
+      if (response.success) {
         setAsignaciones(response.data.asignaciones || []);
       } else {
         toast.error('Error al cargar las asignaciones');
       }
     } catch (error) {
+      console.error('Error fetching asignaciones:', error);
       toast.error('Error de conexión al cargar asignaciones');
     }
   };
 
   const fetchAreas = async () => {
     try {
+      console.log('Iniciando fetchAreas...');
       const response = await apiRequest('/areas');
+      console.log('Response areas:', response);
+      
       if (response.success && response.data) {
-        setAreas(response.data.areas || []);
+        const areasData = response.data.areas || [];
+        console.log('Áreas recibidas:', areasData);
+        setAreas(areasData);
+        
+        if (areasData.length === 0) {
+          toast.error('No hay áreas disponibles');
+        }
       } else {
+        console.error('Error en la respuesta de áreas:', response);
         toast.error('Error al cargar las áreas');
       }
     } catch (error) {
+      console.error('Error fetching areas:', error);
       toast.error('Error de conexión al cargar áreas');
     }
   };
 
-  const handleCreate = () => {
-    setEditingAsignacion(null);
-    setIsFormOpen(true);
-  };
-
-  const handleEdit = (asignacion: Asignacion) => {
-    setEditingAsignacion(asignacion);
-    setIsFormOpen(true);
-  };
-
-  const handleDelete = async (id: number) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
-      return;
-    }
-
-    try {
-      const response = await apiRequest(`/asignaciones/${id}`, {
-        method: 'DELETE',
-      });
-
-      if (response.success) {
-        toast.success('Asignación eliminada exitosamente');
-        fetchAsignaciones();
-      } else {
-        toast.error(response.error || 'Error al eliminar la asignación');
-      }
-    } catch (error) {
-      toast.error('Error de conexión al eliminar');
-    }
-  };
-
-  const handleFormSubmit = async (formData: any) => {
+  const handleSubmit = async (values: any) => {
+    setIsSubmitting(true);
+    
     try {
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
-            body: formData,
+            body: values,
           })
         : await apiRequest('/asignaciones', {
             method: 'POST',
-            body: formData,
+            body: values,
           });
 
       if (response.success) {
-        toast.success(
-          editingAsignacion 
-            ? 'Asignación actualizada exitosamente' 
-            : 'Asignación creada exitosamente'
-        );
-        setIsFormOpen(false);
+        toast.success(response.data.message || 'Asignación guardada exitosamente');
+        setIsDialogOpen(false);
         setEditingAsignacion(null);
         fetchAsignaciones();
       } else {
@@ -127,39 +104,59 @@ const AsignacionEvaluaciones = () => {
       }
     } catch (error) {
       toast.error('Error de conexión');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
+
+  const handleEdit = (asignacion: Asignacion) => {
+    setEditingAsignacion(asignacion);
+    setIsDialogOpen(true);
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm('¿Estás seguro de que quieres eliminar esta asignación?')) {
+      return;
+    }
+
+    const response = await apiRequest(`/asignaciones/${id}`, {
+      method: 'DELETE',
+    });
+
+    if (response.success) {
+      toast.success('Asignación eliminada exitosamente');
+      fetchAsignaciones();
+    } else {
+      toast.error('Error al eliminar la asignación');
+    }
+  };
+
+  const handleNewAsignacion = () => {
+    setEditingAsignacion(null);
+    setIsDialogOpen(true);
   };
 
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Gestión de Asignaciones de Evaluación</h1>
+          <h1 className="text-3xl font-bold">Asignación de Evaluaciones por Área</h1>
           <p className="text-muted-foreground">
-            Administra las asignaciones de evaluación por área
+            Gestiona los períodos y horarios para las evaluaciones organizadas por área
           </p>
         </div>
-        <div className="flex space-x-2">
-          <Button
-            variant="outline"
-            onClick={loadData}
-            disabled={isLoading}
-          >
-            <RefreshCw className={`mr-2 h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
-            Actualizar
-          </Button>
-          <Button onClick={handleCreate}>
-            <Plus className="mr-2 h-4 w-4" />
-            Nueva Asignación
-          </Button>
-        </div>
+        <Button onClick={handleNewAsignacion}>
+          <Plus className="mr-2 h-4 w-4" />
+          Nueva Asignación
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Lista de Asignaciones</CardTitle>
+          <CardTitle>Asignaciones de Evaluación</CardTitle>
           <CardDescription>
-            Visualiza y gestiona todas las asignaciones de evaluación del sistema
+            Lista de todas las asignaciones de evaluación programadas por área. 
+            Cada asignación crea automáticamente autoevaluaciones, evaluaciones evaluador-evaluado y evaluaciones estudiante-docente.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -167,22 +164,18 @@ const AsignacionEvaluaciones = () => {
             asignaciones={asignaciones}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            isLoading={isLoading}
           />
         </CardContent>
       </Card>
 
-      {isFormOpen && (
-        <AsignacionForm
-          asignacion={editingAsignacion}
-          areas={areas}
-          onSubmit={handleFormSubmit}
-          onCancel={() => {
-            setIsFormOpen(false);
-            setEditingAsignacion(null);
-          }}
-        />
-      )}
+      <AsignacionDialog
+        open={isDialogOpen}
+        onOpenChange={setIsDialogOpen}
+        asignacionData={editingAsignacion}
+        areas={areas}
+        onSubmit={handleSubmit}
+        isSubmitting={isSubmitting}
+      />
     </div>
   );
 };
