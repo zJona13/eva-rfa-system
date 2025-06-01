@@ -9,8 +9,7 @@ import {
   BarChart4, 
   Home,
   Settings,
-  FileText,
-  Calendar
+  FileText
 } from 'lucide-react';
 
 export interface NavItem {
@@ -48,12 +47,6 @@ export const navItems: NavItem[] = [
     href: '/checklist-evaluation',
     icon: CheckSquare,
     roles: ['admin', 'evaluator'],
-  },
-  {
-    title: 'Asignación de Evaluaciones',
-    href: '/assignments',
-    icon: Calendar,
-    roles: ['admin'],
   },
   {
     title: 'Incidencias',
