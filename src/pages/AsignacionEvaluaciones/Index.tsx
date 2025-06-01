@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,6 @@ interface Asignacion {
   areaId: number;
   totalEvaluaciones: number;
   evaluacionesCompletadas: number;
-  periodo?: number;
 }
 
 interface Area {
@@ -36,7 +34,6 @@ const AsignacionEvaluaciones = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
@@ -46,26 +43,16 @@ const AsignacionEvaluaciones = () => {
 
   const fetchAsignaciones = async () => {
     try {
-      setIsLoading(true);
-      console.log('Obteniendo asignaciones...');
       const response = await apiRequest('/asignaciones');
       console.log('Response asignaciones:', response);
-      
-      if (response.success && response.data) {
-        const asignacionesData = response.data.asignaciones || [];
-        console.log('Asignaciones recibidas:', asignacionesData);
-        setAsignaciones(asignacionesData);
+      if (response.success) {
+        setAsignaciones(response.data.asignaciones || []);
       } else {
-        console.error('Error en la respuesta de asignaciones:', response);
         toast.error('Error al cargar las asignaciones');
-        setAsignaciones([]);
       }
     } catch (error) {
       console.error('Error fetching asignaciones:', error);
       toast.error('Error de conexión al cargar asignaciones');
-      setAsignaciones([]);
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -78,17 +65,9 @@ const AsignacionEvaluaciones = () => {
       if (response.success && response.data) {
         const areasData = response.data.areas || [];
         console.log('Áreas recibidas:', areasData);
+        setAreas(areasData);
         
-        // Mapear los datos para que coincidan con la interfaz esperada
-        const mappedAreas = areasData.map((area: any) => ({
-          id: area.id,
-          name: area.nombre || area.name,
-          description: area.descripcion || area.description
-        }));
-        
-        setAreas(mappedAreas);
-        
-        if (mappedAreas.length === 0) {
+        if (areasData.length === 0) {
           toast.error('No hay áreas disponibles');
         }
       } else {
@@ -116,11 +95,10 @@ const AsignacionEvaluaciones = () => {
           });
 
       if (response.success) {
-        toast.success(response.data?.message || 'Asignación guardada exitosamente');
+        toast.success(response.data.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        // Recargar las asignaciones después de crear/actualizar
-        await fetchAsignaciones();
+        fetchAsignaciones();
       } else {
         toast.error(response.error || 'Error al guardar la asignación');
       }
@@ -141,20 +119,15 @@ const AsignacionEvaluaciones = () => {
       return;
     }
 
-    try {
-      const response = await apiRequest(`/asignaciones/${id}`, {
-        method: 'DELETE',
-      });
+    const response = await apiRequest(`/asignaciones/${id}`, {
+      method: 'DELETE',
+    });
 
-      if (response.success) {
-        toast.success('Asignación eliminada exitosamente');
-        // Recargar las asignaciones después de eliminar
-        await fetchAsignaciones();
-      } else {
-        toast.error('Error al eliminar la asignación');
-      }
-    } catch (error) {
-      toast.error('Error de conexión al eliminar');
+    if (response.success) {
+      toast.success('Asignación eliminada exitosamente');
+      fetchAsignaciones();
+    } else {
+      toast.error('Error al eliminar la asignación');
     }
   };
 
@@ -191,7 +164,6 @@ const AsignacionEvaluaciones = () => {
             asignaciones={asignaciones}
             onEdit={handleEdit}
             onDelete={handleDelete}
-            isLoading={isLoading}
           />
         </CardContent>
       </Card>

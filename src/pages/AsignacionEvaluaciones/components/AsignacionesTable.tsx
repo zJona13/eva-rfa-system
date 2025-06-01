@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Edit, Trash2, Calendar, Clock, Users, BarChart3 } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -11,7 +11,6 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -28,21 +27,18 @@ interface Asignacion {
   areaId: number;
   totalEvaluaciones: number;
   evaluacionesCompletadas: number;
-  periodo?: number;
 }
 
 interface AsignacionesTableProps {
   asignaciones: Asignacion[];
   onEdit: (asignacion: Asignacion) => void;
   onDelete: (id: number) => void;
-  isLoading?: boolean;
 }
 
 const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
   asignaciones,
   onEdit,
   onDelete,
-  isLoading = false,
 }) => {
   const getEstadoBadge = (estado: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -65,16 +61,13 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
     const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
     
     return (
-      <div className="space-y-2">
-        <div className="flex justify-between text-xs">
-          <span className="font-medium">
-            {completadas} / {total}
-          </span>
-          <span className="text-muted-foreground">
-            {porcentaje}%
-          </span>
-        </div>
-        <Progress value={porcentaje} className="h-2" />
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">
+          {completadas} / {total}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {porcentaje}% completado
+        </span>
       </div>
     );
   };
@@ -86,15 +79,6 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
       return dateString;
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        <BarChart3 className="mx-auto h-12 w-12 mb-4 opacity-50 animate-pulse" />
-        <p>Cargando asignaciones...</p>
-      </div>
-    );
-  }
 
   if (asignaciones.length === 0) {
     return (
@@ -112,10 +96,9 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
         <TableHeader>
           <TableRow>
             <TableHead>Período</TableHead>
-            <TableHead>Fechas</TableHead>
             <TableHead>Horario</TableHead>
             <TableHead>Área</TableHead>
-            <TableHead>Progreso Evaluaciones</TableHead>
+            <TableHead>Progreso</TableHead>
             <TableHead>Estado</TableHead>
             <TableHead>Descripción</TableHead>
             <TableHead className="w-24">Acciones</TableHead>
@@ -129,24 +112,14 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <div className="font-medium">
-                      {asignacion.periodo || new Date().getFullYear()}
+                      {formatDate(asignacion.fechaInicio)}
                     </div>
-                    <div className="text-sm text-muted-foreground">
-                      ID: {asignacion.id}
-                    </div>
+                    {asignacion.fechaInicio !== asignacion.fechaFin && (
+                      <div className="text-sm text-muted-foreground">
+                        hasta {formatDate(asignacion.fechaFin)}
+                      </div>
+                    )}
                   </div>
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <div className="font-medium">
-                    {formatDate(asignacion.fechaInicio)}
-                  </div>
-                  {asignacion.fechaInicio !== asignacion.fechaFin && (
-                    <div className="text-sm text-muted-foreground">
-                      hasta {formatDate(asignacion.fechaFin)}
-                    </div>
-                  )}
                 </div>
               </TableCell>
               <TableCell>
@@ -160,22 +133,15 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="font-medium">
-                      {asignacion.areaNombre}
-                    </div>
-                    <div className="text-sm text-muted-foreground">
-                      3 tipos de evaluación
-                    </div>
-                  </div>
+                <div className="font-medium">
+                  {asignacion.areaNombre}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  3 tipos de evaluación
                 </div>
               </TableCell>
               <TableCell>
-                <div className="min-w-[120px]">
-                  {getProgresoEvaluaciones(asignacion.evaluacionesCompletadas, asignacion.totalEvaluaciones)}
-                </div>
+                {getProgresoEvaluaciones(asignacion.evaluacionesCompletadas, asignacion.totalEvaluaciones)}
               </TableCell>
               <TableCell>
                 {getEstadoBadge(asignacion.estado)}
@@ -183,7 +149,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
               <TableCell>
                 <div className="max-w-xs">
                   <p className="text-sm text-muted-foreground truncate">
-                    {asignacion.descripcion || `Asignación del área ${asignacion.areaNombre} - Periodo ${asignacion.periodo || new Date().getFullYear()}`}
+                    {asignacion.descripcion || 'Sin descripción'}
                   </p>
                 </div>
               </TableCell>
