@@ -28,9 +28,16 @@ interface AreaData {
   descripcion?: string;
 }
 
+// Interface que espera el AsignacionDialog
+interface Area {
+  id: number;
+  name: string;
+  descripcion?: string;
+}
+
 const AsignacionEvaluaciones = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
-  const [areas, setAreas] = useState<AreaData[]>([]);
+  const [areasData, setAreasData] = useState<AreaData[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,19 +61,18 @@ const AsignacionEvaluaciones = () => {
     try {
       console.log('🔍 Cargando asignaciones...');
       const response = await apiRequest('/asignaciones');
-      console.log('📋 Respuesta completa:', response);
+      console.log('📋 Respuesta asignaciones:', response);
       
       if (response.success && response.data) {
-        console.log('✅ Datos recibidos:', response.data);
+        let asignacionesData = response.data;
         
         // Manejar diferentes estructuras de respuesta
-        let asignacionesData = response.data;
         if (response.data.asignaciones) {
           asignacionesData = response.data.asignaciones;
         }
         
         if (Array.isArray(asignacionesData)) {
-          console.log('📊 Asignaciones encontradas:', asignacionesData.length);
+          console.log('✅ Asignaciones cargadas:', asignacionesData.length);
           setAsignaciones(asignacionesData);
         } else {
           console.log('⚠️ Datos no son array:', asignacionesData);
@@ -89,29 +95,28 @@ const AsignacionEvaluaciones = () => {
       console.log('🏢 Respuesta áreas:', response);
       
       if (response.success && response.data) {
-        let areasData = response.data;
+        let areasRaw = response.data;
         if (response.data.areas) {
-          areasData = response.data.areas;
+          areasRaw = response.data.areas;
         }
         
-        if (Array.isArray(areasData)) {
-          // Mapear para asegurar estructura consistente
-          const areasFormateadas = areasData.map((area: any) => ({
+        if (Array.isArray(areasRaw)) {
+          const areasFormateadas = areasRaw.map((area: any) => ({
             id: area.id || area.idArea,
             nombre: area.nombre || area.name,
             descripcion: area.descripcion || area.description
           }));
           console.log('🏢 Áreas formateadas:', areasFormateadas);
-          setAreas(areasFormateadas);
+          setAreasData(areasFormateadas);
         } else {
-          setAreas([]);
+          setAreasData([]);
         }
       } else {
-        setAreas([]);
+        setAreasData([]);
       }
     } catch (error) {
       console.error('❌ Error al cargar áreas:', error);
-      setAreas([]);
+      setAreasData([]);
     }
   };
 
@@ -279,6 +284,13 @@ const AsignacionEvaluaciones = () => {
     );
   };
 
+  // Convertir AreaData[] a Area[] para el dialog
+  const areasForDialog: Area[] = areasData.map(area => ({
+    id: area.id,
+    name: area.nombre,
+    descripcion: area.descripcion
+  }));
+
   if (isLoading) {
     return (
       <div className="container mx-auto p-6">
@@ -310,7 +322,7 @@ const AsignacionEvaluaciones = () => {
       {/* Información de debug */}
       <div className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-lg">
         <p>Asignaciones encontradas: {asignaciones.length}</p>
-        <p>Áreas disponibles: {areas.length}</p>
+        <p>Áreas disponibles: {areasData.length}</p>
         {asignaciones.length > 0 && (
           <p>Primera asignación: {JSON.stringify(asignaciones[0])}</p>
         )}
@@ -343,7 +355,7 @@ const AsignacionEvaluaciones = () => {
         open={isDialogOpen}
         onOpenChange={setIsDialogOpen}
         asignacionData={editingAsignacion}
-        areas={areas}
+        areas={areasForDialog}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       />
