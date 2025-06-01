@@ -9,7 +9,8 @@ import {
   BarChart4, 
   Home,
   Settings,
-  FileText
+  FileText,
+  CalendarCheck
 } from 'lucide-react';
 
 export interface NavItem {
@@ -47,6 +48,12 @@ export const navItems: NavItem[] = [
     href: '/checklist-evaluation',
     icon: CheckSquare,
     roles: ['admin', 'evaluator'],
+  },
+  {
+    title: 'Asignación de Evaluaciones',
+    href: '/assignments',
+    icon: CalendarCheck,
+    roles: ['admin'],
   },
   {
     title: 'Incidencias',
@@ -111,6 +118,15 @@ export const modulesData = [
   },
   {
     id: 5,
+    title: 'Asignación de Evaluaciones',
+    description: 'Gestión de asignaciones de evaluación por área',
+    href: '/assignments',
+    icon: CalendarCheck,
+    color: 'bg-ies-blue-100 text-ies-blue-600',
+    roles: ['admin'],
+  },
+  {
+    id: 6,
     title: 'Mantenimientos',
     description: 'Gestión de usuarios, roles y parámetros del sistema',
     href: '/roles',
