@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -65,20 +64,27 @@ const AsignacionEvaluaciones = () => {
 
   const fetchAreas = async () => {
     try {
+      console.log('Iniciando fetch de áreas...');
       const response = await apiRequest('/asignaciones/areas');
-      console.log('Respuesta áreas:', response);
+      console.log('Respuesta completa de áreas:', response);
       
-      if (response.success) {
+      if (response && response.success && response.data) {
         const areasData = response.data.areas || [];
-        console.log('Áreas procesadas:', areasData);
+        console.log('Áreas extraídas:', areasData);
         setAreas(areasData);
+        
+        if (areasData.length === 0) {
+          toast.warning('No hay áreas disponibles con docentes');
+        }
       } else {
         console.error('Error en respuesta de áreas:', response);
         toast.error('Error al cargar las áreas');
+        setAreas([]);
       }
     } catch (error) {
       console.error('Error en fetchAreas:', error);
       toast.error('Error de conexión al cargar áreas');
+      setAreas([]);
     }
   };
 

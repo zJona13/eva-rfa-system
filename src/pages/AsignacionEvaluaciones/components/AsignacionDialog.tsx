@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -91,6 +90,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
 
   useEffect(() => {
     console.log('Areas recibidas en AsignacionDialog:', areas);
+    console.log('Cantidad de áreas:', areas?.length || 0);
     
     if (asignacionData) {
       const fechaInicio = asignacionData.fechaInicio ? format(new Date(asignacionData.fechaInicio), 'yyyy-MM-dd') : '';
@@ -114,7 +114,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
         descripcion: '',
       });
     }
-  }, [asignacionData, form]);
+  }, [asignacionData, form, areas]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
@@ -156,29 +156,37 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                   <FormLabel>Área</FormLabel>
                   <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
-                      <SelectTrigger className="bg-white">
-                        <SelectValue placeholder="Seleccionar área" />
+                      <SelectTrigger className="bg-white border border-gray-300">
+                        <SelectValue placeholder="Seleccionar área..." />
                       </SelectTrigger>
                     </FormControl>
-                    <SelectContent className="bg-white border shadow-lg max-h-[200px] overflow-y-auto z-50">
+                    <SelectContent className="bg-white border shadow-lg max-h-[200px] overflow-y-auto z-[9999]">
                       {areas && areas.length > 0 ? (
-                        areas.map((area) => (
-                          <SelectItem 
-                            key={area.id} 
-                            value={area.id.toString()}
-                            className="hover:bg-gray-100 cursor-pointer"
-                          >
-                            {area.nombre} ({area.totalDocentes} docentes)
-                          </SelectItem>
-                        ))
+                        areas.map((area) => {
+                          console.log('Renderizando área:', area);
+                          return (
+                            <SelectItem 
+                              key={area.id} 
+                              value={area.id.toString()}
+                              className="hover:bg-gray-100 cursor-pointer"
+                            >
+                              {area.nombre} ({area.totalDocentes || 0} docentes)
+                            </SelectItem>
+                          );
+                        })
                       ) : (
                         <SelectItem value="no-areas" disabled>
-                          No hay áreas disponibles
+                          {areas?.length === 0 ? 'No hay áreas disponibles' : 'Cargando áreas...'}
                         </SelectItem>
                       )}
                     </SelectContent>
                   </Select>
                   <FormMessage />
+                  {areas && areas.length === 0 && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      No hay áreas con docentes disponibles para asignar evaluaciones.
+                    </p>
+                  )}
                 </FormItem>
               )}
             />
@@ -287,7 +295,10 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
               >
                 Cancelar
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button 
+                type="submit" 
+                disabled={isSubmitting || !areas || areas.length === 0}
+              >
                 {isSubmitting ? 'Creando...' : asignacionData ? 'Actualizar' : 'Crear Asignación'}
               </Button>
             </div>
