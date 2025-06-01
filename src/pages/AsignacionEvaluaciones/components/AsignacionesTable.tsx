@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Edit, Trash2, Calendar, Clock, Users, BarChart3 } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -11,13 +11,11 @@ import {
 } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { format } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface Asignacion {
   id: number;
-  periodo: number;
   fechaInicio: string;
   fechaFin: string;
   horaInicio: string;
@@ -35,14 +33,12 @@ interface AsignacionesTableProps {
   asignaciones: Asignacion[];
   onEdit: (asignacion: Asignacion) => void;
   onDelete: (id: number) => void;
-  isLoading?: boolean;
 }
 
 const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
   asignaciones,
   onEdit,
   onDelete,
-  isLoading = false,
 }) => {
   const getEstadoBadge = (estado: string) => {
     const variants: Record<string, "default" | "secondary" | "destructive" | "outline"> = {
@@ -61,9 +57,19 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
     );
   };
 
-  const getProgreso = (completadas: number, total: number) => {
+  const getProgresoEvaluaciones = (completadas: number, total: number) => {
     const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
-    return porcentaje;
+    
+    return (
+      <div className="flex flex-col">
+        <span className="text-sm font-medium">
+          {completadas} / {total}
+        </span>
+        <span className="text-xs text-muted-foreground">
+          {porcentaje}% completado
+        </span>
+      </div>
+    );
   };
 
   const formatDate = (dateString: string) => {
@@ -74,29 +80,12 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
     }
   };
 
-  const formatTime = (timeString: string) => {
-    if (!timeString) return '';
-    // Si viene en formato HH:MM:SS, tomar solo HH:MM
-    return timeString.slice(0, 5);
-  };
-
-  if (isLoading) {
-    return (
-      <div className="text-center py-8 text-muted-foreground">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
-          <span>Cargando asignaciones...</span>
-        </div>
-      </div>
-    );
-  }
-
   if (asignaciones.length === 0) {
     return (
       <div className="text-center py-8 text-muted-foreground">
         <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
-        <p className="text-lg font-medium">No hay asignaciones de evaluación registradas</p>
-        <p className="text-sm">Crea una nueva asignación para programar las evaluaciones por área</p>
+        <p>No hay asignaciones de evaluación registradas</p>
+        <p className="text-sm">Crea una nueva asignación para programar las 3 evaluaciones por área</p>
       </div>
     );
   }
@@ -107,12 +96,10 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
         <TableHeader>
           <TableRow>
             <TableHead>Período</TableHead>
-            <TableHead>Fechas</TableHead>
             <TableHead>Horario</TableHead>
             <TableHead>Área</TableHead>
-            <TableHead>Tipo Evaluación</TableHead>
-            <TableHead>Estado</TableHead>
             <TableHead>Progreso</TableHead>
+            <TableHead>Estado</TableHead>
             <TableHead>Descripción</TableHead>
             <TableHead className="w-24">Acciones</TableHead>
           </TableRow>
@@ -120,16 +107,6 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
         <TableBody>
           {asignaciones.map((asignacion) => (
             <TableRow key={asignacion.id}>
-              <TableCell>
-                <div className="flex items-center space-x-2">
-                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="font-medium">{asignacion.periodo}</div>
-                    <div className="text-sm text-muted-foreground">Año académico</div>
-                  </div>
-                </div>
-              </TableCell>
-              
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -145,65 +122,37 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                   </div>
                 </div>
               </TableCell>
-              
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <div className="font-medium">
-                      {formatTime(asignacion.horaInicio)} - {formatTime(asignacion.horaFin)}
+                      {asignacion.horaInicio} - {asignacion.horaFin}
                     </div>
                   </div>
                 </div>
               </TableCell>
-              
               <TableCell>
-                <div className="flex items-center space-x-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <div>
-                    <div className="font-medium">{asignacion.areaNombre}</div>
-                    <div className="text-sm text-muted-foreground">Área académica</div>
-                  </div>
+                <div className="font-medium">
+                  {asignacion.areaNombre}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  3 tipos de evaluación
                 </div>
               </TableCell>
-              
               <TableCell>
-                <div className="text-sm">
-                  <div className="font-medium">{asignacion.tipoEvaluacion}</div>
-                  <div className="text-muted-foreground">3 modalidades</div>
-                </div>
+                {getProgresoEvaluaciones(asignacion.evaluacionesCompletadas, asignacion.totalEvaluaciones)}
               </TableCell>
-              
               <TableCell>
                 {getEstadoBadge(asignacion.estado)}
               </TableCell>
-              
-              <TableCell>
-                <div className="space-y-2 min-w-[120px]">
-                  <div className="flex justify-between text-sm">
-                    <span>Completadas:</span>
-                    <span className="font-medium">
-                      {asignacion.evaluacionesCompletadas} / {asignacion.totalEvaluaciones}
-                    </span>
-                  </div>
-                  <Progress 
-                    value={getProgreso(asignacion.evaluacionesCompletadas, asignacion.totalEvaluaciones)} 
-                    className="h-2"
-                  />
-                  <div className="text-xs text-muted-foreground text-center">
-                    {getProgreso(asignacion.evaluacionesCompletadas, asignacion.totalEvaluaciones)}% completado
-                  </div>
-                </div>
-              </TableCell>
-              
               <TableCell>
                 <div className="max-w-xs">
-                  <p className="text-sm text-muted-foreground truncate" title={asignacion.descripcion}>
+                  <p className="text-sm text-muted-foreground truncate">
                     {asignacion.descripcion || 'Sin descripción'}
                   </p>
                 </div>
               </TableCell>
-              
               <TableCell>
                 <div className="flex space-x-1">
                   <Button
