@@ -22,7 +22,7 @@ interface Asignacion {
   periodo: number;
 }
 
-interface Area {
+interface AreaData {
   id: number;
   nombre: string;
   descripcion?: string;
@@ -30,7 +30,7 @@ interface Area {
 
 const AsignacionEvaluaciones = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [areas, setAreas] = useState<AreaData[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,55 +54,54 @@ const AsignacionEvaluaciones = () => {
     try {
       console.log('🔍 Cargando asignaciones...');
       const response = await apiRequest('/asignaciones');
-      console.log('📋 Respuesta del servidor:', response);
+      console.log('📋 Respuesta completa:', response);
       
-      if (response.success) {
-        // Extraer datos de diferentes estructuras posibles
-        let data = response.data;
+      if (response.success && response.data) {
+        console.log('✅ Datos recibidos:', response.data);
         
-        // Si viene envuelto en otra propiedad
-        if (data && data.asignaciones) {
-          data = data.asignaciones;
+        // Manejar diferentes estructuras de respuesta
+        let asignacionesData = response.data;
+        if (response.data.asignaciones) {
+          asignacionesData = response.data.asignaciones;
         }
         
-        // Si es un array, usarlo directamente
-        if (Array.isArray(data)) {
-          console.log('✅ Asignaciones encontradas:', data.length);
-          setAsignaciones(data);
+        if (Array.isArray(asignacionesData)) {
+          console.log('📊 Asignaciones encontradas:', asignacionesData.length);
+          setAsignaciones(asignacionesData);
         } else {
-          console.log('⚠️ Los datos no son un array:', data);
+          console.log('⚠️ Datos no son array:', asignacionesData);
           setAsignaciones([]);
         }
       } else {
-        console.error('❌ Error en respuesta:', response.error);
-        toast.error('Error al cargar asignaciones');
+        console.log('❌ Error en respuesta o sin datos');
         setAsignaciones([]);
       }
     } catch (error) {
-      console.error('❌ Error en fetchAsignaciones:', error);
-      toast.error('Error de conexión');
+      console.error('❌ Error al cargar asignaciones:', error);
       setAsignaciones([]);
     }
   };
 
   const fetchAreas = async () => {
     try {
+      console.log('🔍 Cargando áreas...');
       const response = await apiRequest('/areas');
+      console.log('🏢 Respuesta áreas:', response);
       
-      if (response.success) {
-        let data = response.data;
-        
-        if (data && data.areas) {
-          data = data.areas;
+      if (response.success && response.data) {
+        let areasData = response.data;
+        if (response.data.areas) {
+          areasData = response.data.areas;
         }
         
-        if (Array.isArray(data)) {
-          // Mapear para asegurar la estructura correcta
-          const areasFormateadas = data.map((area: any) => ({
+        if (Array.isArray(areasData)) {
+          // Mapear para asegurar estructura consistente
+          const areasFormateadas = areasData.map((area: any) => ({
             id: area.id || area.idArea,
             nombre: area.nombre || area.name,
             descripcion: area.descripcion || area.description
           }));
+          console.log('🏢 Áreas formateadas:', areasFormateadas);
           setAreas(areasFormateadas);
         } else {
           setAreas([]);
@@ -111,7 +110,7 @@ const AsignacionEvaluaciones = () => {
         setAreas([]);
       }
     } catch (error) {
-      console.error('❌ Error en fetchAreas:', error);
+      console.error('❌ Error al cargar áreas:', error);
       setAreas([]);
     }
   };
@@ -134,7 +133,6 @@ const AsignacionEvaluaciones = () => {
         toast.success('Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        // Recargar inmediatamente después de guardar
         await fetchAsignaciones();
       } else {
         toast.error(response.error || 'Error al guardar la asignación');
@@ -163,7 +161,6 @@ const AsignacionEvaluaciones = () => {
 
       if (response.success) {
         toast.success('Asignación eliminada exitosamente');
-        // Recargar inmediatamente después de eliminar
         await fetchAsignaciones();
       } else {
         toast.error('Error al eliminar la asignación');
@@ -312,8 +309,11 @@ const AsignacionEvaluaciones = () => {
 
       {/* Información de debug */}
       <div className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-lg">
-        <p>Asignaciones cargadas: {asignaciones.length}</p>
+        <p>Asignaciones encontradas: {asignaciones.length}</p>
         <p>Áreas disponibles: {areas.length}</p>
+        {asignaciones.length > 0 && (
+          <p>Primera asignación: {JSON.stringify(asignaciones[0])}</p>
+        )}
       </div>
 
       {/* Lista de asignaciones */}
