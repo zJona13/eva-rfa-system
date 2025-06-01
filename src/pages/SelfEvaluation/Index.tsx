@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -6,17 +7,14 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
-import { useEvaluationPermissions } from '@/hooks/useEvaluationPermissions';
 import AutoevaluacionForm from './AutoevaluacionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
-import { AlertTriangle, BookOpen } from 'lucide-react';
 
 const SelfEvaluation = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const { apiRequest } = useApiWithToken();
-  const { permissions, isLoading: permissionsLoading } = useEvaluationPermissions();
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
@@ -25,7 +23,7 @@ const SelfEvaluation = () => {
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-colaborador', user?.colaboradorId],
     queryFn: () => apiRequest(`/evaluaciones/colaborador/${user?.colaboradorId}`),
-    enabled: !!user?.colaboradorId && permissions.canPerformSelfEvaluation,
+    enabled: !!user?.colaboradorId,
   });
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
@@ -55,39 +53,6 @@ const SelfEvaluation = () => {
     return evaluacion.score < 11;
   };
 
-  if (permissionsLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Verificando permisos...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!permissions.canPerformSelfEvaluation) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertTriangle className="mx-auto h-16 w-16 text-amber-500 mb-4" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              Acceso Restringido
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Para realizar autoevaluaciones necesitas:
-              <br />• Tener rol de Docente
-              <br />• Tener una asignación activa en un área
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   if (showForm) {
     return <AutoevaluacionForm onCancel={() => setShowForm(false)} />;
   }
@@ -99,11 +64,6 @@ const SelfEvaluation = () => {
         <p className="text-muted-foreground mt-2">
           {t('selfEval.subtitle')}
         </p>
-        {permissions.allowedAreaIds.length > 0 && (
-          <p className="text-sm text-blue-600 mt-1">
-            Área asignada: {permissions.allowedAreaIds.join(', ')}
-          </p>
-        )}
       </div>
 
       <Card>

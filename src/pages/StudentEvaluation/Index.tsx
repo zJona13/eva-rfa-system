@@ -6,16 +6,13 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
-import { useEvaluationPermissions } from '@/hooks/useEvaluationPermissions';
 import EvaluacionEstudianteForm from './EvaluacionEstudianteForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
-import { AlertTriangle, GraduationCap } from 'lucide-react';
 
 const StudentEvaluation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const { apiRequest } = useApiWithToken();
-  const { permissions, isLoading: permissionsLoading } = useEvaluationPermissions();
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
@@ -24,7 +21,7 @@ const StudentEvaluation = () => {
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-estudiante', user?.id],
     queryFn: () => apiRequest(`/evaluaciones/evaluador/${user?.id}`),
-    enabled: !!user?.id && permissions.canPerformStudentEvaluation,
+    enabled: !!user?.id,
   });
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
@@ -41,11 +38,6 @@ const StudentEvaluation = () => {
     setShowIncidenciaDialog(true);
   };
 
-  const canGenerateIncidencia = (evaluacion: any) => {
-    // Solo se puede generar incidencia si la evaluación está completada y el puntaje es menor a 11
-    return evaluacion.status === 'Completada' && evaluacion.score < 11;
-  };
-
   const getEvaluationStatus = (score: number) => {
     return score >= 11 ? 'Aprobado' : 'Desaprobado';
   };
@@ -54,39 +46,11 @@ const StudentEvaluation = () => {
     return score >= 11 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
   };
 
-  // Verificar permisos
-  if (permissionsLoading) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-muted-foreground">Verificando permisos...</p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!permissions.canPerformStudentEvaluation) {
-    return (
-      <div className="container mx-auto p-6">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <AlertTriangle className="mx-auto h-16 w-16 text-amber-500 mb-4" />
-            <h3 className="text-lg font-medium text-muted-foreground mb-2">
-              Acceso Restringido
-            </h3>
-            <p className="text-sm text-muted-foreground max-w-md mx-auto">
-              Para evaluar docentes necesitas:
-              <br />• Tener rol de Estudiante
-              <br />• Tener una asignación activa en un área
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Verificar si el usuario puede generar incidencias (no debe ser el evaluado)
+  const canGenerateIncidencia = (evaluacion: any) => {
+    // El estudiante puede generar incidencias para docentes que evaluó
+    return evaluacion.score < 11;
+  };
 
   if (showForm) {
     return <EvaluacionEstudianteForm onCancel={() => setShowForm(false)} />;
@@ -99,11 +63,6 @@ const StudentEvaluation = () => {
         <p className="text-muted-foreground mt-2">
           Consulta las evaluaciones que has realizado a los docentes.
         </p>
-        {permissions.allowedAreaIds.length > 0 && (
-          <p className="text-sm text-blue-600 mt-1">
-            Área asignada: {permissions.allowedAreaIds.join(', ')}
-          </p>
-        )}
       </div>
 
       <Card>
