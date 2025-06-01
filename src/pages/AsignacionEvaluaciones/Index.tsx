@@ -51,11 +51,27 @@ const AsignacionEvaluaciones = () => {
       console.log('📋 Response completa asignaciones:', response);
       
       if (response.success && response.data) {
-        const asignacionesData = Array.isArray(response.data) ? response.data : 
-                               response.data.asignaciones ? response.data.asignaciones : 
-                               response.data.data ? response.data.data : [];
+        let asignacionesData = [];
         
-        console.log('✅ Asignaciones encontradas:', asignacionesData.length);
+        // Extraer datos de diferentes estructuras posibles
+        if (Array.isArray(response.data)) {
+          asignacionesData = response.data;
+        } else if (response.data.asignaciones && Array.isArray(response.data.asignaciones)) {
+          asignacionesData = response.data.asignaciones;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          asignacionesData = response.data.data;
+        } else {
+          console.warn('⚠️ Estructura de datos inesperada:', response.data);
+          asignacionesData = [];
+        }
+        
+        // Asegurar que tenemos un array válido
+        if (!Array.isArray(asignacionesData)) {
+          console.error('❌ Los datos de asignaciones no son un array:', asignacionesData);
+          asignacionesData = [];
+        }
+        
+        console.log('✅ Asignaciones procesadas:', asignacionesData.length);
         console.log('📊 Datos de asignaciones:', asignacionesData);
         
         setAsignaciones(asignacionesData);
@@ -65,10 +81,12 @@ const AsignacionEvaluaciones = () => {
         }
       } else {
         console.error('❌ Error en la respuesta:', response);
+        setAsignaciones([]); // Asegurar que sea un array
         toast.error('Error al cargar las asignaciones');
       }
     } catch (error) {
       console.error('❌ Error fetching asignaciones:', error);
+      setAsignaciones([]); // Asegurar que sea un array
       toast.error('Error de conexión al cargar asignaciones');
     }
   };
@@ -80,30 +98,48 @@ const AsignacionEvaluaciones = () => {
       console.log('🏢 Response areas:', response);
       
       if (response.success && response.data) {
-        const areasData = Array.isArray(response.data) ? response.data :
-                         response.data.areas ? response.data.areas :
-                         response.data.data ? response.data.data : [];
+        let areasData = [];
         
-        // Mapear los datos para asegurar compatibilidad con la interfaz Area
-        const mappedAreas = areasData.map((area: any) => ({
-          id: area.id || area.idArea,
-          name: area.name || area.nombre,
-          description: area.description || area.descripcion
-        }));
+        // Extraer datos de diferentes estructuras posibles
+        if (Array.isArray(response.data)) {
+          areasData = response.data;
+        } else if (response.data.areas && Array.isArray(response.data.areas)) {
+          areasData = response.data.areas;
+        } else if (response.data.data && Array.isArray(response.data.data)) {
+          areasData = response.data.data;
+        } else {
+          console.warn('⚠️ Estructura de datos de áreas inesperada:', response.data);
+          areasData = [];
+        }
         
-        console.log('✅ Áreas encontradas:', mappedAreas.length);
-        console.log('🏢 Datos de áreas mapeadas:', mappedAreas);
-        setAreas(mappedAreas);
-        
-        if (mappedAreas.length === 0) {
-          toast.error('No hay áreas disponibles');
+        // Asegurar que tenemos un array válido y mapear los datos
+        if (Array.isArray(areasData)) {
+          const mappedAreas = areasData.map((area: any) => ({
+            id: area.id || area.idArea,
+            name: area.name || area.nombre,
+            description: area.description || area.descripcion
+          }));
+          
+          console.log('✅ Áreas encontradas:', mappedAreas.length);
+          console.log('🏢 Datos de áreas mapeadas:', mappedAreas);
+          setAreas(mappedAreas);
+          
+          if (mappedAreas.length === 0) {
+            toast.error('No hay áreas disponibles');
+          }
+        } else {
+          console.error('❌ Los datos de áreas no son un array:', areasData);
+          setAreas([]);
+          toast.error('Error al procesar las áreas');
         }
       } else {
         console.error('❌ Error en la respuesta de áreas:', response);
+        setAreas([]);
         toast.error('Error al cargar las áreas');
       }
     } catch (error) {
       console.error('❌ Error fetching areas:', error);
+      setAreas([]);
       toast.error('Error de conexión al cargar áreas');
     }
   };
@@ -275,6 +311,9 @@ const AsignacionEvaluaciones = () => {
     );
   };
 
+  // Asegurar que asignaciones siempre sea un array antes del render
+  const safeAsignaciones = Array.isArray(asignaciones) ? asignaciones : [];
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -292,11 +331,11 @@ const AsignacionEvaluaciones = () => {
 
       {/* Información de debug */}
       <div className="text-sm text-muted-foreground">
-        Total de asignaciones cargadas: {asignaciones.length}
+        Total de asignaciones cargadas: {safeAsignaciones.length}
       </div>
 
       {/* Lista de asignaciones como cards */}
-      {asignaciones.length === 0 ? (
+      {safeAsignaciones.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
@@ -312,7 +351,7 @@ const AsignacionEvaluaciones = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {asignaciones.map((asignacion) => (
+          {safeAsignaciones.map((asignacion) => (
             <AsignacionCard key={asignacion.id} asignacion={asignacion} />
           ))}
         </div>
