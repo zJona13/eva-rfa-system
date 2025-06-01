@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 
@@ -8,15 +7,17 @@ const getAllUsers = async () => {
     const [rows] = await pool.execute(
       `SELECT u.idUsuario as id, u.nombre as name, u.correo as email, 
       u.vigencia as active, t.nombre as role, t.idTipoUsu as roleId,
-      u.idColaborador as colaboradorId,
+      u.idColaborador as colaboradorId, u.idArea as areaId,
       CASE 
         WHEN c.idColaborador IS NOT NULL 
         THEN CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat)
         ELSE NULL 
-      END as colaboradorName
+      END as colaboradorName,
+      a.nombre as areaName
       FROM USUARIO u 
       JOIN TIPO_USUARIO t ON u.idTipoUsu = t.idTipoUsu
-      LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador`
+      LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
+      LEFT JOIN AREA a ON u.idArea = a.idArea`
     );
     
     return {
@@ -70,19 +71,19 @@ const getAvailableColaboradores = async (excludeUserId = null) => {
 // Crear un nuevo usuario
 const createUser = async (userData) => {
   try {
-    // Hash de la contraseña
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
     
     const [result] = await pool.execute(
-      'INSERT INTO USUARIO (nombre, correo, contrasena, vigencia, idTipoUsu, idColaborador) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO USUARIO (nombre, correo, contrasena, vigencia, idTipoUsu, idColaborador, idArea) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
         userData.name, 
         userData.email, 
         hashedPassword, 
         userData.active ? 1 : 0, 
         userData.roleId,
-        userData.colaboradorId || null
+        userData.colaboradorId || null,
+        userData.areaId || null
       ]
     );
     
@@ -100,13 +101,12 @@ const createUser = async (userData) => {
 // Actualizar un usuario
 const updateUser = async (userId, userData) => {
   try {
-    // Si viene una nueva contraseña, la hasheamos
     if (userData.password) {
       const saltRounds = 10;
       const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
       
       const [result] = await pool.execute(
-        'UPDATE USUARIO SET nombre = ?, correo = ?, contrasena = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ? WHERE idUsuario = ?',
+        'UPDATE USUARIO SET nombre = ?, correo = ?, contrasena = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ?, idArea = ? WHERE idUsuario = ?',
         [
           userData.name, 
           userData.email, 
@@ -114,6 +114,7 @@ const updateUser = async (userId, userData) => {
           userData.active ? 1 : 0, 
           userData.roleId, 
           userData.colaboradorId || null,
+          userData.areaId || null,
           userId
         ]
       );
@@ -122,15 +123,15 @@ const updateUser = async (userId, userData) => {
         return { success: false, message: 'Usuario no encontrado' };
       }
     } else {
-      // Si no viene contraseña, actualizamos el resto de campos
       const [result] = await pool.execute(
-        'UPDATE USUARIO SET nombre = ?, correo = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ? WHERE idUsuario = ?',
+        'UPDATE USUARIO SET nombre = ?, correo = ?, vigencia = ?, idTipoUsu = ?, idColaborador = ?, idArea = ? WHERE idUsuario = ?',
         [
           userData.name, 
           userData.email, 
           userData.active ? 1 : 0, 
           userData.roleId, 
           userData.colaboradorId || null,
+          userData.areaId || null,
           userId
         ]
       );
