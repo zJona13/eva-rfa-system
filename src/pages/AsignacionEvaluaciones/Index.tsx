@@ -46,33 +46,30 @@ const AsignacionEvaluaciones = () => {
   const fetchAsignaciones = async () => {
     try {
       setIsLoading(true);
-      console.log('Fetching asignaciones...');
+      console.log('Iniciando fetchAsignaciones...');
       
       const response = await apiRequest('/asignaciones');
-      console.log('Response asignaciones completa:', response);
+      console.log('Response completa:', response);
       
-      if (response.success && response.data) {
-        const asignacionesData = response.data.asignaciones || [];
-        console.log('Asignaciones recibidas:', asignacionesData);
+      if (response.success && response.data && response.data.asignaciones) {
+        const asignacionesData = response.data.asignaciones;
+        console.log('Asignaciones encontradas:', asignacionesData.length);
+        console.log('Datos de asignaciones:', asignacionesData);
         
-        // Ensure we're setting the data correctly
         setAsignaciones(asignacionesData);
-        console.log('Asignaciones establecidas en el estado:', asignacionesData);
         
         if (asignacionesData.length > 0) {
           toast.success(`Se cargaron ${asignacionesData.length} asignaciones`);
-        } else {
-          console.log('No hay asignaciones para mostrar');
         }
       } else {
-        console.error('Error en respuesta:', response);
-        toast.error(response.error || 'Error al cargar las asignaciones');
+        console.error('Error en respuesta o datos vacíos:', response);
         setAsignaciones([]);
+        toast.error('No se pudieron cargar las asignaciones');
       }
     } catch (error) {
-      console.error('Error fetching asignaciones:', error);
-      toast.error('Error de conexión al cargar asignaciones');
+      console.error('Error en fetchAsignaciones:', error);
       setAsignaciones([]);
+      toast.error('Error de conexión al cargar asignaciones');
     } finally {
       setIsLoading(false);
     }
@@ -164,9 +161,9 @@ const AsignacionEvaluaciones = () => {
     setIsDialogOpen(true);
   };
 
-  // Debug logging
-  console.log('Estado actual de asignaciones:', asignaciones);
-  console.log('isLoading:', isLoading);
+  console.log('Render - asignaciones en estado:', asignaciones);
+  console.log('Render - isLoading:', isLoading);
+  console.log('Render - cantidad asignaciones:', asignaciones.length);
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -199,13 +196,20 @@ const AsignacionEvaluaciones = () => {
           ) : (
             <>
               <div className="mb-4 text-sm text-muted-foreground">
-                Total de asignaciones encontradas: {asignaciones.length}
+                Total de asignaciones: {asignaciones.length}
               </div>
-              <AsignacionesTable
-                asignaciones={asignaciones}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
+              {asignaciones.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  <p>No hay asignaciones registradas</p>
+                  <p className="text-sm">Crea una nueva asignación para comenzar</p>
+                </div>
+              ) : (
+                <AsignacionesTable
+                  asignaciones={asignaciones}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              )}
             </>
           )}
         </CardContent>
