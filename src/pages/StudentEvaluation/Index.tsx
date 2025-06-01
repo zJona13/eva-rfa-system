@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,6 +39,11 @@ const StudentEvaluation = () => {
       type: evaluacion.type
     });
     setShowIncidenciaDialog(true);
+  };
+
+  const canGenerateIncidencia = (evaluacion: any) => {
+    // Solo se puede generar incidencia si la evaluación está completada y el puntaje es menor a 11
+    return evaluacion.status === 'Completada' && evaluacion.score < 11;
   };
 
   const getEvaluationStatus = (score: number) => {
