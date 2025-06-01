@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -46,32 +45,58 @@ const AsignacionEvaluaciones = () => {
   const fetchAsignaciones = async () => {
     try {
       setIsLoading(true);
-      console.log('Iniciando fetchAsignaciones...');
+      console.log('🔄 Iniciando fetchAsignaciones...');
       
       const response = await apiRequest('/asignaciones');
-      console.log('Response completa:', response);
+      console.log('📦 Response completa desde API:', response);
+      console.log('📦 Tipo de response:', typeof response);
+      console.log('📦 Keys de response:', Object.keys(response));
       
-      if (response.success && response.data && response.data.asignaciones) {
-        const asignacionesData = response.data.asignaciones;
-        console.log('Asignaciones encontradas:', asignacionesData.length);
-        console.log('Datos de asignaciones:', asignacionesData);
+      if (response.success) {
+        console.log('✅ Response exitosa, analizando data...');
+        console.log('📦 response.data:', response.data);
+        console.log('📦 Tipo de response.data:', typeof response.data);
         
-        setAsignaciones(asignacionesData);
-        
-        if (asignacionesData.length > 0) {
-          toast.success(`Se cargaron ${asignacionesData.length} asignaciones`);
+        if (response.data) {
+          console.log('📦 Keys de response.data:', Object.keys(response.data));
+          console.log('📦 response.data.asignaciones:', response.data.asignaciones);
+          
+          const asignacionesData = response.data.asignaciones || [];
+          console.log('📊 Asignaciones extraídas:', asignacionesData);
+          console.log('📊 Cantidad de asignaciones:', asignacionesData.length);
+          console.log('📊 Tipo de asignacionesData:', typeof asignacionesData);
+          console.log('📊 Es array?:', Array.isArray(asignacionesData));
+          
+          if (Array.isArray(asignacionesData)) {
+            console.log('✅ Estableciendo asignaciones en el estado...');
+            setAsignaciones(asignacionesData);
+            
+            if (asignacionesData.length > 0) {
+              toast.success(`Se cargaron ${asignacionesData.length} asignaciones`);
+              console.log('🎉 Toast mostrado con éxito');
+            } else {
+              console.log('⚠️ Array de asignaciones está vacío');
+            }
+          } else {
+            console.error('❌ asignacionesData no es un array:', asignacionesData);
+            setAsignaciones([]);
+          }
+        } else {
+          console.error('❌ response.data es null o undefined');
+          setAsignaciones([]);
         }
       } else {
-        console.error('Error en respuesta o datos vacíos:', response);
+        console.error('❌ Response no exitosa:', response);
         setAsignaciones([]);
         toast.error('No se pudieron cargar las asignaciones');
       }
     } catch (error) {
-      console.error('Error en fetchAsignaciones:', error);
+      console.error('💥 Error en fetchAsignaciones:', error);
       setAsignaciones([]);
       toast.error('Error de conexión al cargar asignaciones');
     } finally {
       setIsLoading(false);
+      console.log('🏁 fetchAsignaciones finalizado');
     }
   };
 
@@ -161,9 +186,11 @@ const AsignacionEvaluaciones = () => {
     setIsDialogOpen(true);
   };
 
-  console.log('Render - asignaciones en estado:', asignaciones);
-  console.log('Render - isLoading:', isLoading);
-  console.log('Render - cantidad asignaciones:', asignaciones.length);
+  console.log('🎨 RENDER - asignaciones en estado:', asignaciones);
+  console.log('🎨 RENDER - isLoading:', isLoading);
+  console.log('🎨 RENDER - cantidad asignaciones:', asignaciones.length);
+  console.log('🎨 RENDER - tipo de asignaciones:', typeof asignaciones);
+  console.log('🎨 RENDER - es array?:', Array.isArray(asignaciones));
 
   return (
     <div className="container mx-auto p-6 space-y-6">
