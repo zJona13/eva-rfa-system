@@ -14,6 +14,7 @@ const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
 const asignacionService = require('./services/asignacionService.cjs');
+const userAsignacionService = require('./services/userAsignacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -1622,6 +1623,64 @@ app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error en /api/asignaciones/areas:', error);
     res.status(500).json({ success: false, error: 'Error del servidor' });
+  }
+});
+
+// Rutas para asignaciones de usuario
+app.get('/api/asignaciones/usuario/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Verificar que el usuario solo pueda ver sus propias asignaciones (excepto admin)
+    if (req.user.role !== 'Administrador' && req.user.id !== parseInt(userId)) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permisos para ver estas asignaciones' 
+      });
+    }
+    
+    const result = await userAsignacionService.getAsignacionesByUsuario(userId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error en ruta de asignaciones de usuario:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Verificar asignación activa en área específica
+app.get('/api/asignaciones/verificar/:userId/:areaId', authenticateToken, async (req, res) => {
+  try {
+    const { userId, areaId } = req.params;
+    
+    // Verificar permisos
+    if (req.user.role !== 'Administrador' && req.user.id !== parseInt(userId)) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'No tienes permisos para verificar esta asignación' 
+      });
+    }
+    
+    const result = await userAsignacionService.hasActiveAsignacionInArea(userId, areaId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error en verificación de asignación:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
   }
 });
 
