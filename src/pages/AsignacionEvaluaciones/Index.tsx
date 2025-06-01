@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus, Calendar, Users, CheckCircle, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -37,110 +38,106 @@ const AsignacionEvaluaciones = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
-    fetchAsignaciones();
-    fetchAreas();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchAsignaciones(), fetchAreas()]);
+    setIsLoading(false);
+  };
 
   const fetchAsignaciones = async () => {
     try {
-      console.log('🔍 Iniciando fetchAsignaciones...');
+      console.log('🔍 Obteniendo asignaciones...');
       const response = await apiRequest('/asignaciones');
-      console.log('📋 Response completa asignaciones:', response);
+      console.log('📋 Respuesta completa de asignaciones:', response);
       
-      if (response.success && response.data) {
+      if (response.success) {
+        // Buscar los datos en diferentes posibles estructuras
         let asignacionesData = [];
         
-        // Extraer datos de diferentes estructuras posibles
-        if (Array.isArray(response.data)) {
-          asignacionesData = response.data;
-        } else if (response.data.asignaciones && Array.isArray(response.data.asignaciones)) {
-          asignacionesData = response.data.asignaciones;
-        } else if (response.data.data && Array.isArray(response.data.data)) {
-          asignacionesData = response.data.data;
-        } else {
-          console.warn('⚠️ Estructura de datos inesperada:', response.data);
-          asignacionesData = [];
+        if (response.data) {
+          if (Array.isArray(response.data)) {
+            asignacionesData = response.data;
+          } else if (response.data.asignaciones && Array.isArray(response.data.asignaciones)) {
+            asignacionesData = response.data.asignaciones;
+          } else if (response.data.data && Array.isArray(response.data.data)) {
+            asignacionesData = response.data.data;
+          }
         }
         
-        // Asegurar que tenemos un array válido
-        if (!Array.isArray(asignacionesData)) {
-          console.error('❌ Los datos de asignaciones no son un array:', asignacionesData);
-          asignacionesData = [];
-        }
+        console.log('✅ Datos de asignaciones extraídos:', asignacionesData);
+        console.log('📊 Número de asignaciones:', asignacionesData.length);
         
-        console.log('✅ Asignaciones procesadas:', asignacionesData.length);
-        console.log('📊 Datos de asignaciones:', asignacionesData);
+        // Validar y limpiar los datos
+        const asignacionesLimpias = asignacionesData.map((item: any) => ({
+          id: item.id || item.idAsignacion,
+          fechaInicio: item.fechaInicio || item.fecha_inicio,
+          fechaFin: item.fechaFin || item.fecha_fin,
+          horaInicio: item.horaInicio || '08:00',
+          horaFin: item.horaFin || '18:00',
+          tipoEvaluacion: item.tipoEvaluacion || 'Múltiples evaluaciones',
+          estado: item.estado || item.estadoAsignacion || 'Pendiente',
+          descripcion: item.descripcion || `Evaluaciones del área ${item.areaNombre || 'Sin área'}`,
+          areaNombre: item.areaNombre || item.area_nombre || 'Área sin nombre',
+          areaId: item.areaId || item.idArea || 0,
+          totalEvaluaciones: parseInt(item.totalEvaluaciones) || 0,
+          evaluacionesCompletadas: parseInt(item.evaluacionesCompletadas) || 0,
+          periodo: item.periodo || new Date().getFullYear()
+        }));
         
-        setAsignaciones(asignacionesData);
+        console.log('🧹 Asignaciones procesadas:', asignacionesLimpias);
+        setAsignaciones(asignacionesLimpias);
         
-        if (asignacionesData.length === 0) {
-          console.log('⚠️ No se encontraron asignaciones');
-        }
       } else {
-        console.error('❌ Error en la respuesta:', response);
-        setAsignaciones([]); // Asegurar que sea un array
-        toast.error('Error al cargar las asignaciones');
+        console.error('❌ Error en la respuesta:', response.error);
+        toast.error('Error al cargar las asignaciones: ' + response.error);
+        setAsignaciones([]);
       }
     } catch (error) {
       console.error('❌ Error fetching asignaciones:', error);
-      setAsignaciones([]); // Asegurar que sea un array
       toast.error('Error de conexión al cargar asignaciones');
+      setAsignaciones([]);
     }
   };
 
   const fetchAreas = async () => {
     try {
-      console.log('🔍 Iniciando fetchAreas...');
+      console.log('🏢 Obteniendo áreas...');
       const response = await apiRequest('/areas');
-      console.log('🏢 Response areas:', response);
+      console.log('📋 Respuesta de áreas:', response);
       
       if (response.success && response.data) {
         let areasData = [];
         
-        // Extraer datos de diferentes estructuras posibles
         if (Array.isArray(response.data)) {
           areasData = response.data;
         } else if (response.data.areas && Array.isArray(response.data.areas)) {
           areasData = response.data.areas;
         } else if (response.data.data && Array.isArray(response.data.data)) {
           areasData = response.data.data;
-        } else {
-          console.warn('⚠️ Estructura de datos de áreas inesperada:', response.data);
-          areasData = [];
         }
         
-        // Asegurar que tenemos un array válido y mapear los datos
-        if (Array.isArray(areasData)) {
-          const mappedAreas = areasData.map((area: any) => ({
-            id: area.id || area.idArea,
-            name: area.name || area.nombre,
-            description: area.description || area.descripcion
-          }));
-          
-          console.log('✅ Áreas encontradas:', mappedAreas.length);
-          console.log('🏢 Datos de áreas mapeadas:', mappedAreas);
-          setAreas(mappedAreas);
-          
-          if (mappedAreas.length === 0) {
-            toast.error('No hay áreas disponibles');
-          }
-        } else {
-          console.error('❌ Los datos de áreas no son un array:', areasData);
-          setAreas([]);
-          toast.error('Error al procesar las áreas');
-        }
+        const areasLimpias = areasData.map((area: any) => ({
+          id: area.id || area.idArea,
+          name: area.name || area.nombre,
+          description: area.description || area.descripcion
+        }));
+        
+        console.log('✅ Áreas procesadas:', areasLimpias);
+        setAreas(areasLimpias);
       } else {
-        console.error('❌ Error en la respuesta de áreas:', response);
+        console.error('❌ Error en la respuesta de áreas:', response.error);
         setAreas([]);
-        toast.error('Error al cargar las áreas');
       }
     } catch (error) {
       console.error('❌ Error fetching areas:', error);
       setAreas([]);
-      toast.error('Error de conexión al cargar áreas');
     }
   };
 
@@ -201,6 +198,7 @@ const AsignacionEvaluaciones = () => {
   };
 
   const formatDate = (dateString: string) => {
+    if (!dateString) return 'Fecha no disponible';
     try {
       return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
     } catch {
@@ -239,7 +237,7 @@ const AsignacionEvaluaciones = () => {
                 {asignacion.areaNombre}
               </CardTitle>
               <CardDescription>
-                Periodo {asignacion.periodo || new Date().getFullYear()}
+                Periodo {asignacion.periodo}
               </CardDescription>
             </div>
             {getEstadoBadge(asignacion.estado)}
@@ -311,8 +309,18 @@ const AsignacionEvaluaciones = () => {
     );
   };
 
-  // Asegurar que asignaciones siempre sea un array antes del render
-  const safeAsignaciones = Array.isArray(asignaciones) ? asignaciones : [];
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p>Cargando asignaciones...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -330,12 +338,13 @@ const AsignacionEvaluaciones = () => {
       </div>
 
       {/* Información de debug */}
-      <div className="text-sm text-muted-foreground">
-        Total de asignaciones cargadas: {safeAsignaciones.length}
+      <div className="text-sm text-muted-foreground bg-gray-50 p-3 rounded-lg">
+        <p>Estado: {asignaciones.length} asignaciones encontradas</p>
+        <p>Áreas disponibles: {areas.length}</p>
       </div>
 
       {/* Lista de asignaciones como cards */}
-      {safeAsignaciones.length === 0 ? (
+      {asignaciones.length === 0 ? (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
             <Calendar className="h-12 w-12 text-muted-foreground mb-4" />
@@ -351,7 +360,7 @@ const AsignacionEvaluaciones = () => {
         </Card>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {safeAsignaciones.map((asignacion) => (
+          {asignaciones.map((asignacion) => (
             <AsignacionCard key={asignacion.id} asignacion={asignacion} />
           ))}
         </div>
