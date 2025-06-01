@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { Edit, Trash2, Calendar, Clock } from 'lucide-react';
+import { Edit, Trash2, Calendar, Clock, Users } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -27,6 +27,7 @@ interface Asignacion {
   areaId: number;
   totalEvaluaciones: number;
   evaluacionesCompletadas: number;
+  periodo?: number;
 }
 
 interface AsignacionesTableProps {
@@ -50,8 +51,17 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
       'Inactiva': 'destructive',
     };
     
+    const colors: Record<string, string> = {
+      'Pendiente': 'bg-yellow-100 text-yellow-800',
+      'Activa': 'bg-blue-100 text-blue-800',
+      'Abierta': 'bg-green-100 text-green-800',
+      'Completada': 'bg-gray-100 text-gray-800',
+      'Cerrada': 'bg-gray-100 text-gray-800',
+      'Inactiva': 'bg-red-100 text-red-800',
+    };
+    
     return (
-      <Badge variant={variants[estado] || 'secondary'}>
+      <Badge variant={variants[estado] || 'secondary'} className={colors[estado]}>
         {estado}
       </Badge>
     );
@@ -61,11 +71,20 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
     const porcentaje = total > 0 ? Math.round((completadas / total) * 100) : 0;
     
     return (
-      <div className="flex flex-col">
-        <span className="text-sm font-medium">
-          {completadas} / {total}
-        </span>
-        <span className="text-xs text-muted-foreground">
+      <div className="flex flex-col items-center">
+        <div className="flex items-center space-x-2">
+          <Users className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium">
+            {completadas} / {total}
+          </span>
+        </div>
+        <div className="w-full bg-gray-200 rounded-full h-2 mt-1">
+          <div 
+            className="bg-primary h-2 rounded-full" 
+            style={{ width: `${porcentaje}%` }}
+          ></div>
+        </div>
+        <span className="text-xs text-muted-foreground mt-1">
           {porcentaje}% completado
         </span>
       </div>
@@ -74,7 +93,9 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
 
   const formatDate = (dateString: string) => {
     try {
-      return format(new Date(dateString), 'dd/MM/yyyy', { locale: es });
+      if (!dateString) return 'Sin fecha';
+      const date = new Date(dateString);
+      return format(date, 'dd/MM/yyyy', { locale: es });
     } catch {
       return dateString;
     }
@@ -82,10 +103,15 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
 
   if (asignaciones.length === 0) {
     return (
-      <div className="text-center py-8 text-muted-foreground">
-        <Calendar className="mx-auto h-12 w-12 mb-4 opacity-50" />
-        <p>No hay asignaciones de evaluación registradas</p>
-        <p className="text-sm">Crea una nueva asignación para programar las 3 evaluaciones por área</p>
+      <div className="text-center py-12 text-muted-foreground">
+        <Calendar className="mx-auto h-16 w-16 mb-4 opacity-50" />
+        <h3 className="text-lg font-semibold mb-2">No hay asignaciones registradas</h3>
+        <p className="text-sm">
+          Crea una nueva asignación para programar las 3 evaluaciones por área
+        </p>
+        <p className="text-xs mt-2 text-gray-500">
+          (Autoevaluación, Evaluador-Evaluado, Estudiante-Docente)
+        </p>
       </div>
     );
   }
@@ -96,17 +122,25 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
         <TableHeader>
           <TableRow>
             <TableHead>Período</TableHead>
+            <TableHead>Fechas</TableHead>
             <TableHead>Horario</TableHead>
             <TableHead>Área</TableHead>
-            <TableHead>Progreso</TableHead>
+            <TableHead>Progreso de Evaluaciones</TableHead>
             <TableHead>Estado</TableHead>
-            <TableHead>Descripción</TableHead>
             <TableHead className="w-24">Acciones</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {asignaciones.map((asignacion) => (
-            <TableRow key={asignacion.id}>
+            <TableRow key={asignacion.id} className="hover:bg-muted/50">
+              <TableCell>
+                <div className="font-medium">
+                  Período {asignacion.periodo || new Date().getFullYear()}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  ID: {asignacion.id}
+                </div>
+              </TableCell>
               <TableCell>
                 <div className="flex items-center space-x-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -127,7 +161,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                   <Clock className="h-4 w-4 text-muted-foreground" />
                   <div>
                     <div className="font-medium">
-                      {asignacion.horaInicio} - {asignacion.horaFin}
+                      {asignacion.horaInicio || '08:00'} - {asignacion.horaFin || '18:00'}
                     </div>
                   </div>
                 </div>
@@ -141,17 +175,13 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                 </div>
               </TableCell>
               <TableCell>
-                {getProgresoEvaluaciones(asignacion.evaluacionesCompletadas, asignacion.totalEvaluaciones)}
+                {getProgresoEvaluaciones(
+                  asignacion.evaluacionesCompletadas || 0, 
+                  asignacion.totalEvaluaciones || 0
+                )}
               </TableCell>
               <TableCell>
                 {getEstadoBadge(asignacion.estado)}
-              </TableCell>
-              <TableCell>
-                <div className="max-w-xs">
-                  <p className="text-sm text-muted-foreground truncate">
-                    {asignacion.descripcion || 'Sin descripción'}
-                  </p>
-                </div>
               </TableCell>
               <TableCell>
                 <div className="flex space-x-1">
@@ -168,6 +198,7 @@ const AsignacionesTable: React.FC<AsignacionesTableProps> = ({
                     size="sm"
                     onClick={() => onDelete(asignacion.id)}
                     title="Eliminar asignación"
+                    className="text-destructive hover:text-destructive"
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
