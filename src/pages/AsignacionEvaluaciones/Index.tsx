@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -34,6 +35,7 @@ const AsignacionEvaluaciones = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
@@ -43,16 +45,32 @@ const AsignacionEvaluaciones = () => {
 
   const fetchAsignaciones = async () => {
     try {
+      setIsLoading(true);
+      console.log('Fetching asignaciones...');
+      
       const response = await apiRequest('/asignaciones');
-      console.log('Response asignaciones:', response);
-      if (response.success) {
-        setAsignaciones(response.data.asignaciones || []);
+      console.log('Response asignaciones completa:', response);
+      
+      if (response.success && response.data) {
+        const asignacionesData = response.data.asignaciones || [];
+        console.log('Asignaciones recibidas:', asignacionesData);
+        
+        setAsignaciones(asignacionesData);
+        
+        if (asignacionesData.length > 0) {
+          toast.success(`Se cargaron ${asignacionesData.length} asignaciones`);
+        }
       } else {
-        toast.error('Error al cargar las asignaciones');
+        console.error('Error en respuesta:', response);
+        toast.error(response.error || 'Error al cargar las asignaciones');
+        setAsignaciones([]);
       }
     } catch (error) {
       console.error('Error fetching asignaciones:', error);
       toast.error('Error de conexión al cargar asignaciones');
+      setAsignaciones([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -84,6 +102,8 @@ const AsignacionEvaluaciones = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('Enviando valores:', values);
+      
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
@@ -94,15 +114,19 @@ const AsignacionEvaluaciones = () => {
             body: values,
           });
 
+      console.log('Response del submit:', response);
+
       if (response.success) {
-        toast.success(response.data.message || 'Asignación guardada exitosamente');
+        toast.success(response.data?.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        fetchAsignaciones();
+        // Recargar las asignaciones para mostrar la nueva
+        await fetchAsignaciones();
       } else {
         toast.error(response.error || 'Error al guardar la asignación');
       }
     } catch (error) {
+      console.error('Error en submit:', error);
       toast.error('Error de conexión');
     } finally {
       setIsSubmitting(false);
@@ -160,11 +184,17 @@ const AsignacionEvaluaciones = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <AsignacionesTable
-            asignaciones={asignaciones}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          {isLoading ? (
+            <div className="text-center py-8">
+              <p>Cargando asignaciones...</p>
+            </div>
+          ) : (
+            <AsignacionesTable
+              asignaciones={asignaciones}
+              onEdit={handleEdit}
+              onDelete={handleDelete}
+            />
+          )}
         </CardContent>
       </Card>
 
