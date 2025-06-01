@@ -55,10 +55,14 @@ const AsignacionEvaluaciones = () => {
         const asignacionesData = response.data.asignaciones || [];
         console.log('Asignaciones recibidas:', asignacionesData);
         
+        // Ensure we're setting the data correctly
         setAsignaciones(asignacionesData);
+        console.log('Asignaciones establecidas en el estado:', asignacionesData);
         
         if (asignacionesData.length > 0) {
           toast.success(`Se cargaron ${asignacionesData.length} asignaciones`);
+        } else {
+          console.log('No hay asignaciones para mostrar');
         }
       } else {
         console.error('Error en respuesta:', response);
@@ -160,6 +164,10 @@ const AsignacionEvaluaciones = () => {
     setIsDialogOpen(true);
   };
 
+  // Debug logging
+  console.log('Estado actual de asignaciones:', asignaciones);
+  console.log('isLoading:', isLoading);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -189,11 +197,16 @@ const AsignacionEvaluaciones = () => {
               <p>Cargando asignaciones...</p>
             </div>
           ) : (
-            <AsignacionesTable
-              asignaciones={asignaciones}
-              onEdit={handleEdit}
-              onDelete={handleDelete}
-            />
+            <>
+              <div className="mb-4 text-sm text-muted-foreground">
+                Total de asignaciones encontradas: {asignaciones.length}
+              </div>
+              <AsignacionesTable
+                asignaciones={asignaciones}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </>
           )}
         </CardContent>
       </Card>
