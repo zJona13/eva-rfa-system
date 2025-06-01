@@ -9,6 +9,7 @@ import AsignacionesTable from './components/AsignacionesTable';
 
 interface Asignacion {
   id: number;
+  periodo: number;
   fechaInicio: string;
   fechaFin: string;
   horaInicio: string;
@@ -34,6 +35,7 @@ const AsignacionEvaluaciones = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
@@ -43,16 +45,26 @@ const AsignacionEvaluaciones = () => {
 
   const fetchAsignaciones = async () => {
     try {
+      setIsLoading(true);
+      console.log('🔄 Cargando asignaciones...');
       const response = await apiRequest('/asignaciones');
       console.log('Response asignaciones:', response);
-      if (response.success) {
-        setAsignaciones(response.data.asignaciones || []);
+      
+      if (response.success && response.data) {
+        const asignacionesData = response.data.asignaciones || [];
+        console.log('✅ Asignaciones cargadas:', asignacionesData);
+        setAsignaciones(asignacionesData);
       } else {
+        console.error('❌ Error en respuesta de asignaciones:', response);
         toast.error('Error al cargar las asignaciones');
+        setAsignaciones([]);
       }
     } catch (error) {
-      console.error('Error fetching asignaciones:', error);
+      console.error('❌ Error fetching asignaciones:', error);
       toast.error('Error de conexión al cargar asignaciones');
+      setAsignaciones([]);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -164,6 +176,7 @@ const AsignacionEvaluaciones = () => {
             asignaciones={asignaciones}
             onEdit={handleEdit}
             onDelete={handleDelete}
+            isLoading={isLoading}
           />
         </CardContent>
       </Card>
