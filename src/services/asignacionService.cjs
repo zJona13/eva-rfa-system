@@ -204,54 +204,6 @@ const createAsignacion = async (asignacionData) => {
   }
 };
 
-// Obtener todas las asignaciones con sus evaluaciones
-const getAllAsignaciones = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT a.idAsignacion as id, a.periodo, a.fecha_inicio as fechaInicio, 
-       a.fecha_fin as fechaFin, a.estado as estadoAsignacion,
-       ar.nombre as areaNombre, ar.idArea as areaId,
-       COUNT(da.idEvaluacion) as totalEvaluaciones,
-       SUM(CASE WHEN e.estado = 'Completada' THEN 1 ELSE 0 END) as evaluacionesCompletadas
-       FROM ASIGNACION a
-       LEFT JOIN AREA ar ON a.idArea = ar.idArea
-       LEFT JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
-       LEFT JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
-       WHERE a.estado IN ('Activa', 'Abierta', 'Cerrada')
-       GROUP BY a.idAsignacion
-       ORDER BY a.fecha_inicio DESC`
-    );
-    
-    const asignaciones = rows.map(row => ({
-      id: row.id,
-      periodo: row.periodo,
-      fechaInicio: row.fechaInicio,
-      fechaFin: row.fechaFin,
-      areaId: row.areaId,
-      areaNombre: row.areaNombre,
-      estado: row.estadoAsignacion,
-      totalEvaluaciones: row.totalEvaluaciones,
-      evaluacionesCompletadas: row.evaluacionesCompletadas,
-      // Para compatibilidad con el frontend existente
-      horaInicio: '08:00',
-      horaFin: '18:00',
-      tipoEvaluacion: 'Todas las evaluaciones',
-      descripcion: `Asignación del área ${row.areaNombre} - Periodo ${row.periodo}`
-    }));
-    
-    return {
-      success: true,
-      asignaciones: asignaciones
-    };
-  } catch (error) {
-    console.error('Error al obtener asignaciones:', error);
-    return { 
-      success: false, 
-      message: 'Error al obtener las asignaciones' 
-    };
-  }
-};
-
 // Actualizar una asignación
 const updateAsignacion = async (asignacionId, asignacionData) => {
   const connection = await pool.getConnection();
