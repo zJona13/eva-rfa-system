@@ -41,23 +41,35 @@ export const useAsignacionData = () => {
     try {
       console.log('=== FRONTEND: Iniciando fetchAsignaciones ===');
       const response = await apiRequest('/asignaciones');
-      console.log('=== FRONTEND: Respuesta completa del servidor ===', response);
+      console.log('=== FRONTEND: Respuesta completa del servidor ===');
+      console.log('Response object:', response);
+      console.log('Response.success:', response?.success);
+      console.log('Response.data:', response?.data);
+      console.log('Response.data.asignaciones:', response?.data?.asignaciones);
       
-      if (response?.success && response?.data?.asignaciones) {
-        const asignacionesData = response.data.asignaciones;
-        console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
-        
-        if (asignacionesData.length > 0) {
-          console.log('=== FRONTEND: Primera asignación recibida ===', asignacionesData[0]);
+      if (response?.success) {
+        if (response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
+          const asignacionesData = response.data.asignaciones;
+          console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
+          
+          if (asignacionesData.length > 0) {
+            console.log('=== FRONTEND: Primera asignación recibida ===', asignacionesData[0]);
+          }
+          
+          setAsignaciones(asignacionesData);
+          console.log('=== FRONTEND: Estado actualizado con', asignacionesData.length, 'asignaciones ===');
+        } else {
+          console.warn('=== FRONTEND: La respuesta no contiene un array de asignaciones válido ===');
+          console.warn('Estructura recibida:', response.data);
+          setAsignaciones([]);
         }
-        
-        setAsignaciones(asignacionesData);
-        console.log('=== FRONTEND: Estado actualizado ===');
       } else {
-        console.warn('=== FRONTEND: Respuesta sin datos válidos ===', response);
+        console.error('=== FRONTEND: Respuesta no exitosa ===', response);
         setAsignaciones([]);
         if (response?.error) {
           toast.error(response.error);
+        } else if (response?.message) {
+          toast.error(response.message);
         }
       }
     } catch (error) {
