@@ -61,20 +61,27 @@ const AsignacionEvaluaciones = () => {
 
   const fetchAsignaciones = async () => {
     try {
-      console.log('Fetching asignaciones...');
+      console.log('=== FRONTEND: Obteniendo asignaciones ===');
       const response = await apiRequest('/asignaciones');
-      console.log('Response completa asignaciones:', response);
+      console.log('=== FRONTEND: Respuesta completa ===', response);
       
-      if (response.success && response.data && response.data.asignaciones) {
-        console.log('Asignaciones recibidas:', response.data.asignaciones);
-        setAsignaciones(response.data.asignaciones);
+      if (response && response.success) {
+        if (response.data && response.data.asignaciones) {
+          console.log('=== FRONTEND: Asignaciones recibidas ===');
+          console.log('Cantidad:', response.data.asignaciones.length);
+          console.log('Datos:', response.data.asignaciones);
+          setAsignaciones(response.data.asignaciones);
+        } else {
+          console.warn('=== FRONTEND: No hay asignaciones en la respuesta ===');
+          setAsignaciones([]);
+        }
       } else {
-        console.error('Error en respuesta de asignaciones:', response);
+        console.error('=== FRONTEND: Error en respuesta ===', response);
         setAsignaciones([]);
-        toast.error('Error al cargar las asignaciones');
+        toast.error(response?.error || 'Error al cargar las asignaciones');
       }
     } catch (error) {
-      console.error('Error fetching asignaciones:', error);
+      console.error('=== FRONTEND: Error de conexión ===', error);
       setAsignaciones([]);
       toast.error('Error de conexión al cargar asignaciones');
     }
@@ -82,23 +89,24 @@ const AsignacionEvaluaciones = () => {
 
   const fetchAreas = async () => {
     try {
-      console.log('Fetching areas...');
+      console.log('=== FRONTEND: Obteniendo áreas ===');
       const response = await apiRequest('/areas');
-      console.log('Response areas:', response);
+      console.log('=== FRONTEND: Respuesta áreas ===', response);
       
-      if (response.success && response.data && response.data.areas) {
+      if (response && response.success && response.data && response.data.areas) {
         const areasData = response.data.areas.map((area: any) => ({
           id: area.id,
           name: area.nombre || area.name,
           description: area.descripcion || area.description
         }));
+        console.log('=== FRONTEND: Áreas procesadas ===', areasData);
         setAreas(areasData);
       } else {
-        console.error('Error en respuesta de áreas:', response);
+        console.error('=== FRONTEND: Error en respuesta de áreas ===', response);
         toast.error('Error al cargar las áreas');
       }
     } catch (error) {
-      console.error('Error fetching areas:', error);
+      console.error('=== FRONTEND: Error al obtener áreas ===', error);
       toast.error('Error de conexión al cargar áreas');
     }
   };
@@ -107,7 +115,7 @@ const AsignacionEvaluaciones = () => {
     setIsSubmitting(true);
     
     try {
-      console.log('Enviando datos de asignación:', values);
+      console.log('=== FRONTEND: Enviando datos de asignación ===', values);
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
@@ -118,18 +126,22 @@ const AsignacionEvaluaciones = () => {
             body: values,
           });
 
-      console.log('Respuesta del servidor:', response);
+      console.log('=== FRONTEND: Respuesta del servidor ===', response);
 
-      if (response.success) {
+      if (response && response.success) {
         toast.success(response.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        fetchAsignaciones(); // Recargar asignaciones
+        
+        // Esperar un momento y recargar asignaciones
+        setTimeout(() => {
+          fetchAsignaciones();
+        }, 500);
       } else {
-        toast.error(response.error || response.message || 'Error al guardar la asignación');
+        toast.error(response?.error || response?.message || 'Error al guardar la asignación');
       }
     } catch (error) {
-      console.error('Error al enviar asignación:', error);
+      console.error('=== FRONTEND: Error al enviar asignación ===', error);
       toast.error('Error de conexión');
     } finally {
       setIsSubmitting(false);
@@ -150,7 +162,7 @@ const AsignacionEvaluaciones = () => {
       method: 'DELETE',
     });
 
-    if (response.success) {
+    if (response && response.success) {
       toast.success('Asignación eliminada exitosamente');
       fetchAsignaciones();
     } else {
@@ -174,6 +186,12 @@ const AsignacionEvaluaciones = () => {
   const asignacionesAbiertas = asignacionesFiltradas.filter(a => a.estado === 'Abierta');
   const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado === 'Cerrada');
   const todasAsignaciones = asignacionesFiltradas;
+
+  console.log('=== FRONTEND: Estado actual ===');
+  console.log('Total asignaciones:', asignaciones.length);
+  console.log('Asignaciones filtradas:', asignacionesFiltradas.length);
+  console.log('Abiertas:', asignacionesAbiertas.length);
+  console.log('Cerradas:', asignacionesCerradas.length);
 
   if (isLoading) {
     return (
@@ -202,6 +220,16 @@ const AsignacionEvaluaciones = () => {
           Nueva Asignación
         </Button>
       </div>
+
+      {/* Mensaje de estado para debugging */}
+      <Card className="bg-blue-50 border-blue-200">
+        <CardContent className="pt-6">
+          <p className="text-sm text-blue-700">
+            <strong>Estado de asignaciones:</strong> {asignaciones.length} asignaciones cargadas
+            {asignaciones.length === 0 && " - No se encontraron asignaciones"}
+          </p>
+        </CardContent>
+      </Card>
 
       {/* Filtros */}
       <Card>
