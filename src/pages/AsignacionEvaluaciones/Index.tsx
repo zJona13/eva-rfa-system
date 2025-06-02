@@ -46,44 +46,55 @@ const AsignacionEvaluaciones = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [filtroEstado, setFiltroEstado] = useState<string>('todos');
   const [filtroArea, setFiltroArea] = useState<string>('todas');
+  const [isLoading, setIsLoading] = useState(true);
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
-    fetchAsignaciones();
-    fetchAreas();
+    loadData();
   }, []);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    await Promise.all([fetchAsignaciones(), fetchAreas()]);
+    setIsLoading(false);
+  };
 
   const fetchAsignaciones = async () => {
     try {
+      console.log('Fetching asignaciones...');
       const response = await apiRequest('/asignaciones');
-      console.log('Response asignaciones:', response);
-      if (response.success) {
-        setAsignaciones(response.data.asignaciones || []);
+      console.log('Response completa asignaciones:', response);
+      
+      if (response.success && response.data && response.data.asignaciones) {
+        console.log('Asignaciones recibidas:', response.data.asignaciones);
+        setAsignaciones(response.data.asignaciones);
       } else {
-        toast.error('Error al cargar el historial de asignaciones');
+        console.error('Error en respuesta de asignaciones:', response);
+        setAsignaciones([]);
+        toast.error('Error al cargar las asignaciones');
       }
     } catch (error) {
       console.error('Error fetching asignaciones:', error);
+      setAsignaciones([]);
       toast.error('Error de conexión al cargar asignaciones');
     }
   };
 
   const fetchAreas = async () => {
     try {
-      console.log('Iniciando fetchAreas...');
+      console.log('Fetching areas...');
       const response = await apiRequest('/areas');
       console.log('Response areas:', response);
       
-      if (response.success && response.data) {
-        const areasData = response.data.areas || [];
-        console.log('Áreas recibidas:', areasData);
+      if (response.success && response.data && response.data.areas) {
+        const areasData = response.data.areas.map((area: any) => ({
+          id: area.id,
+          name: area.nombre || area.name,
+          description: area.descripcion || area.description
+        }));
         setAreas(areasData);
-        
-        if (areasData.length === 0) {
-          toast.error('No hay áreas disponibles');
-        }
       } else {
-        console.error('Error en la respuesta de áreas:', response);
+        console.error('Error en respuesta de áreas:', response);
         toast.error('Error al cargar las áreas');
       }
     } catch (error) {
@@ -96,6 +107,7 @@ const AsignacionEvaluaciones = () => {
     setIsSubmitting(true);
     
     try {
+      console.log('Enviando datos de asignación:', values);
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',
@@ -106,15 +118,18 @@ const AsignacionEvaluaciones = () => {
             body: values,
           });
 
+      console.log('Respuesta del servidor:', response);
+
       if (response.success) {
-        toast.success(response.data.message || 'Asignación guardada exitosamente');
+        toast.success(response.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
-        fetchAsignaciones();
+        fetchAsignaciones(); // Recargar asignaciones
       } else {
-        toast.error(response.error || 'Error al guardar la asignación');
+        toast.error(response.error || response.message || 'Error al guardar la asignación');
       }
     } catch (error) {
+      console.error('Error al enviar asignación:', error);
       toast.error('Error de conexión');
     } finally {
       setIsSubmitting(false);
@@ -156,9 +171,22 @@ const AsignacionEvaluaciones = () => {
   });
 
   // Agrupar asignaciones por estado
-  const asignacionesActivas = asignacionesFiltradas.filter(a => a.estado === 'Abierta');
+  const asignacionesAbiertas = asignacionesFiltradas.filter(a => a.estado === 'Abierta');
   const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado === 'Cerrada');
   const todasAsignaciones = asignacionesFiltradas;
+
+  if (isLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex justify-center items-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+            <p className="mt-4 text-gray-600">Cargando asignaciones...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -193,7 +221,6 @@ const AsignacionEvaluaciones = () => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos los estados</SelectItem>
-                  <SelectItem value="Activa">Activa</SelectItem>
                   <SelectItem value="Abierta">Abierta</SelectItem>
                   <SelectItem value="Cerrada">Cerrada</SelectItem>
                 </SelectContent>
@@ -226,8 +253,8 @@ const AsignacionEvaluaciones = () => {
             <Calendar className="h-4 w-4" />
             Todas ({todasAsignaciones.length})
           </TabsTrigger>
-          <TabsTrigger value="activas" className="flex items-center gap-2">
-            Activas ({asignacionesActivas.length})
+          <TabsTrigger value="abiertas" className="flex items-center gap-2">
+            Abiertas ({asignacionesAbiertas.length})
           </TabsTrigger>
           <TabsTrigger value="cerradas" className="flex items-center gap-2">
             Cerradas ({asignacionesCerradas.length})
@@ -252,17 +279,17 @@ const AsignacionEvaluaciones = () => {
           </Card>
         </TabsContent>
 
-        <TabsContent value="activas">
+        <TabsContent value="abiertas">
           <Card>
             <CardHeader>
-              <CardTitle>Asignaciones Activas</CardTitle>
+              <CardTitle>Asignaciones Abiertas</CardTitle>
               <CardDescription>
                 Asignaciones que están actualmente abiertas para evaluación
               </CardDescription>
             </CardHeader>
             <CardContent>
               <AsignacionHistorial
-                asignaciones={asignacionesActivas}
+                asignaciones={asignacionesAbiertas}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
               />

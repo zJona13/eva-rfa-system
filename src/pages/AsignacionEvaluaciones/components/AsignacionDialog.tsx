@@ -1,3 +1,4 @@
+
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -35,6 +36,37 @@ const formSchema = z.object({
   horaFin: z.string().min(1, 'La hora de fin es obligatoria'),
   areaId: z.string().min(1, 'Debe seleccionar un área'),
   descripcion: z.string().optional(),
+}).refine((data) => {
+  // Validar que fecha fin no sea anterior a fecha inicio
+  if (data.fechaInicio && data.fechaFin) {
+    return new Date(data.fechaFin) >= new Date(data.fechaInicio);
+  }
+  return true;
+}, {
+  message: "La fecha de finalización no puede ser anterior a la fecha de inicio",
+  path: ["fechaFin"]
+}).refine((data) => {
+  // Validar que si es el mismo día, la hora fin sea posterior a la hora inicio
+  if (data.fechaInicio && data.fechaFin && data.horaInicio && data.horaFin) {
+    if (data.fechaInicio === data.fechaFin) {
+      return data.horaFin > data.horaInicio;
+    }
+  }
+  return true;
+}, {
+  message: "La hora de finalización debe ser posterior a la hora de inicio",
+  path: ["horaFin"]
+}).refine((data) => {
+  // Validar que la fecha de inicio no sea anterior a hoy
+  if (data.fechaInicio) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return new Date(data.fechaInicio) >= today;
+  }
+  return true;
+}, {
+  message: "La fecha de inicio no puede ser anterior a hoy",
+  path: ["fechaInicio"]
 });
 
 interface AreaData {
@@ -72,8 +104,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
     },
   });
 
-  // Debug para verificar las áreas
-  console.log('Areas en AsignacionDialog:', areas);
+  const today = format(new Date(), 'yyyy-MM-dd');
 
   useEffect(() => {
     if (asignacionData) {
@@ -90,7 +121,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
       });
     } else {
       form.reset({
-        fechaInicio: '',
+        fechaInicio: today,
         fechaFin: '',
         horaInicio: '08:00',
         horaFin: '18:00',
@@ -98,7 +129,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
         descripcion: '',
       });
     }
-  }, [asignacionData, form]);
+  }, [asignacionData, form, today]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     const submissionData = {
@@ -167,6 +198,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="date"
+                        min={today}
                         {...field}
                       />
                     </FormControl>
@@ -184,6 +216,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="date"
+                        min={form.watch('fechaInicio') || today}
                         {...field}
                       />
                     </FormControl>
@@ -220,6 +253,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="time"
+                        min={form.watch('fechaInicio') === form.watch('fechaFin') ? form.watch('horaInicio') : undefined}
                         {...field}
                       />
                     </FormControl>

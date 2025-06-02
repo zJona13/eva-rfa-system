@@ -32,7 +32,7 @@ const createAsignacion = async (asignacionData) => {
       };
     }
     
-    // Crear la asignación principal con estado 'Activa'
+    // Crear la asignación principal con estado 'Abierta'
     const [asignacionResult] = await connection.execute(
       `INSERT INTO ASIGNACION (idUsuario, periodo, fecha_inicio, fecha_fin, estado, idArea) 
        VALUES (?, ?, ?, ?, ?, ?)`,
@@ -41,7 +41,7 @@ const createAsignacion = async (asignacionData) => {
         new Date().getFullYear(),
         asignacionData.fechaInicio,
         asignacionData.fechaFin,
-        'Activa',
+        'Abierta',
         asignacionData.areaId
       ]
     );
@@ -72,7 +72,7 @@ const createAsignacion = async (asignacionData) => {
     
     // 1. Crear autoevaluaciones para cada docente del área
     for (const docente of docentes) {
-      if (docente.idUsuario) { // Solo si el docente tiene usuario
+      if (docente.idUsuario) {
         const [evaluacionResult] = await connection.execute(
           `INSERT INTO EVALUACION 
            (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
@@ -108,7 +108,7 @@ const createAsignacion = async (asignacionData) => {
     for (const evaluador of docentes) {
       if (evaluador.idUsuario) {
         for (const evaluado of docentes) {
-          if (evaluador.idColaborador !== evaluado.idColaborador) { // No se evalúa a sí mismo
+          if (evaluador.idColaborador !== evaluado.idColaborador) {
             const [evaluacionResult] = await connection.execute(
               `INSERT INTO EVALUACION 
                (fechaEvaluacion, horaEvaluacion, tipo, estado, idUsuario, idColaborador, comentario) 
@@ -141,7 +141,7 @@ const createAsignacion = async (asignacionData) => {
       }
     }
     
-    // 3. Crear evaluaciones estudiante-docente (cada estudiante evalúa a cada docente del área)
+    // 3. Crear evaluaciones estudiante-docente
     for (const estudiante of estudiantes) {
       for (const docente of docentes) {
         const [evaluacionResult] = await connection.execute(
@@ -174,12 +174,6 @@ const createAsignacion = async (asignacionData) => {
       }
     }
     
-    // Cambiar el estado de la asignación a 'Abierta' después de crear las evaluaciones
-    await connection.execute(
-      'UPDATE ASIGNACION SET estado = ? WHERE idAsignacion = ?',
-      ['Abierta', asignacionId]
-    );
-    
     await connection.commit();
     
     return {
@@ -206,6 +200,8 @@ const createAsignacion = async (asignacionData) => {
 // Obtener asignaciones como historial con información detallada
 const getAllAsignaciones = async () => {
   try {
+    console.log('Iniciando consulta de asignaciones...');
+    
     const [rows] = await pool.execute(
       `SELECT 
         a.idAsignacion as id,
@@ -222,20 +218,21 @@ const getAllAsignaciones = async () => {
         SUM(CASE WHEN e.tipo = 'Autoevaluacion' THEN 1 ELSE 0 END) as autoevaluaciones,
         SUM(CASE WHEN e.tipo = 'Evaluador-Evaluado' THEN 1 ELSE 0 END) as evaluacionesEvaluador,
         SUM(CASE WHEN e.tipo = 'Estudiante-Docente' THEN 1 ELSE 0 END) as evaluacionesEstudiante,
-        DATE(a.fecha_inicio) as fechaCreacion,
+        a.fecha_inicio as fechaCreacion,
         DATEDIFF(a.fecha_fin, a.fecha_inicio) as duracionDias
        FROM ASIGNACION a
        LEFT JOIN AREA ar ON a.idArea = ar.idArea
        LEFT JOIN USUARIO u ON a.idUsuario = u.idUsuario
        LEFT JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
        LEFT JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
-       WHERE a.estado IN ('Activa', 'Abierta', 'Cerrada')
+       WHERE a.estado IN ('Abierta', 'Cerrada')
        GROUP BY a.idAsignacion, a.periodo, a.fecha_inicio, a.fecha_fin, a.estado, 
                 ar.nombre, ar.idArea, u.nombre
        ORDER BY a.fecha_inicio DESC, a.idAsignacion DESC`
     );
     
-    console.log('Asignaciones obtenidas:', rows.length);
+    console.log('Asignaciones SQL resultado:', rows.length);
+    console.log('Primera asignación encontrada:', rows[0]);
     
     const asignaciones = rows.map(row => ({
       id: row.id,
@@ -244,31 +241,35 @@ const getAllAsignaciones = async () => {
       fechaFin: row.fechaFin,
       fechaCreacion: row.fechaCreacion,
       areaId: row.areaId,
-      areaNombre: row.areaNombre,
-      usuarioCreador: row.usuarioCreador,
+      areaNombre: row.areaNombre || 'Sin área',
+      usuarioCreador: row.usuarioCreador || 'Sistema',
       estado: row.estado,
-      duracionDias: row.duracionDias,
+      duracionDias: row.duracionDias || 0,
       estadisticas: {
-        totalEvaluaciones: row.totalEvaluaciones,
-        evaluacionesCompletadas: row.evaluacionesCompletadas,
-        evaluacionesPendientes: row.evaluacionesPendientes,
-        autoevaluaciones: row.autoevaluaciones,
-        evaluacionesEvaluador: row.evaluacionesEvaluador,
-        evaluacionesEstudiante: row.evaluacionesEstudiante
+        totalEvaluaciones: parseInt(row.totalEvaluaciones) || 0,
+        evaluacionesCompletadas: parseInt(row.evaluacionesCompletadas) || 0,
+        evaluacionesPendientes: parseInt(row.evaluacionesPendientes) || 0,
+        autoevaluaciones: parseInt(row.autoevaluaciones) || 0,
+        evaluacionesEvaluador: parseInt(row.evaluacionesEvaluador) || 0,
+        evaluacionesEstudiante: parseInt(row.evaluacionesEstudiante) || 0
       },
       progreso: row.totalEvaluaciones > 0 ? 
         Math.round((row.evaluacionesCompletadas / row.totalEvaluaciones) * 100) : 0
     }));
     
+    console.log('Asignaciones procesadas:', asignaciones);
+    
     return {
       success: true,
-      asignaciones: asignaciones
+      data: {
+        asignaciones: asignaciones
+      }
     };
   } catch (error) {
     console.error('Error al obtener asignaciones:', error);
     return { 
       success: false, 
-      message: 'Error al obtener el historial de asignaciones' 
+      error: 'Error al obtener el historial de asignaciones' 
     };
   }
 };
