@@ -32,15 +32,15 @@ interface Asignacion {
   progreso: number;
 }
 
-interface Area {
+interface AreaData {
   id: number;
-  nombre: string;
-  descripcion?: string;
+  name: string;
+  description?: string;
 }
 
 const AsignacionEvaluaciones = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
-  const [areas, setAreas] = useState<Area[]>([]);
+  const [areas, setAreas] = useState<AreaData[]>([]);
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -209,7 +209,7 @@ const AsignacionEvaluaciones = () => {
                   <SelectItem value="todas">Todas las áreas</SelectItem>
                   {areas.map(area => (
                     <SelectItem key={area.id} value={area.id.toString()}>
-                      {area.nombre}
+                      {area.name}
                     </SelectItem>
                   ))}
                 </SelectContent>
