@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +24,7 @@ const ChecklistEvaluation = () => {
   });
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
-  const evaluacionesSupervision = evaluaciones.filter((e: any) => e.type === 'Evaluacion a Docente');
+  const evaluacionesSupervision = evaluaciones.filter((e: any) => e.type === 'Evaluador-Evaluado');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for supervision:', evaluacion);

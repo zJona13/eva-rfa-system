@@ -1368,12 +1368,7 @@ app.get('/api/asignaciones', authenticateToken, async (req, res) => {
     const result = await asignacionService.getAllAsignaciones();
     
     if (result.success) {
-      res.json({
-        success: true,
-        data: {
-          asignaciones: result.asignaciones
-        }
-      });
+      res.json(result);
     } else {
       res.status(400).json({
         success: false,

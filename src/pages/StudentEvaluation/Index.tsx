@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,7 +24,7 @@ const StudentEvaluation = () => {
   });
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
-  const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluacion estudiante-docente');
+  const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Estudiante-Docente');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for evaluation:', evaluacion);
@@ -120,6 +119,19 @@ const StudentEvaluation = () => {
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(evaluacion.score)}`}>
                         {getEvaluationStatus(evaluacion.score)}
                       </span>
+                      {evaluacion.status !== 'Completada' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setSelectedEvaluacion(evaluacion);
+                            setShowForm(true);
+                          }}
+                          className="text-xs"
+                        >
+                          Editar
+                        </Button>
+                      )}
                       {canGenerateIncidencia(evaluacion) && (
                         <Button
                           size="sm"
@@ -144,11 +156,17 @@ const StudentEvaluation = () => {
         </CardContent>
       </Card>
 
-      {selectedEvaluacion && (
-        <IncidenciaDialog
-          open={showIncidenciaDialog}
-          onOpenChange={setShowIncidenciaDialog}
+      {showForm && (
+        <EvaluacionEstudianteForm 
+          onCancel={() => { setShowForm(false); setSelectedEvaluacion(null); }}
           evaluacionData={selectedEvaluacion}
+        />
+      )}
+      {showIncidenciaDialog && (
+        <IncidenciaDialog 
+          open={showIncidenciaDialog} 
+          onOpenChange={setShowIncidenciaDialog} 
+          evaluacionData={selectedEvaluacion} 
         />
       )}
     </div>

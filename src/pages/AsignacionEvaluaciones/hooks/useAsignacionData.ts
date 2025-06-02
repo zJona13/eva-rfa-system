@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
@@ -8,7 +7,6 @@ interface Asignacion {
   periodo: number;
   fechaInicio: string;
   fechaFin: string;
-  fechaCreacion: string;
   areaId: number;
   areaNombre: string;
   usuarioCreador: string;
@@ -43,34 +41,21 @@ export const useAsignacionData = () => {
       const response = await apiRequest('/asignaciones');
       console.log('=== FRONTEND: Respuesta completa del servidor ===');
       console.log('Response object:', response);
-      console.log('Response.success:', response?.success);
-      console.log('Response.data:', response?.data);
-      console.log('Response.data.asignaciones:', response?.data?.asignaciones);
       
-      if (response?.success) {
-        if (response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
-          const asignacionesData = response.data.asignaciones;
-          console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
-          
-          if (asignacionesData.length > 0) {
-            console.log('=== FRONTEND: Primera asignación recibida ===', asignacionesData[0]);
-          }
-          
-          setAsignaciones(asignacionesData);
-          console.log('=== FRONTEND: Estado actualizado con', asignacionesData.length, 'asignaciones ===');
-        } else {
-          console.warn('=== FRONTEND: La respuesta no contiene un array de asignaciones válido ===');
-          console.warn('Estructura recibida:', response.data);
-          setAsignaciones([]);
+      if (response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
+        const asignacionesData = response.data.asignaciones;
+        console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
+        
+        if (asignacionesData.length > 0) {
+          console.log('=== FRONTEND: Primera asignación recibida ===', asignacionesData[0]);
         }
+        
+        setAsignaciones(asignacionesData);
+        console.log('=== FRONTEND: Estado actualizado con', asignacionesData.length, 'asignaciones ===');
       } else {
-        console.error('=== FRONTEND: Respuesta no exitosa ===', response);
+        console.warn('=== FRONTEND: La respuesta no contiene un array de asignaciones válido ===');
+        console.warn('Estructura recibida:', response);
         setAsignaciones([]);
-        if (response?.error) {
-          toast.error(response.error);
-        } else if (response?.message) {
-          toast.error(response.message);
-        }
       }
     } catch (error) {
       console.error('=== FRONTEND: Error en fetchAsignaciones ===', error);

@@ -1,14 +1,12 @@
-
 const { pool } = require('../../utils/dbConnection.cjs');
 
 // Create evaluations for an assignment
 const createEvaluationsForAsignacion = async (connection, asignacionId, asignacionData) => {
   console.log('=== CREANDO EVALUACIONES PARA ASIGNACIÓN ===');
   
-  // Get all teachers from the area
+  // Obtener docentes del área
   const [docentes] = await connection.execute(
-    `SELECT c.idColaborador, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre,
-     u.idUsuario
+    `SELECT c.idColaborador, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre, u.idUsuario
      FROM COLABORADOR c
      JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
      JOIN USUARIO u ON c.idColaborador = u.idColaborador
@@ -22,20 +20,29 @@ const createEvaluationsForAsignacion = async (connection, asignacionId, asignaci
     throw new Error('No existen profesores en el área seleccionada');
   }
   
-  // Get all students
-  const [estudiantes] = await connection.execute(
-    `SELECT c.idColaborador, u.idUsuario, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre
+  // Obtener evaluadores (jefes de área) del área
+  const [evaluadores] = await connection.execute(
+    `SELECT c.idColaborador, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre, u.idUsuario
      FROM COLABORADOR c
      JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
      JOIN USUARIO u ON c.idColaborador = u.idColaborador
-     WHERE c.estado = 1 AND tc.nombre = 'Estudiante'`
+     WHERE u.idArea = ? AND c.estado = 1 AND tc.nombre LIKE 'Jefe%'`,
+    [asignacionData.areaId]
   );
+  console.log('Evaluadores (jefes) encontrados en el área:', evaluadores.length);
   
+  // Obtener estudiantes (usuarios con tipo_usuario = 'Estudiante')
+  const [estudiantes] = await connection.execute(
+    `SELECT u.idUsuario, CONCAT(u.nombre, '') as nombre
+     FROM USUARIO u
+     JOIN TIPO_USUARIO tu ON u.idTipoUsu = tu.idTipoUsu
+     WHERE tu.nombre = 'Estudiante'`
+  );
   console.log('Estudiantes encontrados:', estudiantes.length);
   
   const evaluacionesCreadas = [];
   
-  // 1. Create self-evaluations for each teacher
+  // 1. Autoevaluación para cada docente
   for (const docente of docentes) {
     if (docente.idUsuario) {
       const evaluacionId = await createEvaluacion(connection, {
@@ -59,35 +66,33 @@ const createEvaluationsForAsignacion = async (connection, asignacionId, asignaci
     }
   }
   
-  // 2. Create teacher-to-teacher evaluations
-  for (const evaluador of docentes) {
+  // 2. Evaluación de cada evaluador (jefe) a cada docente
+  for (const evaluador of evaluadores) {
     if (evaluador.idUsuario) {
-      for (const evaluado of docentes) {
-        if (evaluador.idColaborador !== evaluado.idColaborador) {
-          const evaluacionId = await createEvaluacion(connection, {
-            fechaEvaluacion: asignacionData.fechaInicio,
-            horaEvaluacion: asignacionData.horaInicio || '08:00',
-            tipo: 'Evaluador-Evaluado',
-            estado: 'Pendiente',
-            idUsuario: evaluador.idUsuario,
-            idColaborador: evaluado.idColaborador,
-            comentario: `Evaluación de ${evaluador.nombre} a ${evaluado.nombre}`
-          });
-          
-          await createDetalleAsignacion(connection, evaluacionId, asignacionId);
-          
-          evaluacionesCreadas.push({
-            id: evaluacionId,
-            tipo: 'Evaluador-Evaluado',
-            evaluador: evaluador.nombre,
-            evaluado: evaluado.nombre
-          });
-        }
+      for (const docente of docentes) {
+        const evaluacionId = await createEvaluacion(connection, {
+          fechaEvaluacion: asignacionData.fechaInicio,
+          horaEvaluacion: asignacionData.horaInicio || '08:00',
+          tipo: 'Evaluador-Evaluado',
+          estado: 'Pendiente',
+          idUsuario: evaluador.idUsuario,
+          idColaborador: docente.idColaborador,
+          comentario: `Evaluación de ${evaluador.nombre} a ${docente.nombre}`
+        });
+        
+        await createDetalleAsignacion(connection, evaluacionId, asignacionId);
+        
+        evaluacionesCreadas.push({
+          id: evaluacionId,
+          tipo: 'Evaluador-Evaluado',
+          evaluador: evaluador.nombre,
+          evaluado: docente.nombre
+        });
       }
     }
   }
   
-  // 3. Create student-to-teacher evaluations
+  // 3. Evaluación de cada estudiante a cada docente
   for (const estudiante of estudiantes) {
     for (const docente of docentes) {
       const evaluacionId = await createEvaluacion(connection, {

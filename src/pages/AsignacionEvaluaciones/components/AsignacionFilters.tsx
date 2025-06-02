@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Filter } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -38,8 +37,10 @@ const AsignacionFilters: React.FC<AsignacionFiltersProps> = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos">Todos los estados</SelectItem>
-                <SelectItem value="Abierta">Abierta</SelectItem>
-                <SelectItem value="Cerrada">Cerrada</SelectItem>
+                <SelectItem value="abierta">Abierta</SelectItem>
+                <SelectItem value="cerrada">Cerrada</SelectItem>
+                <SelectItem value="pendiente">Pendiente</SelectItem>
+                <SelectItem value="completada">Completada</SelectItem>
               </SelectContent>
             </Select>
           </div>

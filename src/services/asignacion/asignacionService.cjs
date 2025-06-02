@@ -1,4 +1,3 @@
-
 const { pool } = require('../../utils/dbConnection.cjs');
 const { createEvaluationsForAsignacion } = require('./evaluacionCreationService.cjs');
 const { validateAsignacionData, validateTimeRange } = require('./asignacionValidationService.cjs');
@@ -84,7 +83,6 @@ const getAllAsignaciones = async () => {
         ar.nombre as areaNombre,
         ar.idArea as areaId,
         u.nombre as usuarioCreador,
-        a.fecha_inicio as fechaCreacion,
         DATEDIFF(a.fecha_fin, a.fecha_inicio) as duracionDias
        FROM ASIGNACION a
        LEFT JOIN AREA ar ON a.idArea = ar.idArea
@@ -101,7 +99,7 @@ const getAllAsignaciones = async () => {
       console.log('=== RETORNANDO ARRAY VACÍO ===');
       return {
         success: true,
-        data: { asignaciones: [] }
+        asignaciones: []
       };
     }
     
@@ -111,7 +109,6 @@ const getAllAsignaciones = async () => {
       periodo: row.periodo,
       fechaInicio: row.fechaInicio,
       fechaFin: row.fechaFin,
-      fechaCreacion: row.fechaCreacion,
       areaId: row.areaId,
       areaNombre: row.areaNombre || 'Sin área',
       usuarioCreador: row.usuarioCreador || 'Sistema',
@@ -130,21 +127,10 @@ const getAllAsignaciones = async () => {
     console.log('Total asignaciones procesadas:', asignacionesConEstadisticas.length);
     console.log('Primera asignación con estadísticas:', asignacionesConEstadisticas[0]);
     
-    const response = {
+    return {
       success: true,
-      data: {
-        asignaciones: asignacionesConEstadisticas
-      }
+      asignaciones: asignacionesConEstadisticas
     };
-    
-    console.log('=== RESPUESTA FINAL DEL SERVICIO ===');
-    console.log('Response structure:', {
-      success: response.success,
-      dataExists: !!response.data,
-      asignacionesLength: response.data.asignaciones.length
-    });
-    
-    return response;
   } catch (error) {
     console.error('=== ERROR AL OBTENER ASIGNACIONES ===');
     console.error('Error completo:', error);

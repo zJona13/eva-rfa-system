@@ -1,11 +1,9 @@
-
 import React, { useState } from 'react';
 import { Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import AsignacionDialog from './components/AsignacionDialog';
 import AsignacionFilters from './components/AsignacionFilters';
 import AsignacionTabs from './components/AsignacionTabs';
-import DebugInfo from './components/DebugInfo';
 import { useAsignacionData } from './hooks/useAsignacionData';
 
 const AsignacionEvaluaciones = () => {
@@ -45,14 +43,14 @@ const AsignacionEvaluaciones = () => {
 
   // Filtrar asignaciones
   const asignacionesFiltradas = asignaciones.filter(asignacion => {
-    const cumpleFiltroEstado = filtroEstado === 'todos' || asignacion.estado === filtroEstado;
+    const cumpleFiltroEstado = filtroEstado === 'todos' || asignacion.estado.toLowerCase() === filtroEstado.toLowerCase();
     const cumpleFiltroArea = filtroArea === 'todas' || asignacion.areaId.toString() === filtroArea;
     return cumpleFiltroEstado && cumpleFiltroArea;
   });
 
   // Agrupar asignaciones por estado
-  const asignacionesAbiertas = asignacionesFiltradas.filter(a => a.estado === 'Abierta');
-  const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado === 'Cerrada');
+  const asignacionesAbiertas = asignacionesFiltradas.filter(a => a.estado.toLowerCase() === 'abierta');
+  const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado.toLowerCase() === 'cerrada');
   const todasAsignaciones = asignacionesFiltradas;
 
   console.log('=== FRONTEND: Estado actual del componente ===');
@@ -62,6 +60,7 @@ const AsignacionEvaluaciones = () => {
   console.log('Filtradas:', asignacionesFiltradas.length);
   console.log('Abiertas:', asignacionesAbiertas.length);
   console.log('Cerradas:', asignacionesCerradas.length);
+  console.log('Estados únicos:', [...new Set(asignaciones.map(a => a.estado))]);
 
   if (isLoading) {
     return (
@@ -90,14 +89,6 @@ const AsignacionEvaluaciones = () => {
           Nueva Asignación
         </Button>
       </div>
-
-      <DebugInfo
-        asignaciones={asignaciones}
-        asignacionesAbiertas={asignacionesAbiertas}
-        asignacionesCerradas={asignacionesCerradas}
-        areas={areas}
-        isLoading={isLoading}
-      />
 
       <AsignacionFilters
         filtroEstado={filtroEstado}
