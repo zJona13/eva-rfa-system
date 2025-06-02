@@ -1,7 +1,7 @@
 
 const { pool } = require('../utils/dbConnection.cjs');
 
-// Obtener asignaciones activas de un usuario específico
+// Obtener asignaciones abiertas de un usuario específico
 const getUserAsignaciones = async (userId) => {
   try {
     const [rows] = await pool.execute(
@@ -10,7 +10,7 @@ const getUserAsignaciones = async (userId) => {
        FROM ASIGNACION a
        JOIN AREA ar ON a.idArea = ar.idArea
        JOIN USUARIO u ON u.idArea = a.idArea
-       WHERE u.idUsuario = ? AND a.estado IN ('Abierta', 'Activa')
+       WHERE u.idUsuario = ? AND a.estado = 'Abierta'
        ORDER BY a.fecha_inicio DESC`,
       [userId]
     );
