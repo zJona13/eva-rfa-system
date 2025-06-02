@@ -14,7 +14,6 @@ const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
 const asignacionService = require('./services/asignacionService.cjs');
-const userAsignacionService = require('./services/userAsignacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -1623,28 +1622,6 @@ app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error en /api/asignaciones/areas:', error);
     res.status(500).json({ success: false, error: 'Error del servidor' });
-  }
-});
-
-// User assignments route
-app.get('/api/user-asignaciones/:userId', authenticateToken, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    console.log(`📋 Obteniendo asignaciones para usuario: ${userId}`);
-    
-    const result = await userAsignacionService.getUserAsignaciones(userId);
-    
-    if (result.success) {
-      res.json({ success: true, data: result });
-    } else {
-      res.status(400).json({ success: false, message: result.message });
-    }
-  } catch (error) {
-    console.error('❌ Error en endpoint de asignaciones de usuario:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error interno del servidor al obtener asignaciones' 
-    });
   }
 });
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,6 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { useApiWithToken } from '@/hooks/useApiWithToken';
 import AutoevaluacionForm from './AutoevaluacionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
-import { useEvaluationPermissions } from '@/hooks/useEvaluationPermissions';
 
 const SelfEvaluation = () => {
   const { user } = useAuth();
@@ -19,18 +19,11 @@ const SelfEvaluation = () => {
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
 
-  // Use evaluation permissions
-  const { 
-    canAccessSelfEvaluation, 
-    userAreas, 
-    isLoading: isLoadingPermissions 
-  } = useEvaluationPermissions();
-
   // Fetch autoevaluaciones del usuario actual
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-colaborador', user?.colaboradorId],
     queryFn: () => apiRequest(`/evaluaciones/colaborador/${user?.colaboradorId}`),
-    enabled: !!user?.colaboradorId && canAccessSelfEvaluation,
+    enabled: !!user?.colaboradorId,
   });
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
@@ -59,36 +52,6 @@ const SelfEvaluation = () => {
   const canGenerateIncidencia = (evaluacion: any) => {
     return evaluacion.score < 11;
   };
-
-  if (isLoadingPermissions) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
-  }
-
-  if (!canAccessSelfEvaluation) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t('selfEval.title')}</h1>
-          <p className="text-muted-foreground mt-2">
-            {t('selfEval.subtitle')}
-          </p>
-        </div>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                No tienes permisos para acceder a autoevaluaciones o no tienes asignaciones activas en tu área.
-              </p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
 
   if (showForm) {
     return <AutoevaluacionForm onCancel={() => setShowForm(false)} />;
