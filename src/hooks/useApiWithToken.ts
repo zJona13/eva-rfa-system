@@ -21,7 +21,7 @@ interface ApiResponse<T = any> {
 export const useApiWithToken = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { logout, user } = useAuth();
+  const { logout } = useAuth();
 
   const getAuthHeaders = useCallback(() => {
     const token = localStorage.getItem('iesrfa_token');
@@ -49,14 +49,6 @@ export const useApiWithToken = () => {
       
       const authHeaders = getAuthHeaders();
       
-      // Check if we have authentication headers
-      if (!authHeaders.Authorization) {
-        console.log('❌ No hay token disponible, redirigiendo al login');
-        toast.error('Sesión no encontrada, por favor inicia sesión');
-        logout();
-        return { success: false, error: 'NO_TOKEN' };
-      }
-      
       const requestHeaders = {
         'Content-Type': 'application/json',
         ...authHeaders,
@@ -76,7 +68,7 @@ export const useApiWithToken = () => {
       // Manejar errores de autenticación
       if (response.status === 401) {
         console.log('❌ Token inválido o expirado, cerrando sesión');
-        toast.error('Tu sesión ha expirado, por favor inicia sesión nuevamente');
+        toast.error('Sesión expirada, por favor inicia sesión nuevamente');
         logout();
         return { success: false, error: 'TOKEN_EXPIRED' };
       }
@@ -85,16 +77,6 @@ export const useApiWithToken = () => {
         const errorMessage = data.message || `Error HTTP ${response.status}`;
         console.log(`❌ Error en petición ${method} ${endpoint}:`, errorMessage);
         setError(errorMessage);
-        
-        // Show different messages based on error type
-        if (response.status === 403) {
-          toast.error('No tienes permisos para realizar esta acción');
-        } else if (response.status === 404) {
-          toast.error('Recurso no encontrado');
-        } else {
-          toast.error(errorMessage);
-        }
-        
         return { success: false, error: errorMessage };
       }
 
@@ -116,7 +98,6 @@ export const useApiWithToken = () => {
     apiRequest,
     isLoading,
     error,
-    isAuthenticated: !!user,
   };
 };
 
