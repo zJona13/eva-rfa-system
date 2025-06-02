@@ -76,7 +76,7 @@ CREATE TABLE ASIGNACION (
     periodo INT(10) NOT NULL,
     fecha_inicio DATE NOT NULL,
     fecha_fin DATE NOT NULL,
-    estado VARCHAR(50) DEFAULT 'Activa',
+    estado VARCHAR(50) DEFAULT 'Abierta',
     idArea INT(10) NOT NULL,
     FOREIGN KEY (idArea) REFERENCES AREA(idArea) ON DELETE CASCADE,
     FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE
