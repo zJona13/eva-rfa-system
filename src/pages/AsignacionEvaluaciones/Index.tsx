@@ -55,33 +55,39 @@ const AsignacionEvaluaciones = () => {
 
   const loadData = async () => {
     setIsLoading(true);
-    await Promise.all([fetchAsignaciones(), fetchAreas()]);
-    setIsLoading(false);
+    try {
+      await Promise.all([fetchAsignaciones(), fetchAreas()]);
+    } catch (error) {
+      console.error('Error loading data:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const fetchAsignaciones = async () => {
     try {
-      console.log('=== FRONTEND: Obteniendo asignaciones ===');
+      console.log('=== FRONTEND: Iniciando fetchAsignaciones ===');
       const response = await apiRequest('/asignaciones');
-      console.log('=== FRONTEND: Respuesta completa ===', response);
+      console.log('=== FRONTEND: Respuesta del servidor ===', response);
       
-      if (response && response.success) {
-        if (response.data && response.data.asignaciones) {
-          console.log('=== FRONTEND: Asignaciones recibidas ===');
-          console.log('Cantidad:', response.data.asignaciones.length);
-          console.log('Datos:', response.data.asignaciones);
-          setAsignaciones(response.data.asignaciones);
-        } else {
-          console.warn('=== FRONTEND: No hay asignaciones en la respuesta ===');
-          setAsignaciones([]);
-        }
+      // Verificar estructura de respuesta
+      if (response?.success && response?.data?.asignaciones) {
+        const asignacionesData = response.data.asignaciones;
+        console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
+        console.log('=== FRONTEND: Primera asignación ===', asignacionesData[0]);
+        
+        // Forzar actualización del estado
+        setAsignaciones([...asignacionesData]);
+        console.log('=== FRONTEND: Estado actualizado con asignaciones ===');
       } else {
-        console.error('=== FRONTEND: Error en respuesta ===', response);
+        console.warn('=== FRONTEND: Estructura de respuesta incorrecta ===', response);
         setAsignaciones([]);
-        toast.error(response?.error || 'Error al cargar las asignaciones');
+        if (response?.error) {
+          toast.error(response.error);
+        }
       }
     } catch (error) {
-      console.error('=== FRONTEND: Error de conexión ===', error);
+      console.error('=== FRONTEND: Error en fetchAsignaciones ===', error);
       setAsignaciones([]);
       toast.error('Error de conexión al cargar asignaciones');
     }
@@ -91,18 +97,17 @@ const AsignacionEvaluaciones = () => {
     try {
       console.log('=== FRONTEND: Obteniendo áreas ===');
       const response = await apiRequest('/areas');
-      console.log('=== FRONTEND: Respuesta áreas ===', response);
       
-      if (response && response.success && response.data && response.data.areas) {
+      if (response?.success && response?.data?.areas) {
         const areasData = response.data.areas.map((area: any) => ({
           id: area.id,
-          name: area.nombre || area.name,
-          description: area.descripcion || area.description
+          name: area.name || area.nombre,
+          description: area.description || area.descripcion
         }));
-        console.log('=== FRONTEND: Áreas procesadas ===', areasData);
         setAreas(areasData);
+        console.log('=== FRONTEND: Áreas cargadas ===', areasData.length);
       } else {
-        console.error('=== FRONTEND: Error en respuesta de áreas ===', response);
+        console.error('=== FRONTEND: Error cargando áreas ===', response);
         toast.error('Error al cargar las áreas');
       }
     } catch (error) {
@@ -128,15 +133,13 @@ const AsignacionEvaluaciones = () => {
 
       console.log('=== FRONTEND: Respuesta del servidor ===', response);
 
-      if (response && response.success) {
+      if (response?.success) {
         toast.success(response.message || 'Asignación guardada exitosamente');
         setIsDialogOpen(false);
         setEditingAsignacion(null);
         
-        // Esperar un momento y recargar asignaciones
-        setTimeout(() => {
-          fetchAsignaciones();
-        }, 500);
+        // Recargar inmediatamente
+        await fetchAsignaciones();
       } else {
         toast.error(response?.error || response?.message || 'Error al guardar la asignación');
       }
@@ -158,15 +161,20 @@ const AsignacionEvaluaciones = () => {
       return;
     }
 
-    const response = await apiRequest(`/asignaciones/${id}`, {
-      method: 'DELETE',
-    });
+    try {
+      const response = await apiRequest(`/asignaciones/${id}`, {
+        method: 'DELETE',
+      });
 
-    if (response && response.success) {
-      toast.success('Asignación eliminada exitosamente');
-      fetchAsignaciones();
-    } else {
-      toast.error('Error al eliminar la asignación');
+      if (response?.success) {
+        toast.success('Asignación eliminada exitosamente');
+        await fetchAsignaciones();
+      } else {
+        toast.error('Error al eliminar la asignación');
+      }
+    } catch (error) {
+      console.error('Error al eliminar:', error);
+      toast.error('Error de conexión');
     }
   };
 
@@ -187,11 +195,12 @@ const AsignacionEvaluaciones = () => {
   const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado === 'Cerrada');
   const todasAsignaciones = asignacionesFiltradas;
 
-  console.log('=== FRONTEND: Estado actual ===');
-  console.log('Total asignaciones:', asignaciones.length);
-  console.log('Asignaciones filtradas:', asignacionesFiltradas.length);
+  console.log('=== FRONTEND: Renderizando componente ===');
+  console.log('Total asignaciones en estado:', asignaciones.length);
+  console.log('Filtradas:', asignacionesFiltradas.length);
   console.log('Abiertas:', asignacionesAbiertas.length);
   console.log('Cerradas:', asignacionesCerradas.length);
+  console.log('Loading:', isLoading);
 
   if (isLoading) {
     return (
@@ -221,13 +230,31 @@ const AsignacionEvaluaciones = () => {
         </Button>
       </div>
 
-      {/* Mensaje de estado para debugging */}
+      {/* Debug info */}
       <Card className="bg-blue-50 border-blue-200">
         <CardContent className="pt-6">
-          <p className="text-sm text-blue-700">
-            <strong>Estado de asignaciones:</strong> {asignaciones.length} asignaciones cargadas
-            {asignaciones.length === 0 && " - No se encontraron asignaciones"}
-          </p>
+          <div className="space-y-2">
+            <p className="text-sm text-blue-700">
+              <strong>Debug Info:</strong>
+            </p>
+            <p className="text-xs text-blue-600">
+              • Total asignaciones: {asignaciones.length}
+            </p>
+            <p className="text-xs text-blue-600">
+              • Abiertas: {asignacionesAbiertas.length}
+            </p>
+            <p className="text-xs text-blue-600">
+              • Cerradas: {asignacionesCerradas.length}
+            </p>
+            <p className="text-xs text-blue-600">
+              • Áreas cargadas: {areas.length}
+            </p>
+            {asignaciones.length > 0 && (
+              <p className="text-xs text-blue-600">
+                • Primera asignación: {asignaciones[0].areaNombre} - {asignaciones[0].estado}
+              </p>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -298,11 +325,22 @@ const AsignacionEvaluaciones = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AsignacionHistorial
-                asignaciones={todasAsignaciones}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
+              {todasAsignaciones.length > 0 ? (
+                <AsignacionHistorial
+                  asignaciones={todasAsignaciones}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No hay asignaciones para mostrar</p>
+                  <p className="text-sm text-gray-400 mt-2">
+                    {asignaciones.length === 0 
+                      ? "No se han creado asignaciones aún" 
+                      : "No hay asignaciones que coincidan con los filtros"}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -316,11 +354,17 @@ const AsignacionEvaluaciones = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AsignacionHistorial
-                asignaciones={asignacionesAbiertas}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
+              {asignacionesAbiertas.length > 0 ? (
+                <AsignacionHistorial
+                  asignaciones={asignacionesAbiertas}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No hay asignaciones abiertas</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
@@ -334,11 +378,17 @@ const AsignacionEvaluaciones = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <AsignacionHistorial
-                asignaciones={asignacionesCerradas}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
+              {asignacionesCerradas.length > 0 ? (
+                <AsignacionHistorial
+                  asignaciones={asignacionesCerradas}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">No hay asignaciones cerradas</p>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
