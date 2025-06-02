@@ -68,19 +68,21 @@ const AsignacionEvaluaciones = () => {
     try {
       console.log('=== FRONTEND: Iniciando fetchAsignaciones ===');
       const response = await apiRequest('/asignaciones');
-      console.log('=== FRONTEND: Respuesta del servidor ===', response);
+      console.log('=== FRONTEND: Respuesta completa del servidor ===', response);
       
-      // Verificar estructura de respuesta
       if (response?.success && response?.data?.asignaciones) {
         const asignacionesData = response.data.asignaciones;
         console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
-        console.log('=== FRONTEND: Primera asignación ===', asignacionesData[0]);
         
-        // Forzar actualización del estado
-        setAsignaciones([...asignacionesData]);
-        console.log('=== FRONTEND: Estado actualizado con asignaciones ===');
+        if (asignacionesData.length > 0) {
+          console.log('=== FRONTEND: Primera asignación recibida ===', asignacionesData[0]);
+        }
+        
+        // Actualizar el estado
+        setAsignaciones(asignacionesData);
+        console.log('=== FRONTEND: Estado actualizado ===');
       } else {
-        console.warn('=== FRONTEND: Estructura de respuesta incorrecta ===', response);
+        console.warn('=== FRONTEND: Respuesta sin datos válidos ===', response);
         setAsignaciones([]);
         if (response?.error) {
           toast.error(response.error);
@@ -195,12 +197,13 @@ const AsignacionEvaluaciones = () => {
   const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado === 'Cerrada');
   const todasAsignaciones = asignacionesFiltradas;
 
-  console.log('=== FRONTEND: Renderizando componente ===');
+  console.log('=== FRONTEND: Estado actual del componente ===');
+  console.log('isLoading:', isLoading);
   console.log('Total asignaciones en estado:', asignaciones.length);
+  console.log('Asignaciones sin filtrar:', asignaciones);
   console.log('Filtradas:', asignacionesFiltradas.length);
   console.log('Abiertas:', asignacionesAbiertas.length);
   console.log('Cerradas:', asignacionesCerradas.length);
-  console.log('Loading:', isLoading);
 
   if (isLoading) {
     return (
@@ -249,10 +252,14 @@ const AsignacionEvaluaciones = () => {
             <p className="text-xs text-blue-600">
               • Áreas cargadas: {areas.length}
             </p>
+            <p className="text-xs text-blue-600">
+              • Loading: {isLoading ? 'Sí' : 'No'}
+            </p>
             {asignaciones.length > 0 && (
-              <p className="text-xs text-blue-600">
-                • Primera asignación: {asignaciones[0].areaNombre} - {asignaciones[0].estado}
-              </p>
+              <div className="text-xs text-blue-600">
+                <p>• Primera asignación: {asignaciones[0].areaNombre} - {asignaciones[0].estado}</p>
+                <p>• Evaluaciones: {asignaciones[0].estadisticas.totalEvaluaciones}</p>
+              </div>
             )}
           </div>
         </CardContent>
@@ -339,6 +346,10 @@ const AsignacionEvaluaciones = () => {
                       ? "No se han creado asignaciones aún" 
                       : "No hay asignaciones que coincidan con los filtros"}
                   </p>
+                  <Button onClick={handleNewAsignacion} className="mt-4">
+                    <Plus className="mr-2 h-4 w-4" />
+                    Crear Primera Asignación
+                  </Button>
                 </div>
               )}
             </CardContent>

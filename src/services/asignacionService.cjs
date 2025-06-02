@@ -35,6 +35,39 @@ const createAsignacion = async (asignacionData) => {
       };
     }
     
+    // Obtener todos los docentes del área ANTES de crear la asignación
+    const [docentes] = await connection.execute(
+      `SELECT c.idColaborador, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre,
+       u.idUsuario
+       FROM COLABORADOR c
+       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
+       JOIN USUARIO u ON c.idColaborador = u.idColaborador
+       WHERE u.idArea = ? AND c.estado = 1 AND tc.nombre = 'Docente'`,
+      [asignacionData.areaId]
+    );
+    
+    console.log('Docentes encontrados en el área:', docentes.length);
+    
+    // VALIDACIÓN: No crear asignación si no hay docentes en el área
+    if (docentes.length === 0) {
+      await connection.rollback();
+      return {
+        success: false,
+        message: 'No se puede crear la asignación. No existen profesores en el área seleccionada.'
+      };
+    }
+    
+    // Obtener todos los estudiantes (usuarios con tipo 'Estudiante')
+    const [estudiantes] = await connection.execute(
+      `SELECT c.idColaborador, u.idUsuario, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre
+       FROM COLABORADOR c
+       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
+       JOIN USUARIO u ON c.idColaborador = u.idColaborador
+       WHERE c.estado = 1 AND tc.nombre = 'Estudiante'`
+    );
+    
+    console.log('Estudiantes encontrados:', estudiantes.length);
+    
     // Crear la asignación principal con estado 'Abierta'
     const [asignacionResult] = await connection.execute(
       `INSERT INTO ASIGNACION (idUsuario, periodo, fecha_inicio, fecha_fin, estado, idArea) 
@@ -51,30 +84,6 @@ const createAsignacion = async (asignacionData) => {
     
     const asignacionId = asignacionResult.insertId;
     console.log('Asignación creada con ID:', asignacionId);
-    
-    // Obtener todos los docentes del área
-    const [docentes] = await connection.execute(
-      `SELECT c.idColaborador, CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as nombre,
-       u.idUsuario
-       FROM COLABORADOR c
-       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-       JOIN USUARIO u ON c.idColaborador = u.idColaborador
-       WHERE u.idArea = ? AND c.estado = 1 AND tc.nombre = 'Docente'`,
-      [asignacionData.areaId]
-    );
-    
-    console.log('Docentes encontrados:', docentes.length);
-    
-    // Obtener todos los estudiantes
-    const [estudiantes] = await connection.execute(
-      `SELECT c.idColaborador, u.idUsuario
-       FROM COLABORADOR c
-       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-       JOIN USUARIO u ON c.idColaborador = u.idColaborador
-       WHERE c.estado = 1 AND tc.nombre = 'Estudiante'`
-    );
-    
-    console.log('Estudiantes encontrados:', estudiantes.length);
     
     const evaluacionesCreadas = [];
     
@@ -163,7 +172,7 @@ const createAsignacion = async (asignacionData) => {
             'Pendiente',
             estudiante.idUsuario,
             docente.idColaborador,
-            `Evaluación de estudiante a ${docente.nombre}`
+            `Evaluación de estudiante ${estudiante.nombre} a ${docente.nombre}`
           ]
         );
         
@@ -176,7 +185,7 @@ const createAsignacion = async (asignacionData) => {
         evaluacionesCreadas.push({
           id: evaluacionResult.insertId,
           tipo: 'Estudiante-Docente',
-          evaluador: 'Estudiante',
+          evaluador: estudiante.nombre,
           evaluado: docente.nombre
         });
       }
@@ -186,6 +195,11 @@ const createAsignacion = async (asignacionData) => {
     
     console.log('=== ASIGNACIÓN CREADA EXITOSAMENTE ===');
     console.log(`Total evaluaciones creadas: ${evaluacionesCreadas.length}`);
+    console.log('Tipos de evaluaciones:', {
+      autoevaluaciones: evaluacionesCreadas.filter(e => e.tipo === 'Autoevaluacion').length,
+      evaluadorEvaluado: evaluacionesCreadas.filter(e => e.tipo === 'Evaluador-Evaluado').length,
+      estudianteDocente: evaluacionesCreadas.filter(e => e.tipo === 'Estudiante-Docente').length
+    });
     
     return {
       success: true,
@@ -236,7 +250,9 @@ const getAllAsignaciones = async () => {
     
     console.log('=== RESULTADO CONSULTA ASIGNACIONES ===');
     console.log('Total filas encontradas:', rows.length);
-    console.log('Primera fila:', rows[0]);
+    if (rows.length > 0) {
+      console.log('Primera fila:', rows[0]);
+    }
     
     if (rows.length === 0) {
       return {
@@ -296,7 +312,9 @@ const getAllAsignaciones = async () => {
     
     console.log('=== ASIGNACIONES PROCESADAS ===');
     console.log('Total asignaciones procesadas:', asignacionesConEstadisticas.length);
-    console.log('Primera asignación procesada:', asignacionesConEstadisticas[0]);
+    if (asignacionesConEstadisticas.length > 0) {
+      console.log('Primera asignación procesada:', asignacionesConEstadisticas[0]);
+    }
     
     return {
       success: true,
@@ -463,7 +481,7 @@ const cerrarAsignacion = async (asignacionId) => {
 const getAreas = async () => {
   try {
     const [rows] = await pool.execute(
-      `SELECT a.idArea as id, a.nombre, a.descripcion,
+      `SELECT a.idArea as id, a.nombre as name, a.descripcion as description,
        COUNT(CASE WHEN tc.nombre = 'Docente' THEN 1 END) as totalDocentes
        FROM AREA a
        LEFT JOIN USUARIO u ON a.idArea = u.idArea 
@@ -474,11 +492,13 @@ const getAreas = async () => {
        ORDER BY a.nombre`
     );
     
-    console.log('Áreas obtenidas:', rows);
+    console.log('Áreas obtenidas desde la base de datos:', rows);
     
     return {
       success: true,
-      areas: rows
+      data: {
+        areas: rows
+      }
     };
   } catch (error) {
     console.error('Error al obtener áreas:', error);
