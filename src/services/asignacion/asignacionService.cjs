@@ -82,7 +82,6 @@ const getAllAsignaciones = async () => {
         a.fecha_fin as fechaFin,
         a.estado,
         ar.nombre as areaNombre,
-        ar.idArea as areaId,
         u.nombre as usuarioCreador,
         a.fecha_inicio as fechaCreacion,
         DATEDIFF(a.fecha_fin, a.fecha_inicio) as duracionDias
@@ -111,9 +110,8 @@ const getAllAsignaciones = async () => {
       periodo: row.periodo,
       fechaInicio: row.fechaInicio,
       fechaFin: row.fechaFin,
-      fechaCreacion: row.fechaCreacion,
-      areaId: row.areaId,
       areaNombre: row.areaNombre || 'Sin área',
+ areaId: row.areaId,
       usuarioCreador: row.usuarioCreador || 'Sistema',
       estado: row.estado,
       duracionDias: row.duracionDias || 0
