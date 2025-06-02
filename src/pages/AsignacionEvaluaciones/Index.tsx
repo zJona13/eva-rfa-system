@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Plus, Filter, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -49,46 +48,64 @@ const AsignacionEvaluaciones = () => {
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
+    console.log('Component mounted, fetching data...');
     fetchAsignaciones();
     fetchAreas();
   }, []);
 
   const fetchAsignaciones = async () => {
     try {
+      console.log('🔄 Iniciando fetchAsignaciones...');
       const response = await apiRequest('/asignaciones');
-      console.log('Response asignaciones:', response);
-      if (response.success) {
-        setAsignaciones(response.data.asignaciones || []);
+      console.log('📥 Response completa de asignaciones:', response);
+      
+      if (response.success && response.data) {
+        const asignacionesData = response.data.asignaciones || [];
+        console.log('✅ Asignaciones extraídas:', asignacionesData);
+        console.log('📊 Cantidad de asignaciones:', asignacionesData.length);
+        
+        setAsignaciones(asignacionesData);
+        
+        if (asignacionesData.length > 0) {
+          toast.success(`${asignacionesData.length} asignaciones cargadas`);
+        } else {
+          console.log('⚠️ No hay asignaciones disponibles');
+        }
       } else {
-        toast.error('Error al cargar el historial de asignaciones');
+        console.error('❌ Error en la respuesta de asignaciones:', response);
+        toast.error(response.error || 'Error al cargar el historial de asignaciones');
+        setAsignaciones([]);
       }
     } catch (error) {
-      console.error('Error fetching asignaciones:', error);
+      console.error('💥 Error crítico fetching asignaciones:', error);
       toast.error('Error de conexión al cargar asignaciones');
+      setAsignaciones([]);
     }
   };
 
   const fetchAreas = async () => {
     try {
-      console.log('Iniciando fetchAreas...');
+      console.log('🔄 Iniciando fetchAreas...');
       const response = await apiRequest('/areas');
-      console.log('Response areas:', response);
+      console.log('📥 Response areas:', response);
       
       if (response.success && response.data) {
         const areasData = response.data.areas || [];
-        console.log('Áreas recibidas:', areasData);
+        console.log('✅ Áreas recibidas:', areasData);
         setAreas(areasData);
         
         if (areasData.length === 0) {
           toast.error('No hay áreas disponibles');
         }
       } else {
-        console.error('Error en la respuesta de áreas:', response);
+        console.error('❌ Error en la respuesta de áreas:', response);
         toast.error('Error al cargar las áreas');
+        setAreas([]);
       }
     } catch (error) {
-      console.error('Error fetching areas:', error);
+      console.error('💥 Error crítico fetching areas:', error);
       toast.error('Error de conexión al cargar áreas');
+      setAreas([]);
     }
   };
 
@@ -160,6 +177,12 @@ const AsignacionEvaluaciones = () => {
   const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado === 'Cerrada');
   const todasAsignaciones = asignacionesFiltradas;
 
+  console.log('🎯 Estado del componente:');
+  console.log('- Total asignaciones:', asignaciones.length);
+  console.log('- Asignaciones filtradas:', asignacionesFiltradas.length);
+  console.log('- Asignaciones activas:', asignacionesActivas.length);
+  console.log('- Asignaciones cerradas:', asignacionesCerradas.length);
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
@@ -173,6 +196,15 @@ const AsignacionEvaluaciones = () => {
           <Plus className="mr-2 h-4 w-4" />
           Nueva Asignación
         </Button>
+      </div>
+
+      {/* Debug info */}
+      <div className="bg-gray-100 p-4 rounded-lg text-sm">
+        <p><strong>Debug Info:</strong></p>
+        <p>Total asignaciones: {asignaciones.length}</p>
+        <p>Total áreas: {areas.length}</p>
+        <p>Filtro estado: {filtroEstado}</p>
+        <p>Filtro área: {filtroArea}</p>
       </div>
 
       {/* Filtros */}

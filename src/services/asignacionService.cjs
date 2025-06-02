@@ -206,6 +206,8 @@ const createAsignacion = async (asignacionData) => {
 // Obtener asignaciones como historial con información detallada
 const getAllAsignaciones = async () => {
   try {
+    console.log('Iniciando getAllAsignaciones...');
+    
     const [rows] = await pool.execute(
       `SELECT 
         a.idAsignacion as id,
@@ -235,7 +237,8 @@ const getAllAsignaciones = async () => {
        ORDER BY a.fecha_inicio DESC, a.idAsignacion DESC`
     );
     
-    console.log('Asignaciones obtenidas:', rows.length);
+    console.log('Query ejecutada, filas obtenidas:', rows.length);
+    console.log('Datos de la primera fila:', rows[0]);
     
     const asignaciones = rows.map(row => ({
       id: row.id,
@@ -244,31 +247,39 @@ const getAllAsignaciones = async () => {
       fechaFin: row.fechaFin,
       fechaCreacion: row.fechaCreacion,
       areaId: row.areaId,
-      areaNombre: row.areaNombre,
-      usuarioCreador: row.usuarioCreador,
+      areaNombre: row.areaNombre || 'Sin área',
+      usuarioCreador: row.usuarioCreador || 'Sin usuario',
       estado: row.estado,
-      duracionDias: row.duracionDias,
+      duracionDias: row.duracionDias || 0,
       estadisticas: {
-        totalEvaluaciones: row.totalEvaluaciones,
-        evaluacionesCompletadas: row.evaluacionesCompletadas,
-        evaluacionesPendientes: row.evaluacionesPendientes,
-        autoevaluaciones: row.autoevaluaciones,
-        evaluacionesEvaluador: row.evaluacionesEvaluador,
-        evaluacionesEstudiante: row.evaluacionesEstudiante
+        totalEvaluaciones: Number(row.totalEvaluaciones) || 0,
+        evaluacionesCompletadas: Number(row.evaluacionesCompletadas) || 0,
+        evaluacionesPendientes: Number(row.evaluacionesPendientes) || 0,
+        autoevaluaciones: Number(row.autoevaluaciones) || 0,
+        evaluacionesEvaluador: Number(row.evaluacionesEvaluador) || 0,
+        evaluacionesEstudiante: Number(row.evaluacionesEstudiante) || 0
       },
       progreso: row.totalEvaluaciones > 0 ? 
         Math.round((row.evaluacionesCompletadas / row.totalEvaluaciones) * 100) : 0
     }));
     
+    console.log('Asignaciones procesadas:', asignaciones.length);
+    console.log('Primera asignación procesada:', asignaciones[0]);
+    
     return {
       success: true,
-      asignaciones: asignaciones
+      data: {
+        asignaciones: asignaciones
+      }
     };
   } catch (error) {
     console.error('Error al obtener asignaciones:', error);
     return { 
       success: false, 
-      message: 'Error al obtener el historial de asignaciones' 
+      message: 'Error al obtener el historial de asignaciones',
+      data: {
+        asignaciones: []
+      }
     };
   }
 };
