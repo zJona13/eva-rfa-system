@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear una nueva asignación basada en área con las 3 evaluaciones automáticamente
@@ -204,39 +203,61 @@ const createAsignacion = async (asignacionData) => {
   }
 };
 
-// Obtener todas las asignaciones con sus evaluaciones
+// Obtener asignaciones como historial con información detallada
 const getAllAsignaciones = async () => {
   try {
     const [rows] = await pool.execute(
-      `SELECT a.idAsignacion as id, a.periodo, a.fecha_inicio as fechaInicio, 
-       a.fecha_fin as fechaFin, a.estado as estadoAsignacion,
-       ar.nombre as areaNombre, ar.idArea as areaId,
-       COUNT(da.idEvaluacion) as totalEvaluaciones,
-       SUM(CASE WHEN e.estado = 'Completada' THEN 1 ELSE 0 END) as evaluacionesCompletadas
+      `SELECT 
+        a.idAsignacion as id,
+        a.periodo,
+        a.fecha_inicio as fechaInicio,
+        a.fecha_fin as fechaFin,
+        a.estado,
+        ar.nombre as areaNombre,
+        ar.idArea as areaId,
+        u.nombre as usuarioCreador,
+        COUNT(da.idEvaluacion) as totalEvaluaciones,
+        SUM(CASE WHEN e.estado = 'Completada' THEN 1 ELSE 0 END) as evaluacionesCompletadas,
+        SUM(CASE WHEN e.estado = 'Pendiente' THEN 1 ELSE 0 END) as evaluacionesPendientes,
+        SUM(CASE WHEN e.tipo = 'Autoevaluacion' THEN 1 ELSE 0 END) as autoevaluaciones,
+        SUM(CASE WHEN e.tipo = 'Evaluador-Evaluado' THEN 1 ELSE 0 END) as evaluacionesEvaluador,
+        SUM(CASE WHEN e.tipo = 'Estudiante-Docente' THEN 1 ELSE 0 END) as evaluacionesEstudiante,
+        DATE(a.fecha_inicio) as fechaCreacion,
+        DATEDIFF(a.fecha_fin, a.fecha_inicio) as duracionDias
        FROM ASIGNACION a
        LEFT JOIN AREA ar ON a.idArea = ar.idArea
+       LEFT JOIN USUARIO u ON a.idUsuario = u.idUsuario
        LEFT JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
        LEFT JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
        WHERE a.estado IN ('Activa', 'Abierta', 'Cerrada')
-       GROUP BY a.idAsignacion
-       ORDER BY a.fecha_inicio DESC`
+       GROUP BY a.idAsignacion, a.periodo, a.fecha_inicio, a.fecha_fin, a.estado, 
+                ar.nombre, ar.idArea, u.nombre
+       ORDER BY a.fecha_inicio DESC, a.idAsignacion DESC`
     );
+    
+    console.log('Asignaciones obtenidas:', rows.length);
     
     const asignaciones = rows.map(row => ({
       id: row.id,
       periodo: row.periodo,
       fechaInicio: row.fechaInicio,
       fechaFin: row.fechaFin,
+      fechaCreacion: row.fechaCreacion,
       areaId: row.areaId,
       areaNombre: row.areaNombre,
-      estado: row.estadoAsignacion,
-      totalEvaluaciones: row.totalEvaluaciones,
-      evaluacionesCompletadas: row.evaluacionesCompletadas,
-      // Para compatibilidad con el frontend existente
-      horaInicio: '08:00',
-      horaFin: '18:00',
-      tipoEvaluacion: 'Todas las evaluaciones',
-      descripcion: `Asignación del área ${row.areaNombre} - Periodo ${row.periodo}`
+      usuarioCreador: row.usuarioCreador,
+      estado: row.estado,
+      duracionDias: row.duracionDias,
+      estadisticas: {
+        totalEvaluaciones: row.totalEvaluaciones,
+        evaluacionesCompletadas: row.evaluacionesCompletadas,
+        evaluacionesPendientes: row.evaluacionesPendientes,
+        autoevaluaciones: row.autoevaluaciones,
+        evaluacionesEvaluador: row.evaluacionesEvaluador,
+        evaluacionesEstudiante: row.evaluacionesEstudiante
+      },
+      progreso: row.totalEvaluaciones > 0 ? 
+        Math.round((row.evaluacionesCompletadas / row.totalEvaluaciones) * 100) : 0
     }));
     
     return {
@@ -247,7 +268,7 @@ const getAllAsignaciones = async () => {
     console.error('Error al obtener asignaciones:', error);
     return { 
       success: false, 
-      message: 'Error al obtener las asignaciones' 
+      message: 'Error al obtener el historial de asignaciones' 
     };
   }
 };

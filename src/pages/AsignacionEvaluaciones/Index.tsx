@@ -1,31 +1,41 @@
+
 import React, { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Filter, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
 import AsignacionDialog from './components/AsignacionDialog';
-import AsignacionesTable from './components/AsignacionesTable';
+import AsignacionHistorial from './components/AsignacionHistorial';
 
 interface Asignacion {
   id: number;
+  periodo: number;
   fechaInicio: string;
   fechaFin: string;
-  horaInicio: string;
-  horaFin: string;
-  tipoEvaluacion: string;
-  estado: string;
-  descripcion?: string;
-  areaNombre: string;
+  fechaCreacion: string;
   areaId: number;
-  totalEvaluaciones: number;
-  evaluacionesCompletadas: number;
+  areaNombre: string;
+  usuarioCreador: string;
+  estado: string;
+  duracionDias: number;
+  estadisticas: {
+    totalEvaluaciones: number;
+    evaluacionesCompletadas: number;
+    evaluacionesPendientes: number;
+    autoevaluaciones: number;
+    evaluacionesEvaluador: number;
+    evaluacionesEstudiante: number;
+  };
+  progreso: number;
 }
 
 interface Area {
   id: number;
-  name: string;
-  description?: string;
+  nombre: string;
+  descripcion?: string;
 }
 
 const AsignacionEvaluaciones = () => {
@@ -34,6 +44,8 @@ const AsignacionEvaluaciones = () => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingAsignacion, setEditingAsignacion] = useState<Asignacion | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [filtroEstado, setFiltroEstado] = useState<string>('todos');
+  const [filtroArea, setFiltroArea] = useState<string>('todas');
   const { apiRequest } = useApiWithToken();
 
   useEffect(() => {
@@ -48,7 +60,7 @@ const AsignacionEvaluaciones = () => {
       if (response.success) {
         setAsignaciones(response.data.asignaciones || []);
       } else {
-        toast.error('Error al cargar las asignaciones');
+        toast.error('Error al cargar el historial de asignaciones');
       }
     } catch (error) {
       console.error('Error fetching asignaciones:', error);
@@ -136,13 +148,25 @@ const AsignacionEvaluaciones = () => {
     setIsDialogOpen(true);
   };
 
+  // Filtrar asignaciones
+  const asignacionesFiltradas = asignaciones.filter(asignacion => {
+    const cumpleFiltroEstado = filtroEstado === 'todos' || asignacion.estado === filtroEstado;
+    const cumpleFiltroArea = filtroArea === 'todas' || asignacion.areaId.toString() === filtroArea;
+    return cumpleFiltroEstado && cumpleFiltroArea;
+  });
+
+  // Agrupar asignaciones por estado
+  const asignacionesActivas = asignacionesFiltradas.filter(a => a.estado === 'Abierta');
+  const asignacionesCerradas = asignacionesFiltradas.filter(a => a.estado === 'Cerrada');
+  const todasAsignaciones = asignacionesFiltradas;
+
   return (
     <div className="container mx-auto p-6 space-y-6">
       <div className="flex justify-between items-center">
         <div>
-          <h1 className="text-3xl font-bold">Asignación de Evaluaciones por Área</h1>
+          <h1 className="text-3xl font-bold">Historial de Asignaciones</h1>
           <p className="text-muted-foreground">
-            Gestiona los períodos y horarios para las evaluaciones organizadas por área
+            Gestiona y revisa el historial completo de asignaciones de evaluación por área
           </p>
         </div>
         <Button onClick={handleNewAsignacion}>
@@ -151,22 +175,119 @@ const AsignacionEvaluaciones = () => {
         </Button>
       </div>
 
+      {/* Filtros */}
       <Card>
         <CardHeader>
-          <CardTitle>Asignaciones de Evaluación</CardTitle>
-          <CardDescription>
-            Lista de todas las asignaciones de evaluación programadas por área. 
-            Cada asignación crea automáticamente autoevaluaciones, evaluaciones evaluador-evaluado y evaluaciones estudiante-docente.
-          </CardDescription>
+          <CardTitle className="flex items-center gap-2">
+            <Filter className="h-5 w-5" />
+            Filtros
+          </CardTitle>
         </CardHeader>
         <CardContent>
-          <AsignacionesTable
-            asignaciones={asignaciones}
-            onEdit={handleEdit}
-            onDelete={handleDelete}
-          />
+          <div className="flex gap-4">
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Estado</label>
+              <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por estado" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos los estados</SelectItem>
+                  <SelectItem value="Activa">Activa</SelectItem>
+                  <SelectItem value="Abierta">Abierta</SelectItem>
+                  <SelectItem value="Cerrada">Cerrada</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1">
+              <label className="text-sm font-medium mb-2 block">Área</label>
+              <Select value={filtroArea} onValueChange={setFiltroArea}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtrar por área" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas las áreas</SelectItem>
+                  {areas.map(area => (
+                    <SelectItem key={area.id} value={area.id.toString()}>
+                      {area.nombre}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Historial de asignaciones */}
+      <Tabs defaultValue="todas" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="todas" className="flex items-center gap-2">
+            <Calendar className="h-4 w-4" />
+            Todas ({todasAsignaciones.length})
+          </TabsTrigger>
+          <TabsTrigger value="activas" className="flex items-center gap-2">
+            Activas ({asignacionesActivas.length})
+          </TabsTrigger>
+          <TabsTrigger value="cerradas" className="flex items-center gap-2">
+            Cerradas ({asignacionesCerradas.length})
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="todas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Todas las Asignaciones</CardTitle>
+              <CardDescription>
+                Historial completo de asignaciones de evaluación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AsignacionHistorial
+                asignaciones={todasAsignaciones}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Asignaciones Activas</CardTitle>
+              <CardDescription>
+                Asignaciones que están actualmente abiertas para evaluación
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AsignacionHistorial
+                asignaciones={asignacionesActivas}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="cerradas">
+          <Card>
+            <CardHeader>
+              <CardTitle>Asignaciones Cerradas</CardTitle>
+              <CardDescription>
+                Asignaciones completadas y cerradas
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <AsignacionHistorial
+                asignaciones={asignacionesCerradas}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       <AsignacionDialog
         open={isDialogOpen}
