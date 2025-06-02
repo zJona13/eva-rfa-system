@@ -1,125 +1,5 @@
 const { pool } = require('../utils/dbConnection.cjs');
 
-// Función simplificada para obtener asignaciones
-const getAllAsignaciones = async () => {
-  try {
-    console.log('🔄 Service: Iniciando getAllAsignaciones...');
-    
-    const query = `
-      SELECT 
-        a.idAsignacion as id,
-        a.periodo,
-        DATE_FORMAT(a.fecha_inicio, '%Y-%m-%d') as fechaInicio,
-        DATE_FORMAT(a.fecha_fin, '%Y-%m-%d') as fechaFin,
-        a.estado,
-        COALESCE(ar.nombre, 'Sin área') as areaNombre,
-        COALESCE(ar.idArea, 0) as areaId,
-        COALESCE(CONCAT(c.nombres, ' ', c.apePat), 'Sin usuario') as usuarioCreador,
-        DATE_FORMAT(a.fecha_inicio, '%Y-%m-%d') as fechaCreacion,
-        COALESCE(DATEDIFF(a.fecha_fin, a.fecha_inicio), 0) as duracionDias,
-        COALESCE(COUNT(DISTINCT da.idEvaluacion), 0) as totalEvaluaciones,
-        COALESCE(SUM(CASE WHEN e.estado = 'Completada' THEN 1 ELSE 0 END), 0) as evaluacionesCompletadas,
-        COALESCE(SUM(CASE WHEN e.estado = 'Pendiente' THEN 1 ELSE 0 END), 0) as evaluacionesPendientes,
-        COALESCE(SUM(CASE WHEN e.tipo = 'Autoevaluacion' THEN 1 ELSE 0 END), 0) as autoevaluaciones,
-        COALESCE(SUM(CASE WHEN e.tipo = 'Evaluador-Evaluado' THEN 1 ELSE 0 END), 0) as evaluacionesEvaluador,
-        COALESCE(SUM(CASE WHEN e.tipo = 'Estudiante-Docente' THEN 1 ELSE 0 END), 0) as evaluacionesEstudiante
-      FROM ASIGNACION a
-      LEFT JOIN AREA ar ON a.idArea = ar.idArea
-      LEFT JOIN USUARIO u ON a.idUsuario = u.idUsuario
-      LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
-      LEFT JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
-      LEFT JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
-      WHERE a.estado IN ('Activa', 'Abierta', 'Cerrada')
-      GROUP BY a.idAsignacion, a.periodo, a.fecha_inicio, a.fecha_fin, a.estado, 
-               ar.nombre, ar.idArea, c.nombres, c.apePat
-      ORDER BY a.fecha_inicio DESC, a.idAsignacion DESC
-    `;
-    
-    console.log('📝 Service: Ejecutando query...');
-    const [rows] = await pool.execute(query);
-    
-    console.log('📊 Service: Filas obtenidas:', rows.length);
-    if (rows.length > 0) {
-      console.log('📋 Service: Primera fila:', rows[0]);
-    }
-    
-    // Procesar los datos
-    const asignaciones = rows.map(row => {
-      const totalEval = Number(row.totalEvaluaciones) || 0;
-      const completadas = Number(row.evaluacionesCompletadas) || 0;
-      const progreso = totalEval > 0 ? Math.round((completadas / totalEval) * 100) : 0;
-      
-      return {
-        id: row.id,
-        periodo: row.periodo,
-        fechaInicio: row.fechaInicio,
-        fechaFin: row.fechaFin,
-        fechaCreacion: row.fechaCreacion,
-        areaId: Number(row.areaId),
-        areaNombre: row.areaNombre,
-        usuarioCreador: row.usuarioCreador,
-        estado: row.estado,
-        duracionDias: Number(row.duracionDias),
-        estadisticas: {
-          totalEvaluaciones: totalEval,
-          evaluacionesCompletadas: completadas,
-          evaluacionesPendientes: Number(row.evaluacionesPendientes) || 0,
-          autoevaluaciones: Number(row.autoevaluaciones) || 0,
-          evaluacionesEvaluador: Number(row.evaluacionesEvaluador) || 0,
-          evaluacionesEstudiante: Number(row.evaluacionesEstudiante) || 0
-        },
-        progreso: progreso
-      };
-    });
-    
-    console.log('✅ Service: Asignaciones procesadas:', asignaciones.length);
-    console.log('📦 Service: Estructura primera asignación:', asignaciones[0]);
-    
-    return {
-      success: true,
-      data: asignaciones
-    };
-    
-  } catch (error) {
-    console.error('❌ Service: Error en getAllAsignaciones:', error);
-    return { 
-      success: false, 
-      message: 'Error al obtener el historial de asignaciones',
-      data: []
-    };
-  }
-};
-
-// Obtener áreas simplificado
-const getAreas = async () => {
-  try {
-    console.log('🔄 Service: Obteniendo áreas...');
-    
-    const [rows] = await pool.execute(
-      `SELECT 
-        a.idArea as id, 
-        a.nombre as name, 
-        a.descripcion as description
-       FROM AREA a
-       ORDER BY a.nombre`
-    );
-    
-    console.log('✅ Service: Áreas obtenidas:', rows.length);
-    
-    return {
-      success: true,
-      data: rows
-    };
-  } catch (error) {
-    console.error('❌ Service: Error al obtener áreas:', error);
-    return { 
-      success: false, 
-      message: 'Error al obtener las áreas',
-      data: []
-    };
-  }
-};
-
 // Crear una nueva asignación basada en área con las 3 evaluaciones automáticamente
 const createAsignacion = async (asignacionData) => {
   const connection = await pool.getConnection();
@@ -323,6 +203,76 @@ const createAsignacion = async (asignacionData) => {
   }
 };
 
+// Obtener asignaciones como historial con información detallada
+const getAllAsignaciones = async () => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT 
+        a.idAsignacion as id,
+        a.periodo,
+        a.fecha_inicio as fechaInicio,
+        a.fecha_fin as fechaFin,
+        a.estado,
+        ar.nombre as areaNombre,
+        ar.idArea as areaId,
+        u.nombre as usuarioCreador,
+        COUNT(da.idEvaluacion) as totalEvaluaciones,
+        SUM(CASE WHEN e.estado = 'Completada' THEN 1 ELSE 0 END) as evaluacionesCompletadas,
+        SUM(CASE WHEN e.estado = 'Pendiente' THEN 1 ELSE 0 END) as evaluacionesPendientes,
+        SUM(CASE WHEN e.tipo = 'Autoevaluacion' THEN 1 ELSE 0 END) as autoevaluaciones,
+        SUM(CASE WHEN e.tipo = 'Evaluador-Evaluado' THEN 1 ELSE 0 END) as evaluacionesEvaluador,
+        SUM(CASE WHEN e.tipo = 'Estudiante-Docente' THEN 1 ELSE 0 END) as evaluacionesEstudiante,
+        DATE(a.fecha_inicio) as fechaCreacion,
+        DATEDIFF(a.fecha_fin, a.fecha_inicio) as duracionDias
+       FROM ASIGNACION a
+       LEFT JOIN AREA ar ON a.idArea = ar.idArea
+       LEFT JOIN USUARIO u ON a.idUsuario = u.idUsuario
+       LEFT JOIN DETALLE_ASIGNACION da ON a.idAsignacion = da.idAsignacion
+       LEFT JOIN EVALUACION e ON da.idEvaluacion = e.idEvaluacion
+       WHERE a.estado IN ('Activa', 'Abierta', 'Cerrada')
+       GROUP BY a.idAsignacion, a.periodo, a.fecha_inicio, a.fecha_fin, a.estado, 
+                ar.nombre, ar.idArea, u.nombre
+       ORDER BY a.fecha_inicio DESC, a.idAsignacion DESC`
+    );
+    
+    console.log('Asignaciones obtenidas:', rows.length);
+    
+    const asignaciones = rows.map(row => ({
+      id: row.id,
+      periodo: row.periodo,
+      fechaInicio: row.fechaInicio,
+      fechaFin: row.fechaFin,
+      fechaCreacion: row.fechaCreacion,
+      areaId: row.areaId,
+      areaNombre: row.areaNombre,
+      usuarioCreador: row.usuarioCreador,
+      estado: row.estado,
+      duracionDias: row.duracionDias,
+      estadisticas: {
+        totalEvaluaciones: row.totalEvaluaciones,
+        evaluacionesCompletadas: row.evaluacionesCompletadas,
+        evaluacionesPendientes: row.evaluacionesPendientes,
+        autoevaluaciones: row.autoevaluaciones,
+        evaluacionesEvaluador: row.evaluacionesEvaluador,
+        evaluacionesEstudiante: row.evaluacionesEstudiante
+      },
+      progreso: row.totalEvaluaciones > 0 ? 
+        Math.round((row.evaluacionesCompletadas / row.totalEvaluaciones) * 100) : 0
+    }));
+    
+    return {
+      success: true,
+      asignaciones: asignaciones
+    };
+  } catch (error) {
+    console.error('Error al obtener asignaciones:', error);
+    return { 
+      success: false, 
+      message: 'Error al obtener el historial de asignaciones' 
+    };
+  }
+};
+
 // Actualizar una asignación
 const updateAsignacion = async (asignacionId, asignacionData) => {
   const connection = await pool.getConnection();
@@ -464,6 +414,36 @@ const cerrarAsignacion = async (asignacionId) => {
     return {
       success: false,
       message: 'Error al cerrar la asignación'
+    };
+  }
+};
+
+// Obtener áreas disponibles para asignación
+const getAreas = async () => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT a.idArea as id, a.nombre, a.descripcion,
+       COUNT(CASE WHEN tc.nombre = 'Docente' THEN 1 END) as totalDocentes
+       FROM AREA a
+       LEFT JOIN USUARIO u ON a.idArea = u.idArea 
+       LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
+       LEFT JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
+       WHERE c.estado = 1 OR c.estado IS NULL
+       GROUP BY a.idArea, a.nombre, a.descripcion
+       ORDER BY a.nombre`
+    );
+    
+    console.log('Áreas obtenidas:', rows);
+    
+    return {
+      success: true,
+      areas: rows
+    };
+  } catch (error) {
+    console.error('Error al obtener áreas:', error);
+    return { 
+      success: false, 
+      message: 'Error al obtener las áreas' 
     };
   }
 };
