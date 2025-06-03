@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,6 +17,7 @@ const SelfEvaluation = () => {
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
+  const [editingEvaluacion, setEditingEvaluacion] = useState<any>(null);
 
   // Fetch autoevaluaciones del usuario actual
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -28,6 +28,9 @@ const SelfEvaluation = () => {
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
   const autoevaluaciones = evaluaciones.filter((e: any) => e.type === 'Autoevaluacion');
+
+  const pendientesAuto = autoevaluaciones.filter((e: any) => e.status === 'Pendiente');
+  const completadasAuto = autoevaluaciones.filter((e: any) => e.status === 'Completada');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for self-evaluation:', evaluacion);
@@ -53,8 +56,8 @@ const SelfEvaluation = () => {
     return evaluacion.score < 11;
   };
 
-  if (showForm) {
-    return <AutoevaluacionForm onCancel={() => setShowForm(false)} />;
+  if (showForm || editingEvaluacion) {
+    return <AutoevaluacionForm onCancel={() => { setShowForm(false); setEditingEvaluacion(null); }} evaluacionDraft={editingEvaluacion} />;
   }
 
   return (
@@ -95,7 +98,30 @@ const SelfEvaluation = () => {
                   {t('selfEval.newEvaluation')}
                 </Button>
               </div>
-              {autoevaluaciones.map((evaluacion: any) => (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Autoevaluaciones Pendientes</CardTitle>
+                  <CardDescription>
+                    Autoevaluaciones que tienes pendientes de completar.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {pendientesAuto.length === 0 ? (
+                    <p className="text-muted-foreground">No tienes autoevaluaciones pendientes.</p>
+                  ) : (
+                    pendientesAuto.map((evaluacion: any) => (
+                      <div key={evaluacion.id} className="border rounded-lg p-4 mb-2 bg-yellow-50 dark:bg-yellow-900/30 flex justify-between items-center transition-colors">
+                        <div>
+                          <h3 className="font-semibold text-yellow-900 dark:text-yellow-200">{evaluacion.type}</h3>
+                          <p className="text-sm text-muted-foreground">Fecha: {new Date(evaluacion.date).toLocaleDateString()}</p>
+                        </div>
+                        <Button size="sm" variant="secondary" onClick={() => setEditingEvaluacion(evaluacion)}>Continuar</Button>
+                      </div>
+                    ))
+                  )}
+                </CardContent>
+              </Card>
+              {completadasAuto.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,7 @@ const StudentEvaluation = () => {
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
+  const [editingEvaluacion, setEditingEvaluacion] = useState<any>(null);
 
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -26,6 +26,9 @@ const StudentEvaluation = () => {
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
   const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluacion estudiante-docente');
+
+  const pendientesEstudiante = evaluacionesEstudiante.filter((e: any) => e.status === 'Pendiente');
+  const completadasEstudiante = evaluacionesEstudiante.filter((e: any) => e.status === 'Completada');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for evaluation:', evaluacion);
@@ -52,8 +55,8 @@ const StudentEvaluation = () => {
     return evaluacion.score < 11;
   };
 
-  if (showForm) {
-    return <EvaluacionEstudianteForm onCancel={() => setShowForm(false)} />;
+  if (showForm || editingEvaluacion) {
+    return <EvaluacionEstudianteForm onCancel={() => { setShowForm(false); setEditingEvaluacion(null); }} evaluacionDraft={editingEvaluacion} />;
   }
 
   return (
@@ -64,6 +67,31 @@ const StudentEvaluation = () => {
           Consulta las evaluaciones que has realizado a los docentes.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Evaluaciones Pendientes</CardTitle>
+          <CardDescription>
+            Evaluaciones que tienes que realizar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {pendientesEstudiante.length === 0 ? (
+            <p className="text-muted-foreground">No tienes evaluaciones pendientes.</p>
+          ) : (
+            pendientesEstudiante.map((evaluacion: any) => (
+              <div key={evaluacion.id} className="border rounded-lg p-4 mb-2 bg-yellow-50 dark:bg-yellow-900/30 flex justify-between items-center transition-colors">
+                <div>
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-200">{evaluacion.type}</h3>
+                  <p className="text-sm text-muted-foreground">Docente evaluado: {evaluacion.evaluatedName}</p>
+                  <p className="text-sm text-muted-foreground">Fecha: {new Date(evaluacion.date).toLocaleDateString()}</p>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => setEditingEvaluacion(evaluacion)}>Continuar</Button>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -94,7 +122,7 @@ const StudentEvaluation = () => {
                   Nueva Evaluación
                 </Button>
               </div>
-              {evaluacionesEstudiante.map((evaluacion: any) => (
+              {completadasEstudiante.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>

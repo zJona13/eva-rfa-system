@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todas las evaluaciones con información relacionada
@@ -204,6 +203,23 @@ const getColaboradorByUserId = async (userId) => {
   }
 };
 
+// Finalizar una evaluación (cambiar estado a Completada)
+const finalizarEvaluacion = async (evaluacionId) => {
+  try {
+    await pool.execute(
+      'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
+      ['Completada', evaluacionId]
+    );
+    return {
+      success: true,
+      message: 'Evaluación finalizada exitosamente'
+    };
+  } catch (error) {
+    console.error('Error al finalizar evaluación:', error);
+    return { success: false, message: 'Error al finalizar la evaluación' };
+  }
+};
+
 module.exports = {
   getAllEvaluaciones,
   getEvaluacionesByEvaluador,
@@ -212,5 +228,6 @@ module.exports = {
   updateEvaluacion,
   deleteEvaluacion,
   getColaboradoresParaEvaluar,
-  getColaboradorByUserId
+  getColaboradorByUserId,
+  finalizarEvaluacion
 };

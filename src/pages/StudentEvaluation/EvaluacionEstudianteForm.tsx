@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -24,15 +23,20 @@ interface Colaborador {
 
 interface EvaluacionEstudianteFormProps {
   onCancel: () => void;
+  evaluacionDraft?: any;
 }
 
-const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onCancel }) => {
+const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onCancel, evaluacionDraft }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const form = useForm();
   const { apiRequest } = useApiWithToken();
-  const [selectedColaborador, setSelectedColaborador] = useState<string>('');
-  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
+  const [selectedColaborador, setSelectedColaborador] = useState<string>(evaluacionDraft?.evaluatedId ? evaluacionDraft.evaluatedId.toString() : '');
+  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(
+    evaluacionDraft?.subcriteriosRatings || {}
+  );
+  const [isDraft, setIsDraft] = useState(false);
+  const borradorKey = evaluacionDraft?.id ? `evaluacion-borrador-${evaluacionDraft.id}` : null;
 
   // Fetch colaboradores
   const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
@@ -71,17 +75,72 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
     return Object.values(subcriteriosRatings).reduce((sum, rating) => sum + rating, 0);
   };
 
-  const onSubmit = (data: any) => {
+  const handleSaveDraft = (data: any) => {
     if (!selectedColaborador) {
       toast.error('Debe seleccionar un colaborador para evaluar');
       return;
     }
+    // Guardar en localStorage SIEMPRE, usando el id del borrador o generando uno temporal si no existe
+    const borradorId = evaluacionDraft?.id || `temp-${user?.id}-${selectedColaborador}`;
+    localStorage.setItem(`evaluacion-borrador-${borradorId}`, JSON.stringify({
+      subcriteriosRatings,
+      selectedColaborador,
+      comments: data.comentarios || '',
+      asignatura: data.asignatura || ''
+    }));
+    // Si es un borrador real, guardar en BD
+    if (evaluacionDraft?.id) {
+      const now = new Date();
+      const evaluacionData = {
+        type: 'Evaluacion estudiante-docente',
+        evaluatorId: user?.id,
+        evaluatedId: parseInt(selectedColaborador),
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0],
+        score: calculateTotalScore(),
+        comments: data.comentarios || null,
+        status: 'Pendiente'
+      };
+      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+        method: 'PUT',
+        body: evaluacionData
+      }).then(() => {
+        toast.success('Borrador guardado exitosamente');
+        queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
+        onCancel();
+      }).catch((error: any) => {
+        toast.error(`Error al guardar borrador: ${error.message}`);
+      });
+    } else {
+      // Si no hay borrador en BD, crear uno nuevo
+      const now = new Date();
+      const evaluacionData = {
+        type: 'Evaluacion estudiante-docente',
+        evaluatorId: user?.id,
+        evaluatedId: parseInt(selectedColaborador),
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0],
+        score: calculateTotalScore(),
+        comments: data.comentarios || null,
+        status: 'Pendiente'
+      };
+      createEvaluacionMutation.mutate(evaluacionData);
+    }
+  };
 
+  const handleFinish = (data: any) => {
+    if (!selectedColaborador) {
+      toast.error('Debe seleccionar un colaborador para evaluar');
+      return;
+    }
     if (Object.keys(subcriteriosRatings).length !== subcriteriosEstudiante.length) {
       toast.error('Debe calificar todos los subcriterios');
       return;
     }
-
+    // Eliminar borrador de localStorage
+    if (evaluacionDraft?.id) {
+      localStorage.removeItem(`evaluacion-borrador-${evaluacionDraft.id}`);
+    }
     const now = new Date();
     const evaluacionData = {
       type: 'Evaluacion estudiante-docente',
@@ -93,9 +152,37 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       comments: data.comentarios || null,
       status: 'Completada'
     };
-
-    createEvaluacionMutation.mutate(evaluacionData);
+    if (evaluacionDraft?.id) {
+      // Actualizar evaluación existente
+      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+        method: 'PUT',
+        body: evaluacionData
+      }).then(() => {
+        toast.success('Evaluación finalizada exitosamente');
+        queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
+        onCancel();
+      }).catch((error: any) => {
+        toast.error(`Error al finalizar evaluación: ${error.message}`);
+      });
+    } else {
+      // Crear nueva evaluación
+      createEvaluacionMutation.mutate(evaluacionData);
+    }
   };
+
+  React.useEffect(() => {
+    if (evaluacionDraft?.id) {
+      // Cargar borrador de localStorage si existe
+      const borrador = localStorage.getItem(`evaluacion-borrador-${evaluacionDraft.id}`);
+      if (borrador) {
+        const data = JSON.parse(borrador);
+        setSubcriteriosRatings(data.subcriteriosRatings || {});
+        setSelectedColaborador(data.selectedColaborador || '');
+        if (data.comments) form.setValue('comentarios', data.comments);
+        if (data.asignatura) form.setValue('asignatura', data.asignatura);
+      }
+    }
+  }, [evaluacionDraft]);
 
   if (isLoadingColaboradores) {
     return (
@@ -118,7 +205,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleFinish)} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>Información de la Evaluación</CardTitle>
@@ -284,11 +371,21 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
               Cancelar
             </Button>
             <Button 
-              type="submit" 
+              type="button"
+              variant="secondary"
+              onClick={() => form.handleSubmit(handleSaveDraft)()}
+              disabled={createEvaluacionMutation.isPending || !selectedColaborador}
+              className="flex-1"
+            >
+              Guardar Borrador
+            </Button>
+            <Button 
+              type="button"
+              onClick={() => form.handleSubmit(handleFinish)()}
               disabled={createEvaluacionMutation.isPending || !selectedColaborador}
               className="flex-1 bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70"
             >
-              {createEvaluacionMutation.isPending ? 'Guardando...' : 'Guardar Evaluación'}
+              {createEvaluacionMutation.isPending ? 'Guardando...' : 'Finalizar Evaluación'}
             </Button>
           </div>
         </form>

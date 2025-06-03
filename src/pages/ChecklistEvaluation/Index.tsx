@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,6 +15,7 @@ const ChecklistEvaluation = () => {
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
+  const [editingEvaluacion, setEditingEvaluacion] = useState<any>(null);
 
   // Fetch evaluaciones realizadas por este evaluador
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -26,6 +26,9 @@ const ChecklistEvaluation = () => {
 
   const evaluaciones = evaluacionesData?.data?.evaluaciones || [];
   const evaluacionesSupervision = evaluaciones.filter((e: any) => e.type === 'Evaluacion a Docente');
+
+  const pendientesSupervision = evaluacionesSupervision.filter((e: any) => e.status === 'Pendiente');
+  const completadasSupervision = evaluacionesSupervision.filter((e: any) => e.status === 'Completada');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for supervision:', evaluacion);
@@ -51,8 +54,8 @@ const ChecklistEvaluation = () => {
     return evaluacion.score < 11;
   };
 
-  if (showForm) {
-    return <EvaluacionSupervisionForm onCancel={() => setShowForm(false)} />;
+  if (showForm || editingEvaluacion) {
+    return <EvaluacionSupervisionForm onCancel={() => { setShowForm(false); setEditingEvaluacion(null); }} evaluacionDraft={editingEvaluacion} />;
   }
 
   return (
@@ -63,6 +66,31 @@ const ChecklistEvaluation = () => {
           Consulta las evaluaciones de supervisión que has realizado utilizando criterios predefinidos.
         </p>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Evaluaciones Pendientes</CardTitle>
+          <CardDescription>
+            Evaluaciones de supervisión que están pendientes de realizar.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {pendientesSupervision.length === 0 ? (
+            <p className="text-muted-foreground">No tienes evaluaciones pendientes.</p>
+          ) : (
+            pendientesSupervision.map((evaluacion: any) => (
+              <div key={evaluacion.id} className="border rounded-lg p-4 mb-2 bg-yellow-50 dark:bg-yellow-900/30 flex justify-between items-center transition-colors">
+                <div>
+                  <h3 className="font-semibold text-yellow-900 dark:text-yellow-200">{evaluacion.type}</h3>
+                  <p className="text-sm text-muted-foreground">Evaluado: {evaluacion.evaluatedName}</p>
+                  <p className="text-sm text-muted-foreground">Fecha: {new Date(evaluacion.date).toLocaleDateString()}</p>
+                </div>
+                <Button size="sm" variant="secondary" onClick={() => setEditingEvaluacion(evaluacion)}>Continuar</Button>
+              </div>
+            ))
+          )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>
@@ -93,7 +121,7 @@ const ChecklistEvaluation = () => {
                   Nueva Supervisión
                 </Button>
               </div>
-              {evaluacionesSupervision.map((evaluacion: any) => (
+              {completadasSupervision.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>

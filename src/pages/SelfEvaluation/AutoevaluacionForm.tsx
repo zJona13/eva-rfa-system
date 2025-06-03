@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -18,15 +17,19 @@ import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evalua
 
 interface AutoevaluacionFormProps {
   onCancel: () => void;
+  evaluacionDraft?: any;
 }
 
-const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => {
+const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evaluacionDraft }) => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const form = useForm();
   const { apiRequest } = useApiWithToken();
-  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
+  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(
+    evaluacionDraft?.subcriteriosRatings || {}
+  );
+  const [isDraft, setIsDraft] = useState(false);
 
   // Fetch colaborador info by user ID
   const { data: colaboradorData, isLoading: isLoadingColaborador } = useQuery({
@@ -64,18 +67,16 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
     return Object.values(subcriteriosRatings).reduce((sum, rating) => sum + rating, 0);
   };
 
-  const onSubmit = (data: any) => {
+  const handleFinish = (data: any) => {
     if (Object.keys(subcriteriosRatings).length !== subcriteriosAutoevaluacion.length) {
       toast.error(t('selfEval.rateAll'));
       return;
     }
-
     const colaborador = colaboradorData?.data?.colaborador;
     if (!colaborador) {
       toast.error(t('selfEval.noColaborador'));
       return;
     }
-
     const now = new Date();
     const evaluacionData = {
       type: 'Autoevaluacion',
@@ -87,8 +88,22 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
       comments: data.comentarios || null,
       status: 'Completada'
     };
-
-    createEvaluacionMutation.mutate(evaluacionData);
+    if (evaluacionDraft?.id) {
+      // Actualizar evaluación existente
+      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+        method: 'PUT',
+        body: evaluacionData
+      }).then(() => {
+        toast.success(t('selfEval.finished'));
+        queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
+        onCancel();
+      }).catch((error: any) => {
+        toast.error(`${t('selfEval.finishError')}: ${error.message}`);
+      });
+    } else {
+      // Crear nueva evaluación
+      createEvaluacionMutation.mutate(evaluacionData);
+    }
   };
 
   if (isLoadingColaborador) {
@@ -114,7 +129,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
       </div>
 
       <Form {...form}>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <form onSubmit={form.handleSubmit(handleFinish)} className="space-y-6">
           <Card>
             <CardHeader>
               <CardTitle>{t('selfEval.evaluationInfo')}</CardTitle>
@@ -264,11 +279,11 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel }) => 
               {t('common.cancel')}
             </Button>
             <Button 
-              type="submit" 
-              disabled={createEvaluacionMutation.isPending}
+              type="button"
+              onClick={() => form.handleSubmit(handleFinish)()}
               className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
             >
-              {createEvaluacionMutation.isPending ? t('selfEval.saving') : t('selfEval.saveEvaluation')}
+              Finalizar Evaluación
             </Button>
           </div>
         </form>

@@ -1417,4 +1417,19 @@ app.listen(PORT, () => {
   console.log(`🔐 Autenticación JWT habilitada`);
 });
 
+app.put('/api/evaluaciones/:id/finalizar', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await evaluacionService.finalizarEvaluacion(id);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error al finalizar evaluación:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
 module.exports = app;
