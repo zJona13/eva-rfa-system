@@ -21,6 +21,7 @@ import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
 import Roles from "./pages/Roles/Index";
 import Reports from "./pages/Reports/Index";
 import AsignacionEvaluaciones from "./pages/AsignacionEvaluaciones/Index";
+import EvaluacionesDisponibles from "./pages/EvaluacionesDisponibles/Index";
 
 // Layout and Protection
 import MainLayout from "./components/Layout/MainLayout";
@@ -51,6 +52,16 @@ const App = () => (
                 {/* Protected routes */}
                 <Route element={<MainLayout />}>
                   <Route path="/dashboard" element={<Dashboard />} />
+                  
+                  {/* Evaluaciones Disponibles - Todos los usuarios autenticados */}
+                  <Route 
+                    path="/evaluaciones-disponibles" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin', 'evaluator', 'evaluated', 'student']}>
+                        <EvaluacionesDisponibles />
+                      </ProtectedRoute>
+                    } 
+                  />
                   
                   {/* Autoevaluación - Solo admin y evaluados */}
                   <Route 

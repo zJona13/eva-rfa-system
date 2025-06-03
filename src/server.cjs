@@ -679,14 +679,35 @@ app.delete('/api/users/:id', authenticateToken, async (req, res) => {
 app.get('/api/evaluaciones', authenticateToken, async (req, res) => {
   try {
     const result = await evaluacionService.getAllEvaluaciones();
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
+    res.json(result);
   } catch (error) {
     console.error('Error en /api/evaluaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.get('/api/evaluaciones/disponibles/:userId', authenticateToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await evaluacionService.getEvaluacionesDisponibles(userId);
+    res.json({
+      success: result.success,
+      data: { evaluaciones: result.evaluaciones || [] },
+      message: result.message
+    });
+  } catch (error) {
+    console.error('Error en /api/evaluaciones/disponibles:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.post('/api/evaluaciones/completar', authenticateToken, async (req, res) => {
+  try {
+    const result = await evaluacionService.completarEvaluacion(req.body);
+    res.json(result);
+  } catch (error) {
+    console.error('Error en /api/evaluaciones/completar:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
