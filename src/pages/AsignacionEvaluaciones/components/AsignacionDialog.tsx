@@ -105,6 +105,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
   });
 
   const today = format(new Date(), 'yyyy-MM-dd');
+  const watchedFechaInicio = form.watch('fechaInicio');
 
   useEffect(() => {
     if (asignacionData) {
@@ -200,6 +201,14 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                         type="date"
                         min={today}
                         {...field}
+                        onChange={(e) => {
+                          field.onChange(e);
+                          // Si la fecha fin es anterior a la nueva fecha inicio, resetearla
+                          const fechaFin = form.getValues('fechaFin');
+                          if (fechaFin && e.target.value && new Date(fechaFin) < new Date(e.target.value)) {
+                            form.setValue('fechaFin', '');
+                          }
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -216,7 +225,7 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
                     <FormControl>
                       <Input
                         type="date"
-                        min={form.watch('fechaInicio') || today}
+                        min={watchedFechaInicio || today}
                         {...field}
                       />
                     </FormControl>

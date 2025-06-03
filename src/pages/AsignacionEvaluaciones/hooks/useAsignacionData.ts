@@ -1,5 +1,5 @@
+
 import { useState, useEffect } from 'react';
-import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
 
 interface Asignacion {
@@ -29,21 +29,35 @@ interface AreaData {
   description?: string;
 }
 
+const API_BASE_URL = 'http://localhost:3306/api';
+
 export const useAsignacionData = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [areas, setAreas] = useState<AreaData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { apiRequest } = useApiWithToken();
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('iesrfa_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+  };
 
   const fetchAsignaciones = async () => {
     try {
       console.log('=== FRONTEND: Iniciando fetchAsignaciones ===');
-      const response = await apiRequest('/asignaciones');
+      const response = await fetch(`${API_BASE_URL}/asignaciones`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+      });
+
+      const data = await response.json();
       console.log('=== FRONTEND: Respuesta completa del servidor ===');
-      console.log('Response object:', response);
+      console.log('Response object:', data);
       
-      if (response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
-        const asignacionesData = response.data.asignaciones;
+      if (data?.asignaciones && Array.isArray(data.asignaciones)) {
+        const asignacionesData = data.asignaciones;
         console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
         
         if (asignacionesData.length > 0) {
@@ -54,7 +68,7 @@ export const useAsignacionData = () => {
         console.log('=== FRONTEND: Estado actualizado con', asignacionesData.length, 'asignaciones ===');
       } else {
         console.warn('=== FRONTEND: La respuesta no contiene un array de asignaciones válido ===');
-        console.warn('Estructura recibida:', response);
+        console.warn('Estructura recibida:', data);
         setAsignaciones([]);
       }
     } catch (error) {
@@ -67,10 +81,18 @@ export const useAsignacionData = () => {
   const fetchAreas = async () => {
     try {
       console.log('=== FRONTEND: Obteniendo áreas ===');
-      const response = await apiRequest('/areas');
+      const response = await fetch(`${API_BASE_URL}/areas`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+      });
       
-      if (response?.success && response?.data?.areas) {
-        const areasData = response.data.areas.map((area: any) => ({
+      const data = await response.json();
+      
+      if (data?.success && data?.data?.areas) {
+        const areasData = data.data.areas.map((area: any) => ({
           id: area.id,
           name: area.name || area.nombre,
           description: area.description || area.descripcion
@@ -78,7 +100,7 @@ export const useAsignacionData = () => {
         setAreas(areasData);
         console.log('=== FRONTEND: Áreas cargadas ===', areasData.length);
       } else {
-        console.error('=== FRONTEND: Error cargando áreas ===', response);
+        console.error('=== FRONTEND: Error cargando áreas ===', data);
         toast.error('Error al cargar las áreas');
       }
     } catch (error) {
@@ -101,24 +123,31 @@ export const useAsignacionData = () => {
   const handleSubmit = async (values: any, editingAsignacion: Asignacion | null) => {
     try {
       console.log('=== FRONTEND: Enviando datos de asignación ===', values);
-      const response = editingAsignacion
-        ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
-            method: 'PUT',
-            body: values,
-          })
-        : await apiRequest('/asignaciones', {
-            method: 'POST',
-            body: values,
-          });
+      
+      const url = editingAsignacion 
+        ? `${API_BASE_URL}/asignaciones/${editingAsignacion.id}`
+        : `${API_BASE_URL}/asignaciones`;
+      
+      const method = editingAsignacion ? 'PUT' : 'POST';
+      
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify(values),
+      });
 
-      console.log('=== FRONTEND: Respuesta del servidor ===', response);
+      const data = await response.json();
+      console.log('=== FRONTEND: Respuesta del servidor ===', data);
 
-      if (response?.success) {
-        toast.success(response.message || 'Asignación guardada exitosamente');
+      if (data?.success) {
+        toast.success(data.message || 'Asignación guardada exitosamente');
         await fetchAsignaciones();
         return { success: true };
       } else {
-        toast.error(response?.error || response?.message || 'Error al guardar la asignación');
+        toast.error(data?.error || data?.message || 'Error al guardar la asignación');
         return { success: false };
       }
     } catch (error) {
@@ -134,11 +163,17 @@ export const useAsignacionData = () => {
     }
 
     try {
-      const response = await apiRequest(`/asignaciones/${id}`, {
+      const response = await fetch(`${API_BASE_URL}/asignaciones/${id}`, {
         method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
       });
 
-      if (response?.success) {
+      const data = await response.json();
+
+      if (data?.success) {
         toast.success('Asignación eliminada exitosamente');
         await fetchAsignaciones();
       } else {
