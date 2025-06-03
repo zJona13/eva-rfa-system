@@ -43,14 +43,14 @@ export const useAsignacionData = () => {
       console.log('=== FRONTEND: Respuesta completa del servidor ===');
       console.log('Response object:', response);
       
-      // Manejar tanto response.data.asignaciones como response.asignaciones
+      // Fix: Handle the correct response structure
       let asignacionesData = [];
-      if (response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
+      if (response?.success && response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
         asignacionesData = response.data.asignaciones;
-      } else if (response?.asignaciones && Array.isArray(response.asignaciones)) {
-        asignacionesData = response.asignaciones;
-      } else if (response?.success && response?.data?.asignaciones) {
-        asignacionesData = response.data.asignaciones;
+      } else if (response?.data && Array.isArray(response.data)) {
+        asignacionesData = response.data;
+      } else if (Array.isArray(response)) {
+        asignacionesData = response;
       }
       
       console.log('=== FRONTEND: Asignaciones procesadas ===', asignacionesData.length);
