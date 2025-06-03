@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from 'react';
-import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
 
 interface Asignacion {
@@ -34,23 +33,38 @@ export const useAsignacionData = () => {
   const [asignaciones, setAsignaciones] = useState<Asignacion[]>([]);
   const [areas, setAreas] = useState<AreaData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const { apiRequest } = useApiWithToken();
+
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('iesrfa_token');
+    return {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+  };
 
   const fetchAsignaciones = async () => {
     try {
       console.log('=== FRONTEND: Iniciando fetchAsignaciones ===');
-      const response = await apiRequest('/asignaciones');
-      console.log('=== FRONTEND: Respuesta completa del servidor ===', response);
+      const response = await fetch('http://localhost:3306/api/asignaciones', {
+        headers: getAuthHeaders()
+      });
       
-      if (response?.success && response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
-        const asignacionesData = response.data.asignaciones;
+      if (!response.ok) {
+        throw new Error('Error al cargar asignaciones');
+      }
+      
+      const data = await response.json();
+      console.log('=== FRONTEND: Respuesta completa del servidor ===', data);
+      
+      if (data?.success && data?.data?.asignaciones && Array.isArray(data.data.asignaciones)) {
+        const asignacionesData = data.data.asignaciones;
         console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
         
         setAsignaciones(asignacionesData);
         console.log('=== FRONTEND: Estado actualizado con', asignacionesData.length, 'asignaciones ===');
       } else {
         console.warn('=== FRONTEND: La respuesta no contiene un array de asignaciones válido ===');
-        console.warn('Estructura recibida:', response);
+        console.warn('Estructura recibida:', data);
         setAsignaciones([]);
       }
     } catch (error) {
@@ -63,10 +77,18 @@ export const useAsignacionData = () => {
   const fetchAreas = async () => {
     try {
       console.log('=== FRONTEND: Obteniendo áreas ===');
-      const response = await apiRequest('/areas');
+      const response = await fetch('http://localhost:3306/api/areas', {
+        headers: getAuthHeaders()
+      });
       
-      if (response?.success && response?.data?.areas) {
-        const areasData = response.data.areas.map((area: any) => ({
+      if (!response.ok) {
+        throw new Error('Error al cargar áreas');
+      }
+      
+      const data = await response.json();
+      
+      if (data?.success && data?.data?.areas) {
+        const areasData = data.data.areas.map((area: any) => ({
           id: area.id,
           name: area.name || area.nombre,
           description: area.description || area.descripcion
@@ -74,7 +96,7 @@ export const useAsignacionData = () => {
         setAreas(areasData);
         console.log('=== FRONTEND: Áreas cargadas ===', areasData.length);
       } else {
-        console.error('=== FRONTEND: Error cargando áreas ===', response);
+        console.error('=== FRONTEND: Error cargando áreas ===', data);
         toast.error('Error al cargar las áreas');
       }
     } catch (error) {
@@ -98,31 +120,43 @@ export const useAsignacionData = () => {
     try {
       console.log('=== FRONTEND: Enviando datos de asignación ===', values);
       
-      // Asegurar que el token esté presente
+      // Verificar token antes de hacer la petición
       const token = localStorage.getItem('iesrfa_token');
       if (!token) {
         toast.error('No se encontró token de autenticación');
         return { success: false };
       }
 
-      const response = editingAsignacion
-        ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
-            method: 'PUT',
-            body: values,
-          })
-        : await apiRequest('/asignaciones', {
-            method: 'POST',
-            body: values,
-          });
+      const url = editingAsignacion
+        ? `http://localhost:3306/api/asignaciones/${editingAsignacion.id}`
+        : 'http://localhost:3306/api/asignaciones';
 
-      console.log('=== FRONTEND: Respuesta del servidor ===', response);
+      const method = editingAsignacion ? 'PUT' : 'POST';
 
-      if (response?.success) {
-        toast.success(response.message || 'Asignación guardada exitosamente');
+      const response = await fetch(url, {
+        method,
+        headers: getAuthHeaders(),
+        body: JSON.stringify(values)
+      });
+
+      console.log('=== FRONTEND: Respuesta del servidor ===', response.status);
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('=== FRONTEND: Error en respuesta ===', errorData);
+        toast.error(errorData?.error || errorData?.message || 'Error al guardar la asignación');
+        return { success: false };
+      }
+
+      const data = await response.json();
+      console.log('=== FRONTEND: Datos de respuesta ===', data);
+
+      if (data?.success) {
+        toast.success(data.message || 'Asignación guardada exitosamente');
         await fetchAsignaciones();
         return { success: true };
       } else {
-        toast.error(response?.error || response?.message || 'Error al guardar la asignación');
+        toast.error(data?.error || data?.message || 'Error al guardar la asignación');
         return { success: false };
       }
     } catch (error) {
@@ -138,11 +172,20 @@ export const useAsignacionData = () => {
     }
 
     try {
-      const response = await apiRequest(`/asignaciones/${id}`, {
+      const response = await fetch(`http://localhost:3306/api/asignaciones/${id}`, {
         method: 'DELETE',
+        headers: getAuthHeaders()
       });
 
-      if (response?.success) {
+      if (!response.ok) {
+        const errorData = await response.json();
+        toast.error(errorData?.message || 'Error al eliminar la asignación');
+        return;
+      }
+
+      const data = await response.json();
+
+      if (data?.success) {
         toast.success('Asignación eliminada exitosamente');
         await fetchAsignaciones();
       } else {
