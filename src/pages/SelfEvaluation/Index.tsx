@@ -30,7 +30,7 @@ const SelfEvaluation = () => {
   const autoevaluaciones = evaluaciones.filter((e: any) => e.type === 'Autoevaluacion');
 
   const pendientesAuto = autoevaluaciones.filter((e: any) => e.status === 'Pendiente');
-  const completadasAuto = autoevaluaciones.filter((e: any) => e.status === 'Completada');
+  const historialAuto = autoevaluaciones.filter((e: any) => e.status === 'Completada' || e.status === 'Cancelada');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for self-evaluation:', evaluacion);
@@ -121,7 +121,7 @@ const SelfEvaluation = () => {
                   )}
                 </CardContent>
               </Card>
-              {completadasAuto.map((evaluacion: any) => (
+              {historialAuto.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
@@ -138,11 +138,13 @@ const SelfEvaluation = () => {
                     </div>
                     <div className="flex gap-2 flex-col items-end">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        evaluacion.status === 'Completada' 
-                          ? 'bg-green-100 text-green-800' 
-                          : 'bg-yellow-100 text-yellow-800'
+                        evaluacion.status === 'Completada'
+                          ? 'bg-green-100 text-green-800'
+                          : evaluacion.status === 'Cancelada'
+                            ? 'bg-red-100 text-red-800'
+                            : 'bg-yellow-100 text-yellow-800'
                       }`}>
-                        {evaluacion.status === 'Completada' ? t('evaluation.completed') : t('evaluation.pending')}
+                        {evaluacion.status === 'Completada' ? t('evaluation.completed') : evaluacion.status === 'Cancelada' ? 'Cancelada' : t('evaluation.pending')}
                       </span>
                       <span className={`px-2 py-1 rounded text-xs ${getStatusColor(evaluacion.score)}`}>
                         {getEvaluationStatus(evaluacion.score)}

@@ -1411,6 +1411,16 @@ app.delete('/api/areas/:id', authenticateToken, async (req, res) => {
   }
 });
 
+// Ejecutar la cancelación automática de borradores vencidos cada hora
+setInterval(() => {
+  evaluacionService.cancelarBorradoresVencidos();
+}, 60 * 60 * 1000); // cada 1 hora
+
+// Ejecutar también al iniciar el servidor
+(async () => {
+  await evaluacionService.cancelarBorradoresVencidos();
+})();
+
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
