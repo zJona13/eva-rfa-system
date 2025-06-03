@@ -63,6 +63,9 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
 
   const colaboradores: Colaborador[] = colaboradoresData?.data?.colaboradores || [];
 
+  // Filtrar solo docentes
+  const colaboradoresDocentes = colaboradores.filter(c => c.roleName === 'Docente');
+
   // Agrupar subcriterios por criterio
   const criteriosAgrupados = getCriteriosAgrupados(subcriteriosSupervision);
 
@@ -184,6 +187,16 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
     }
   }, [evaluacionDraft]);
 
+  React.useEffect(() => {
+    if (!selectedColaborador) return;
+    const borradorId = evaluacionDraft?.id || `temp-${user?.id}-${selectedColaborador}`;
+    localStorage.setItem(`evaluacion-borrador-${borradorId}`, JSON.stringify({
+      subcriteriosRatings,
+      selectedColaborador,
+      comments: form.getValues('comentarios') || ''
+    }));
+  }, [subcriteriosRatings, selectedColaborador]);
+
   if (isLoadingColaboradores) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -218,7 +231,7 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
                     <SelectValue placeholder="Selecciona un docente" />
                   </SelectTrigger>
                   <SelectContent>
-                    {colaboradores.map((colaborador) => (
+                    {colaboradoresDocentes.map((colaborador) => (
                       <SelectItem key={colaborador.id} value={colaborador.id.toString()}>
                         {colaborador.fullName} - {colaborador.roleName}
                       </SelectItem>

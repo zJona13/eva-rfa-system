@@ -61,6 +61,9 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
 
   const colaboradores: Colaborador[] = colaboradoresData?.data?.colaboradores || [];
 
+  // Filtrar solo docentes
+  const colaboradoresDocentes = colaboradores.filter(c => c.roleName === 'Docente');
+
   // Agrupar subcriterios por criterio
   const criteriosAgrupados = getCriteriosAgrupados(subcriteriosEstudiante);
 
@@ -184,6 +187,17 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
     }
   }, [evaluacionDraft]);
 
+  React.useEffect(() => {
+    if (!selectedColaborador) return;
+    const borradorId = evaluacionDraft?.id || `temp-${user?.id}-${selectedColaborador}`;
+    localStorage.setItem(`evaluacion-borrador-${borradorId}`, JSON.stringify({
+      subcriteriosRatings,
+      selectedColaborador,
+      comments: form.getValues('comentarios') || '',
+      asignatura: form.getValues('asignatura') || ''
+    }));
+  }, [subcriteriosRatings, selectedColaborador]);
+
   if (isLoadingColaboradores) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -218,7 +232,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
                     <SelectValue placeholder="Selecciona un profesor/a" />
                   </SelectTrigger>
                   <SelectContent>
-                    {colaboradores.map((colaborador) => (
+                    {colaboradoresDocentes.map((colaborador) => (
                       <SelectItem key={colaborador.id} value={colaborador.id.toString()}>
                         {colaborador.fullName} - {colaborador.roleName}
                       </SelectItem>
