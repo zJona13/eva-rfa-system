@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Reporte de evaluaciones aprobadas (≥ 11)
@@ -179,12 +178,13 @@ const getEvaluacionesPorSemestre = async () => {
   }
 };
 
-// Reporte de evaluaciones por área (tipo de colaborador)
+// Reporte de evaluaciones por área (área real, no tipo de colaborador)
 const getEvaluacionesPorArea = async () => {
   try {
     const [rows] = await pool.execute(
       `SELECT 
-      tc.nombre as area,
+      a.idArea as areaId,
+      a.nombre as area,
       COUNT(e.idEvaluacion) as totalEvaluaciones,
       AVG(e.puntaje) as promedioArea,
       COUNT(CASE WHEN e.puntaje >= 11 THEN 1 END) as aprobadas,
@@ -193,9 +193,11 @@ const getEvaluacionesPorArea = async () => {
       MIN(e.puntaje) as peorCalificacion,
       COUNT(DISTINCT c.idColaborador) as totalColaboradores
       FROM EVALUACION e
+      JOIN USUARIO u ON e.idUsuario = u.idUsuario
+      LEFT JOIN AREA a ON u.idArea = a.idArea
       JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
-      JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-      GROUP BY tc.idTipoColab, tc.nombre
+      WHERE a.idArea IS NOT NULL
+      GROUP BY a.idArea, a.nombre
       ORDER BY promedioArea DESC, totalEvaluaciones DESC`
     );
     
