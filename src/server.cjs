@@ -13,6 +13,7 @@ const incidenciaService = require('./services/incidenciaService.cjs');
 const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
+const asignacionService = require('./services/asignacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -1361,6 +1362,202 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
   }
 });
 
+// Asignaciones routes
+app.get('/api/asignaciones', authenticateToken, async (req, res) => {
+  try {
+    const result = await asignacionService.getAllAsignaciones();
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error en /api/asignaciones:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
+  try {
+    const result = await asignacionService.getAreas();
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: {
+          areas: result.areas
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error en /api/asignaciones/areas:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+app.post('/api/asignaciones', authenticateToken, async (req, res) => {
+  try {
+    // Agregar el idUsuario autenticado a los datos de la asignación
+    const asignacionData = { ...req.body, idUsuario: req.user.id };
+    const result = await asignacionService.createAsignacion(asignacionData);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error en POST /api/asignaciones:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+app.put('/api/asignaciones/:id', authenticateToken, async (req, res) => {
+  try {
+    const asignacionId = req.params.id;
+    const result = await asignacionService.updateAsignacion(asignacionId, req.body);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error en PUT /api/asignaciones:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+app.delete('/api/asignaciones/:id', authenticateToken, async (req, res) => {
+  try {
+    const asignacionId = req.params.id;
+    const result = await asignacionService.deleteAsignacion(asignacionId);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error en DELETE /api/asignaciones:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+app.put('/api/asignaciones/:id/cerrar', authenticateToken, async (req, res) => {
+  try {
+    const asignacionId = req.params.id;
+    const result = await asignacionService.cerrarAsignacion(asignacionId);
+    
+    if (result.success) {
+      res.json({
+        success: true,
+        data: result
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: result.message
+      });
+    }
+  } catch (error) {
+    console.error('Error en PUT /api/asignaciones/cerrar:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Error interno del servidor'
+    });
+  }
+});
+
+// Endpoint para validar disponibilidad de horario (simplificado)
+app.get('/api/asignaciones/validar-horario', async (req, res) => {
+  try {
+    const { fechaInicio, fechaFin, horaInicio, horaFin, evaluadorId, excludeId } = req.query;
+    
+    console.log('Validando horario con parámetros:', req.query);
+    
+    if (!fechaInicio || !fechaFin || !horaInicio || !horaFin || !evaluadorId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Todos los parámetros son requeridos'
+      });
+    }
+    
+    const result = await asignacionService.validarDisponibilidadHorario(
+      fechaInicio,
+      fechaFin,
+      horaInicio,
+      horaFin,
+      parseInt(evaluadorId),
+      excludeId ? parseInt(excludeId) : null
+    );
+    
+    res.json({
+      success: true,
+      data: result
+    });
+  } catch (error) {
+    console.error('Error en validación de horario:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Error interno del servidor'
+    });
+  }
+});
+
+// Obtener evaluadores disponibles
+app.get('/api/asignaciones/evaluadores', async (req, res) => {
+  try {
+    const result = await asignacionService.getEvaluadores();
+    res.json(result);
+  } catch (error) {
+    console.error('Error en GET /api/asignaciones/evaluadores:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
 // Areas routes
 app.get('/api/areas', authenticateToken, async (req, res) => {
   try {
@@ -1417,6 +1614,17 @@ app.delete('/api/areas/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error en DELETE /api/areas:', error);
     res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Ruta para obtener áreas en lugar de evaluadores
+app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
+  try {
+    const result = await asignacionService.getAreas();
+    res.json({ success: result.success, data: result, error: result.message });
+  } catch (error) {
+    console.error('Error en /api/asignaciones/areas:', error);
+    res.status(500).json({ success: false, error: 'Error del servidor' });
   }
 });
 
