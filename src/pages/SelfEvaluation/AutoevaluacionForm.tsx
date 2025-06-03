@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -67,6 +67,59 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     return Object.values(subcriteriosRatings).reduce((sum, rating) => sum + rating, 0);
   };
 
+  // Guardar borrador de autoevaluación
+  const handleSaveDraft = (data: any) => {
+    const colaborador = colaboradorData?.data?.colaborador;
+    if (!colaborador) {
+      toast.error(t('selfEval.noColaborador'));
+      return;
+    }
+    // Guardar en localStorage
+    const borradorId = evaluacionDraft?.id || `temp-${user?.id}-autoeval`;
+    localStorage.setItem(`autoevaluacion-borrador-${borradorId}`, JSON.stringify({
+      subcriteriosRatings,
+      comments: data.comentarios || '',
+    }));
+    // Si es un borrador real, guardar en BD
+    if (evaluacionDraft?.id) {
+      const now = new Date();
+      const evaluacionData = {
+        type: 'Autoevaluacion',
+        evaluatorId: user?.id,
+        evaluatedId: colaborador.id,
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0],
+        score: calculateTotalScore(),
+        comments: data.comentarios || null,
+        status: 'Pendiente'
+      };
+      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+        method: 'PUT',
+        body: evaluacionData
+      }).then(() => {
+        toast.success('Borrador guardado exitosamente');
+        queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
+        onCancel();
+      }).catch((error: any) => {
+        toast.error(`Error al guardar borrador: ${error.message}`);
+      });
+    } else {
+      // Si no hay borrador en BD, crear uno nuevo
+      const now = new Date();
+      const evaluacionData = {
+        type: 'Autoevaluacion',
+        evaluatorId: user?.id,
+        evaluatedId: colaborador.id,
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0],
+        score: calculateTotalScore(),
+        comments: data.comentarios || null,
+        status: 'Pendiente'
+      };
+      createEvaluacionMutation.mutate(evaluacionData);
+    }
+  };
+
   const handleFinish = (data: any) => {
     if (Object.keys(subcriteriosRatings).length !== subcriteriosAutoevaluacion.length) {
       toast.error(t('selfEval.rateAll'));
@@ -106,6 +159,32 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     }
   };
 
+  // Lógica de fecha límite para edición/finalización (1 día)
+  let fueraDeRango = false;
+  let fechaEvaluacionDraft = null;
+  if (evaluacionDraft?.date && evaluacionDraft?.status === 'Pendiente') {
+    fechaEvaluacionDraft = new Date(evaluacionDraft.date);
+    const ahora = new Date();
+    if (!isNaN(fechaEvaluacionDraft.getTime())) {
+      const diffMs = ahora.getTime() - fechaEvaluacionDraft.getTime();
+      const diffDias = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDias > 1) {
+        fueraDeRango = true;
+      }
+    }
+  }
+
+  // Recuperar borrador de localStorage al abrir el formulario
+  useEffect(() => {
+    const borradorId = evaluacionDraft?.id || `temp-${user?.id}-autoeval`;
+    const borrador = localStorage.getItem(`autoevaluacion-borrador-${borradorId}`);
+    if (borrador) {
+      const data = JSON.parse(borrador);
+      setSubcriteriosRatings(data.subcriteriosRatings || {});
+      if (data.comments) form.setValue('comentarios', data.comments);
+    }
+  }, [evaluacionDraft]);
+
   if (isLoadingColaborador) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -142,9 +221,14 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
                 </div>
                 <div>
                   <Label>{t('common.date')}</Label>
-                  <Input value={new Date().toLocaleDateString()} disabled />
+                  <Input value={new Date(evaluacionDraft?.date || Date.now()).toLocaleDateString()} disabled />
                 </div>
               </div>
+              {evaluacionDraft?.status === 'Pendiente' && evaluacionDraft?.date && (
+                <div className="mt-2 text-sm text-blue-600 font-semibold">
+                  Fecha límite para editar/finalizar: {new Date(new Date(evaluacionDraft.date).getTime() + 24*60*60*1000).toLocaleString()}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -280,12 +364,27 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
             </Button>
             <Button 
               type="button"
+              variant="secondary"
+              onClick={() => form.handleSubmit(handleSaveDraft)()}
+              disabled={fueraDeRango}
+              className="flex-1"
+            >
+              Guardar Borrador
+            </Button>
+            <Button 
+              type="button"
               onClick={() => form.handleSubmit(handleFinish)()}
               className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
+              disabled={fueraDeRango}
             >
               Finalizar Evaluación
             </Button>
           </div>
+          {fueraDeRango && (
+            <div className="text-red-600 text-center font-semibold mt-2">
+              No puedes finalizar esta autoevaluación porque ha pasado más de 1 día desde su creación.
+            </div>
+          )}
         </form>
       </Form>
     </div>
@@ -293,3 +392,4 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
 };
 
 export default AutoevaluacionForm;
+

@@ -114,6 +114,22 @@ const createEvaluacion = async (evaluacionData) => {
 // Actualizar una evaluación - SIMPLIFICADO
 const updateEvaluacion = async (evaluacionId, evaluacionData) => {
   try {
+    // Obtener la evaluación actual para validar la fecha
+    const [rows] = await pool.execute('SELECT fechaEvaluacion, estado FROM EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
+    if (rows.length === 0) {
+      return { success: false, message: 'Evaluación no encontrada' };
+    }
+    const evaluacion = rows[0];
+    // Solo restringir si está pendiente
+    if (evaluacion.estado === 'Pendiente') {
+      const fechaEvaluacion = new Date(evaluacion.fechaEvaluacion);
+      const ahora = new Date();
+      const diffMs = ahora - fechaEvaluacion;
+      const diffDias = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDias > 2) {
+        return { success: false, message: 'No se puede editar la evaluación porque han pasado más de 2 días desde su creación.' };
+      }
+    }
     // Actualizar solo la evaluación principal
     await pool.execute(
       'UPDATE EVALUACION SET fechaEvaluacion = ?, horaEvaluacion = ?, puntaje = ?, comentario = ?, tipo = ?, estado = ? WHERE idEvaluacion = ?',
@@ -127,7 +143,6 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
         evaluacionId
       ]
     );
-    
     return {
       success: true,
       message: 'Evaluación actualizada exitosamente'
@@ -206,6 +221,22 @@ const getColaboradorByUserId = async (userId) => {
 // Finalizar una evaluación (cambiar estado a Completada)
 const finalizarEvaluacion = async (evaluacionId) => {
   try {
+    // Obtener la evaluación actual para validar la fecha
+    const [rows] = await pool.execute('SELECT fechaEvaluacion, estado FROM EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
+    if (rows.length === 0) {
+      return { success: false, message: 'Evaluación no encontrada' };
+    }
+    const evaluacion = rows[0];
+    // Solo restringir si está pendiente
+    if (evaluacion.estado === 'Pendiente') {
+      const fechaEvaluacion = new Date(evaluacion.fechaEvaluacion);
+      const ahora = new Date();
+      const diffMs = ahora - fechaEvaluacion;
+      const diffDias = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDias > 2) {
+        return { success: false, message: 'No se puede finalizar la evaluación porque han pasado más de 2 días desde su creación.' };
+      }
+    }
     await pool.execute(
       'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
       ['Completada', evaluacionId]

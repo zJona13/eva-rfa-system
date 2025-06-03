@@ -198,6 +198,21 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
     }));
   }, [subcriteriosRatings, selectedColaborador]);
 
+  // Lógica de fecha límite para edición/finalización (1 día)
+  let fueraDeRango = false;
+  let fechaEvaluacionDraft = null;
+  if (evaluacionDraft?.date && evaluacionDraft?.status === 'Pendiente') {
+    fechaEvaluacionDraft = new Date(evaluacionDraft.date);
+    const ahora = new Date();
+    if (!isNaN(fechaEvaluacionDraft.getTime())) {
+      const diffMs = ahora.getTime() - fechaEvaluacionDraft.getTime();
+      const diffDias = diffMs / (1000 * 60 * 60 * 24);
+      if (diffDias > 1) {
+        fueraDeRango = true;
+      }
+    }
+  }
+
   if (isLoadingColaboradores) {
     return (
       <div className="flex items-center justify-center p-8">
@@ -244,13 +259,18 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Fecha</Label>
-                  <Input value={new Date().toLocaleDateString()} disabled />
+                  <Input value={new Date(evaluacionDraft?.date || Date.now()).toLocaleDateString()} disabled />
                 </div>
                 <div>
                   <Label>Asignatura/Módulo</Label>
                   <Input placeholder="Nombre de la asignatura" {...form.register('asignatura')} />
                 </div>
               </div>
+              {evaluacionDraft?.status === 'Pendiente' && evaluacionDraft?.date && (
+                <div className="mt-2 text-sm text-blue-600 font-semibold">
+                  Fecha límite para editar/finalizar: {new Date(new Date(evaluacionDraft.date).getTime() + 24*60*60*1000).toLocaleString()}
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -388,7 +408,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
               type="button"
               variant="secondary"
               onClick={() => form.handleSubmit(handleSaveDraft)()}
-              disabled={createEvaluacionMutation.isPending || !selectedColaborador}
+              disabled={createEvaluacionMutation.isPending || !selectedColaborador || fueraDeRango}
               className="flex-1"
             >
               Guardar Borrador
@@ -396,12 +416,17 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
             <Button 
               type="button"
               onClick={() => form.handleSubmit(handleFinish)()}
-              disabled={createEvaluacionMutation.isPending || !selectedColaborador}
+              disabled={createEvaluacionMutation.isPending || !selectedColaborador || fueraDeRango}
               className="flex-1 bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70"
             >
               {createEvaluacionMutation.isPending ? 'Guardando...' : 'Finalizar Evaluación'}
             </Button>
           </div>
+          {fueraDeRango && (
+            <div className="text-red-600 text-center font-semibold mt-2">
+              No puedes editar ni finalizar esta evaluación porque han pasado más de 1 día desde su creación.
+            </div>
+          )}
         </form>
       </Form>
     </div>
