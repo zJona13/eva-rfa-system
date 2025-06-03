@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
@@ -42,21 +43,19 @@ export const useAsignacionData = () => {
       console.log('=== FRONTEND: Respuesta completa del servidor ===');
       console.log('Response object:', response);
       
+      // Manejar tanto response.data.asignaciones como response.asignaciones
+      let asignacionesData = [];
       if (response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
-        const asignacionesData = response.data.asignaciones;
-        console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
-        
-        if (asignacionesData.length > 0) {
-          console.log('=== FRONTEND: Primera asignación recibida ===', asignacionesData[0]);
-        }
-        
-        setAsignaciones(asignacionesData);
-        console.log('=== FRONTEND: Estado actualizado con', asignacionesData.length, 'asignaciones ===');
-      } else {
-        console.warn('=== FRONTEND: La respuesta no contiene un array de asignaciones válido ===');
-        console.warn('Estructura recibida:', response);
-        setAsignaciones([]);
+        asignacionesData = response.data.asignaciones;
+      } else if (response?.asignaciones && Array.isArray(response.asignaciones)) {
+        asignacionesData = response.asignaciones;
+      } else if (response?.success && response?.data?.asignaciones) {
+        asignacionesData = response.data.asignaciones;
       }
+      
+      console.log('=== FRONTEND: Asignaciones procesadas ===', asignacionesData.length);
+      setAsignaciones(asignacionesData);
+      
     } catch (error) {
       console.error('=== FRONTEND: Error en fetchAsignaciones ===', error);
       setAsignaciones([]);

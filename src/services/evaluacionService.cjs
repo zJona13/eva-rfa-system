@@ -1,5 +1,83 @@
 const { pool } = require('../utils/dbConnection.cjs');
 
+// Función auxiliar para validar si una evaluación puede ser realizada
+const canPerformEvaluation = async (evaluacionId) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT e.fechaEvaluacion, e.estado, a.fecha_inicio, a.fecha_fin
+       FROM EVALUACION e
+       JOIN DETALLE_ASIGNACION da ON e.idEvaluacion = da.idEvaluacion
+       JOIN ASIGNACION a ON da.idAsignacion = a.idAsignacion
+       WHERE e.idEvaluacion = ?`,
+      [evaluacionId]
+    );
+
+    if (rows.length === 0) {
+      return { canPerform: false, message: 'Evaluación no encontrada' };
+    }
+
+    const evaluacion = rows[0];
+    const now = new Date();
+    const fechaInicio = new Date(evaluacion.fecha_inicio);
+    const fechaFin = new Date(evaluacion.fecha_fin);
+
+    // Verificar si estamos dentro del período de evaluación
+    if (now < fechaInicio) {
+      return { 
+        canPerform: false, 
+        message: 'La evaluación aún no está disponible. Debe esperar hasta la fecha de inicio.' 
+      };
+    }
+
+    if (now > fechaFin) {
+      return { 
+        canPerform: false, 
+        message: 'El período de evaluación ha finalizado.' 
+      };
+    }
+
+    return { canPerform: true };
+  } catch (error) {
+    console.error('Error validando evaluación:', error);
+    return { canPerform: false, message: 'Error al validar la evaluación' };
+  }
+};
+
+// Obtener evaluaciones pendientes por usuario evaluador con validación de fechas
+const getEvaluacionesPendientesByEvaluador = async (userId) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion as id, e.fechaEvaluacion as date, 
+      e.horaEvaluacion as time, e.tipo as type, e.estado as status,
+      CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluatedName,
+      c.idColaborador as evaluatedId,
+      a.fecha_inicio, a.fecha_fin
+      FROM EVALUACION e
+      JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
+      JOIN DETALLE_ASIGNACION da ON e.idEvaluacion = da.idEvaluacion
+      JOIN ASIGNACION a ON da.idAsignacion = a.idAsignacion
+      WHERE e.idUsuario = ? AND e.estado = 'Pendiente'
+      ORDER BY e.fechaEvaluacion DESC`,
+      [userId]
+    );
+
+    const now = new Date();
+    const evaluacionesDisponibles = rows.filter(row => {
+      const fechaInicio = new Date(row.fecha_inicio);
+      const fechaFin = new Date(row.fecha_fin);
+      return now >= fechaInicio && now <= fechaFin;
+    });
+
+    return {
+      success: true,
+      evaluaciones: evaluacionesDisponibles
+    };
+  } catch (error) {
+    console.error('Error al obtener evaluaciones pendientes:', error);
+    return { success: false, message: 'Error al obtener las evaluaciones pendientes' };
+  }
+};
+
 // Obtener todas las evaluaciones con información relacionada
 const getAllEvaluaciones = async () => {
   try {
@@ -87,6 +165,49 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
   } catch (error) {
     console.error('Error al obtener evaluaciones por colaborador:', error);
     return { success: false, message: 'Error al obtener las evaluaciones' };
+  }
+};
+
+// Crear/Completar una evaluación - SIN BORRADORES
+const completeEvaluacion = async (evaluacionId, evaluacionData) => {
+  const connection = await pool.getConnection();
+  
+  try {
+    await connection.beginTransaction();
+
+    // Validar que la evaluación puede ser realizada
+    const validation = await canPerformEvaluation(evaluacionId);
+    if (!validation.canPerform) {
+      await connection.rollback();
+      return { success: false, message: validation.message };
+    }
+
+    // Actualizar la evaluación directamente a 'Completada'
+    await connection.execute(
+      `UPDATE EVALUACION 
+       SET puntaje = ?, comentario = ?, estado = 'Completada', 
+           subcriteriosRatings = ?
+       WHERE idEvaluacion = ? AND estado = 'Pendiente'`,
+      [
+        evaluacionData.score,
+        evaluacionData.comments || null,
+        evaluacionData.subcriteriosRatings ? JSON.stringify(evaluacionData.subcriteriosRatings) : null,
+        evaluacionId
+      ]
+    );
+
+    await connection.commit();
+
+    return {
+      success: true,
+      message: 'Evaluación completada exitosamente'
+    };
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error al completar evaluación:', error);
+    return { success: false, message: 'Error al completar la evaluación' };
+  } finally {
+    connection.release();
   }
 };
 
@@ -221,6 +342,9 @@ module.exports = {
   getAllEvaluaciones,
   getEvaluacionesByEvaluador,
   getEvaluacionesByColaborador,
+  getEvaluacionesPendientesByEvaluador,
+  completeEvaluacion,
+  canPerformEvaluation,
   createEvaluacion,
   updateEvaluacion,
   deleteEvaluacion,
