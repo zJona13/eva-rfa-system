@@ -12,7 +12,6 @@ const criteriosService = require('./services/criteriosService.cjs');
 const incidenciaService = require('./services/incidenciaService.cjs');
 const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
-const areaService = require('./services/areaService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -1358,65 +1357,6 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
       success: false,
       message: 'Error al obtener las evaluaciones recientes'
     });
-  }
-});
-
-// Areas routes
-app.get('/api/areas', authenticateToken, async (req, res) => {
-  try {
-    const result = await areaService.getAllAreas();
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error en /api/areas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.post('/api/areas', authenticateToken, async (req, res) => {
-  try {
-    const result = await areaService.createArea(req.body);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(400).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error en POST /api/areas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.put('/api/areas/:id', authenticateToken, async (req, res) => {
-  try {
-    const areaId = parseInt(req.params.id);
-    const result = await areaService.updateArea(areaId, req.body);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(400).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error en PUT /api/areas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.delete('/api/areas/:id', authenticateToken, async (req, res) => {
-  try {
-    const areaId = parseInt(req.params.id);
-    const result = await areaService.deleteArea(areaId);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(400).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error en DELETE /api/areas:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
   }
 });
 
