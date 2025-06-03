@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -72,7 +71,6 @@ interface UserDialogProps {
     active?: boolean;
   } | null;
   roles: Role[];
-  areas: Area[];
   onSubmit: (values: UserFormValues & { id?: number }) => void;
   isSubmitting: boolean;
 }

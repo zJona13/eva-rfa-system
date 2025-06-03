@@ -39,18 +39,11 @@ interface Role {
   name: string;
 }
 
-interface Area {
-  id: number;
-  name: string;
-  description?: string;
-}
-
 interface UsersTabContentProps {
   users: User[];
   isLoading: boolean;
   searchQuery: string;
   roles: Role[];
-  areas: Area[];
 }
 
 // Servicios API - Fixed token name
@@ -136,7 +129,7 @@ const deleteUser = async (id: number): Promise<{ success: boolean, message: stri
   return data;
 };
 
-const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, searchQuery, roles, areas }) => {
+const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, searchQuery, roles }) => {
   // State
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -343,7 +336,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
         onOpenChange={setIsUserDialogOpen}
         userData={selectedUser}
         roles={roles}
-        areas={areas}
         onSubmit={handleSubmitUser}
         isSubmitting={isSubmitting}
       />
