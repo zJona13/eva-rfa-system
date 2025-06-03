@@ -90,112 +90,6 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
   }
 };
 
-// Obtener evaluaciones disponibles para un usuario específico
-const getEvaluacionesDisponibles = async (userId) => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT e.idEvaluacion as id, 
-       e.fechaEvaluacion, e.horaEvaluacion, e.tipo, e.estado,
-       CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluadoNombre,
-       c.idColaborador as evaluadoId,
-       a.idAsignacion as asignacionId,
-       a.fecha_inicio as fechaInicio,
-       a.fecha_fin as fechaFin
-       FROM EVALUACION e
-       JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
-       JOIN DETALLE_ASIGNACION da ON e.idEvaluacion = da.idEvaluacion
-       JOIN ASIGNACION a ON da.idAsignacion = a.idAsignacion
-       WHERE e.idUsuario = ? AND a.estado = 'Abierta'
-       ORDER BY e.fechaEvaluacion ASC, e.horaEvaluacion ASC`,
-      [userId]
-    );
-    
-    return {
-      success: true,
-      evaluaciones: rows
-    };
-  } catch (error) {
-    console.error('Error al obtener evaluaciones disponibles:', error);
-    return { success: false, message: 'Error al obtener las evaluaciones disponibles' };
-  }
-};
-
-// Completar una evaluación
-const completarEvaluacion = async (evaluacionData) => {
-  const connection = await pool.getConnection();
-  
-  try {
-    await connection.beginTransaction();
-    
-    // Verificar que la evaluación existe y está pendiente
-    const [evaluacion] = await connection.execute(
-      `SELECT e.*, a.fecha_inicio, a.fecha_fin, a.estado as estadoAsignacion
-       FROM EVALUACION e
-       JOIN DETALLE_ASIGNACION da ON e.idEvaluacion = da.idEvaluacion
-       JOIN ASIGNACION a ON da.idAsignacion = a.idAsignacion
-       WHERE e.idEvaluacion = ?`,
-      [evaluacionData.id]
-    );
-    
-    if (evaluacion.length === 0) {
-      await connection.rollback();
-      return { success: false, message: 'Evaluación no encontrada' };
-    }
-    
-    const eval = evaluacion[0];
-    
-    // Verificar que la asignación esté abierta
-    if (eval.estadoAsignacion !== 'Abierta') {
-      await connection.rollback();
-      return { success: false, message: 'La asignación está cerrada' };
-    }
-    
-    // Verificar que estamos en el período válido
-    const now = new Date();
-    const fechaInicio = new Date(eval.fecha_inicio);
-    const fechaFin = new Date(eval.fecha_fin);
-    
-    if (now < fechaInicio || now > fechaFin) {
-      await connection.rollback();
-      return { success: false, message: 'La evaluación no está disponible en este momento' };
-    }
-    
-    // Verificar que la evaluación está pendiente
-    if (eval.estado === 'Completada') {
-      await connection.rollback();
-      return { success: false, message: 'Esta evaluación ya ha sido completada' };
-    }
-    
-    // Actualizar la evaluación
-    await connection.execute(
-      `UPDATE EVALUACION 
-       SET puntaje = ?, comentario = ?, estado = ?, 
-           subcriteriosRatings = ?, fechaEvaluacion = NOW(), horaEvaluacion = TIME(NOW())
-       WHERE idEvaluacion = ?`,
-      [
-        evaluacionData.score,
-        evaluacionData.comments,
-        'Completada',
-        JSON.stringify(evaluacionData.subcriteriosRatings),
-        evaluacionData.id
-      ]
-    );
-    
-    await connection.commit();
-    
-    return {
-      success: true,
-      message: 'Evaluación completada exitosamente'
-    };
-  } catch (error) {
-    await connection.rollback();
-    console.error('Error al completar evaluación:', error);
-    return { success: false, message: 'Error al completar la evaluación' };
-  } finally {
-    connection.release();
-  }
-};
-
 // Crear una nueva evaluación - ahora guarda subcriteriosRatings
 const createEvaluacion = async (evaluacionData) => {
   try {
@@ -331,7 +225,5 @@ module.exports = {
   updateEvaluacion,
   deleteEvaluacion,
   getColaboradoresParaEvaluar,
-  getColaboradorByUserId,
-  getEvaluacionesDisponibles,
-  completarEvaluacion
+  getColaboradorByUserId
 };

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import useApiWithToken from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
@@ -40,11 +39,16 @@ export const useAsignacionData = () => {
     try {
       console.log('=== FRONTEND: Iniciando fetchAsignaciones ===');
       const response = await apiRequest('/asignaciones');
-      console.log('=== FRONTEND: Respuesta completa del servidor ===', response);
+      console.log('=== FRONTEND: Respuesta completa del servidor ===');
+      console.log('Response object:', response);
       
-      if (response?.success && response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
+      if (response?.data?.asignaciones && Array.isArray(response.data.asignaciones)) {
         const asignacionesData = response.data.asignaciones;
         console.log('=== FRONTEND: Asignaciones recibidas ===', asignacionesData.length);
+        
+        if (asignacionesData.length > 0) {
+          console.log('=== FRONTEND: Primera asignación recibida ===', asignacionesData[0]);
+        }
         
         setAsignaciones(asignacionesData);
         console.log('=== FRONTEND: Estado actualizado con', asignacionesData.length, 'asignaciones ===');
@@ -97,14 +101,6 @@ export const useAsignacionData = () => {
   const handleSubmit = async (values: any, editingAsignacion: Asignacion | null) => {
     try {
       console.log('=== FRONTEND: Enviando datos de asignación ===', values);
-      
-      // Asegurar que el token esté presente
-      const token = localStorage.getItem('iesrfa_token');
-      if (!token) {
-        toast.error('No se encontró token de autenticación');
-        return { success: false };
-      }
-
       const response = editingAsignacion
         ? await apiRequest(`/asignaciones/${editingAsignacion.id}`, {
             method: 'PUT',

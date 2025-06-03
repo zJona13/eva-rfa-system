@@ -31,7 +31,7 @@ export const useApiWithToken = () => {
       return {};
     }
 
-    console.log('🔑 Usando token para petición API:', token.substring(0, 20) + '...');
+    console.log('🔑 Usando token para petición API');
     return {
       'Authorization': `Bearer ${token}`,
     };
@@ -49,24 +49,13 @@ export const useApiWithToken = () => {
       
       const authHeaders = getAuthHeaders();
       
-      if (!authHeaders.Authorization) {
-        console.log('❌ No se puede hacer petición sin token de autorización');
-        toast.error('Sesión expirada, por favor inicia sesión nuevamente');
-        logout();
-        return { success: false, error: 'NO_TOKEN' };
-      }
-      
       const requestHeaders = {
         'Content-Type': 'application/json',
         ...authHeaders,
         ...headers,
       };
 
-      console.log(`🌐 ${method} ${endpoint}`);
-      console.log('🔍 Headers enviados:', {
-        'Content-Type': requestHeaders['Content-Type'],
-        'Authorization': requestHeaders['Authorization'] ? 'Bearer [TOKEN]' : 'NO_AUTH'
-      });
+      console.log(`🌐 ${method} ${endpoint} - Con autenticación:`, !!authHeaders.Authorization);
 
       const response = await fetch(`${API_BASE_URL}${endpoint}`, {
         method,
@@ -74,10 +63,7 @@ export const useApiWithToken = () => {
         body: body ? JSON.stringify(body) : undefined,
       });
 
-      console.log(`📊 Respuesta del servidor: ${response.status} ${response.statusText}`);
-
       const data = await response.json();
-      console.log('📦 Datos recibidos:', data);
 
       // Manejar errores de autenticación
       if (response.status === 401) {
@@ -90,9 +76,8 @@ export const useApiWithToken = () => {
       if (!response.ok) {
         const errorMessage = data.message || `Error HTTP ${response.status}`;
         console.log(`❌ Error en petición ${method} ${endpoint}:`, errorMessage);
-        console.log('❌ Detalles del error:', data);
         setError(errorMessage);
-        return { success: false, error: errorMessage, message: data.message };
+        return { success: false, error: errorMessage };
       }
 
       console.log(`✅ Petición ${method} ${endpoint} exitosa`);

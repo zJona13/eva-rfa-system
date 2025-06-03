@@ -1,200 +1,412 @@
 
-interface Subcriterio {
-  id: string;
-  nombre: string;
-  descripcion: string;
-}
+// Criterios y subcriterios hardcodeados para las evaluaciones
 
-interface CriterioEvaluacion {
-  id: string;
-  nombre: string;
-  descripcion: string;
-  subcriterios: Subcriterio[];
-}
-
-interface SubcriterioTexto {
+export interface Subcriterio {
   id: string;
   texto: string;
+  puntaje: number;
   criterio: string;
 }
 
-const criteriosEvaluacion: CriterioEvaluacion[] = [
+// Subcriterios para Ficha de Supervisión de Aprendizaje
+export const subcriteriosSupervision: Subcriterio[] = [
+  // PROGRAMACIÓN (2 puntos)
   {
-    id: 'criterio1',
-    nombre: 'Conocimiento y Aplicación',
-    descripcion: 'Evalúa el dominio del contenido y su aplicación práctica.',
-    subcriterios: [
-      {
-        id: 'subcriterio1_1',
-        nombre: 'Dominio del Contenido',
-        descripcion: 'Conocimiento profundo y actualizado del tema.'
-      },
-      {
-        id: 'subcriterio1_2',
-        nombre: 'Aplicación Práctica',
-        descripcion: 'Habilidad para aplicar el conocimiento en situaciones reales.'
-      }
-    ]
+    id: 'prog_1',
+    texto: 'El sílabo de la UD se encuentra actualizado y disponible en la plataforma virtual (ej. Chamilo).',
+    puntaje: 1,
+    criterio: 'PROGRAMACIÓN'
   },
   {
-    id: 'criterio2',
-    nombre: 'Habilidades de Comunicación',
-    descripcion: 'Evalúa la claridad y efectividad en la comunicación de ideas.',
-    subcriterios: [
-      {
-        id: 'subcriterio2_1',
-        nombre: 'Claridad Verbal',
-        descripcion: 'Capacidad para expresarse de manera clara y comprensible.'
-      },
-      {
-        id: 'subcriterio2_2',
-        nombre: 'Comunicación Escrita',
-        descripcion: 'Habilidad para redactar documentos claros y concisos.'
-      }
-    ]
+    id: 'prog_2',
+    texto: 'La sesión de aprendizaje desarrollada corresponde a lo programado en el sílabo y presenta su ficha.',
+    puntaje: 1,
+    criterio: 'PROGRAMACIÓN'
+  },
+  
+  // MATERIALES EDUCATIVOS (3 puntos)
+  {
+    id: 'mat_1',
+    texto: 'Los materiales educativos son pertinentes a la sesión de aprendizaje (antes, durante y después).',
+    puntaje: 1,
+    criterio: 'MATERIALES EDUCATIVOS'
   },
   {
-    id: 'criterio3',
-    nombre: 'Colaboración y Trabajo en Equipo',
-    descripcion: 'Evalúa la capacidad para trabajar eficazmente con otros.',
-    subcriterios: [
-      {
-        id: 'subcriterio3_1',
-        nombre: 'Participación Activa',
-        descripcion: 'Contribución activa y constructiva en el equipo.'
-      },
-      {
-        id: 'subcriterio3_2',
-        nombre: 'Respeto y Empatía',
-        descripcion: 'Mostrar respeto y empatía hacia los compañeros.'
-      }
-    ]
+    id: 'mat_2',
+    texto: 'Los materiales educativos son visibles, claros y están organizados en la plataforma.',
+    puntaje: 1,
+    criterio: 'MATERIALES EDUCATIVOS'
   },
   {
-    id: 'criterio4',
-    nombre: 'Profesionalismo y Ética',
-    descripcion: 'Evalúa la conducta profesional y el cumplimiento de normas éticas.',
-    subcriterios: [
-      {
-        id: 'subcriterio4_1',
-        nombre: 'Conducta Profesional',
-        descripcion: 'Mantener una actitud profesional en todo momento.'
-      },
-      {
-        id: 'subcriterio4_2',
-        nombre: 'Cumplimiento Ético',
-        descripcion: 'Adherirse a los principios éticos y normas de la organización.'
-      }
-    ]
+    id: 'mat_3',
+    texto: 'Los materiales para actividades posteriores (guías, instrucciones) son adecuados y promueven el aprendizaje.',
+    puntaje: 1,
+    criterio: 'MATERIALES EDUCATIVOS'
+  },
+  
+  // DESARROLLO (10 puntos)
+  {
+    id: 'des_1',
+    texto: 'Inicia la sesión de aprendizaje con puntualidad y saluda a los alumnos.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
   },
   {
-    id: 'criterio5',
-    nombre: 'Resolución de Problemas',
-    descripcion: 'Evalúa la capacidad para identificar y resolver problemas de manera efectiva.',
-    subcriterios: [
-      {
-        id: 'subcriterio5_1',
-        nombre: 'Análisis de Problemas',
-        descripcion: 'Habilidad para analizar problemas y identificar causas.'
-      },
-      {
-        id: 'subcriterio5_2',
-        nombre: 'Soluciones Creativas',
-        descripcion: 'Desarrollar soluciones creativas e innovadoras.'
-      }
-    ]
+    id: 'des_2',
+    texto: 'Registra la asistencia de los estudiantes (según modalidad) en la plataforma o medio establecido.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_3',
+    texto: 'Establece/recuerda orientaciones (netiquetas, normas de convivencia) para la participación.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_4',
+    texto: 'Realiza una actividad de motivación eficaz para generar la atención de los estudiantes.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_5',
+    texto: 'Declara el tema a desarrollar y el logro de aprendizaje esperado para la sesión.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_6',
+    texto: 'Desarrolla el contenido utilizando metodologías activas y participativas.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_7',
+    texto: 'Prioriza el trabajo colaborativo durante la sesión.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_8',
+    texto: 'Emplea una voz clara, modulada y un lenguaje técnico apropiado.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_9',
+    texto: 'Responde a las preguntas e inquietudes de los estudiantes de manera efectiva.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  {
+    id: 'des_10',
+    texto: 'Fomenta el desarrollo de valores, actitudes positivas y la construcción de aprendizajes propios.',
+    puntaje: 1,
+    criterio: 'DESARROLLO'
+  },
+  
+  // EVALUACIÓN (5 puntos)
+  {
+    id: 'eval_1',
+    texto: 'La evaluación aplicada responde a los indicadores de logro de la sesión.',
+    puntaje: 1,
+    criterio: 'EVALUACIÓN'
+  },
+  {
+    id: 'eval_2',
+    texto: 'Utiliza instrumentos de evaluación variados y adecuados al objeto de evaluación.',
+    puntaje: 1,
+    criterio: 'EVALUACIÓN'
+  },
+  {
+    id: 'eval_3',
+    texto: 'Los criterios de evaluación son claros y comunicados previamente a los estudiantes.',
+    puntaje: 1,
+    criterio: 'EVALUACIÓN'
+  },
+  {
+    id: 'eval_4',
+    texto: 'Realiza la retroalimentación del proceso de aprendizaje de forma individual y/o grupal.',
+    puntaje: 1,
+    criterio: 'EVALUACIÓN'
+  },
+  {
+    id: 'eval_5',
+    texto: 'Comunica los resultados de la evaluación de manera oportuna y comprensible.',
+    puntaje: 1,
+    criterio: 'EVALUACIÓN'
   }
 ];
 
-// Subcriterios específicos para autoevaluación
-const subcriteriosAutoevaluacion: SubcriterioTexto[] = [
-  { id: 'auto_1', texto: 'Demuestro dominio completo del contenido de mi área', criterio: 'Conocimiento y Aplicación' },
-  { id: 'auto_2', texto: 'Aplico eficazmente el conocimiento en situaciones prácticas', criterio: 'Conocimiento y Aplicación' },
-  { id: 'auto_3', texto: 'Me comunico de manera clara y efectiva', criterio: 'Habilidades de Comunicación' },
-  { id: 'auto_4', texto: 'Redacto documentos de forma clara y concisa', criterio: 'Habilidades de Comunicación' },
-  { id: 'auto_5', texto: 'Participo activamente en el trabajo en equipo', criterio: 'Colaboración y Trabajo en Equipo' },
-  { id: 'auto_6', texto: 'Muestro respeto y empatía hacia mis compañeros', criterio: 'Colaboración y Trabajo en Equipo' },
-  { id: 'auto_7', texto: 'Mantengo una conducta profesional en todo momento', criterio: 'Profesionalismo y Ética' },
-  { id: 'auto_8', texto: 'Cumplo con los principios éticos de la organización', criterio: 'Profesionalismo y Ética' },
-  { id: 'auto_9', texto: 'Analizo problemas e identifico causas efectivamente', criterio: 'Resolución de Problemas' },
-  { id: 'auto_10', texto: 'Desarrollo soluciones creativas e innovadoras', criterio: 'Resolución de Problemas' },
-  { id: 'auto_11', texto: 'Actualizo constantemente mis conocimientos', criterio: 'Conocimiento y Aplicación' },
-  { id: 'auto_12', texto: 'Adapto mi comunicación según la audiencia', criterio: 'Habilidades de Comunicación' },
-  { id: 'auto_13', texto: 'Colaboro efectivamente con diferentes personalidades', criterio: 'Colaboración y Trabajo en Equipo' },
-  { id: 'auto_14', texto: 'Actúo con integridad en todas mis decisiones', criterio: 'Profesionalismo y Ética' },
-  { id: 'auto_15', texto: 'Busco oportunidades de mejora continua', criterio: 'Resolución de Problemas' },
-  { id: 'auto_16', texto: 'Comparto conocimientos con mis colegas', criterio: 'Conocimiento y Aplicación' },
-  { id: 'auto_17', texto: 'Escucho activamente a otros', criterio: 'Habilidades de Comunicación' },
-  { id: 'auto_18', texto: 'Apoyo el desarrollo de mis compañeros', criterio: 'Colaboración y Trabajo en Equipo' },
-  { id: 'auto_19', texto: 'Cumplo mis compromisos y responsabilidades', criterio: 'Profesionalismo y Ética' },
-  { id: 'auto_20', texto: 'Aprendo de los errores y los convierto en oportunidades', criterio: 'Resolución de Problemas' }
+// Subcriterios para Autoevaluación Docente
+export const subcriteriosAutoevaluacion: Subcriterio[] = [
+  // I. PLANIFICACIÓN Y PROGRAMACIÓN (2 puntos)
+  {
+    id: 'plan_1',
+    texto: 'Mantengo el sílabo actualizado y fácilmente accesible para los estudiantes.',
+    puntaje: 1,
+    criterio: 'I. PLANIFICACIÓN Y PROGRAMACIÓN'
+  },
+  {
+    id: 'plan_2',
+    texto: 'Mis sesiones de aprendizaje se desarrollan conforme a lo planificado en el sílabo y cuento con la ficha de sesión.',
+    puntaje: 1,
+    criterio: 'I. PLANIFICACIÓN Y PROGRAMACIÓN'
+  },
+  
+  // II. MATERIALES EDUCATIVOS (3 puntos)
+  {
+    id: 'mat_auto_1',
+    texto: 'Selecciono y diseño materiales educativos pertinentes para los diferentes momentos de la sesión.',
+    puntaje: 1,
+    criterio: 'II. MATERIALES EDUCATIVOS'
+  },
+  {
+    id: 'mat_auto_2',
+    texto: 'Aseguro que los materiales sean claros, visualmente adecuados y estén bien organizados en la plataforma.',
+    puntaje: 1,
+    criterio: 'II. MATERIALES EDUCATIVOS'
+  },
+  {
+    id: 'mat_auto_3',
+    texto: 'Los materiales para actividades asincrónicas (guías, rúbricas) están bien estructurados y fomentan la autonomía.',
+    puntaje: 1,
+    criterio: 'II. MATERIALES EDUCATIVOS'
+  },
+  
+  // III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA (10 puntos)
+  {
+    id: 'des_auto_1',
+    texto: 'Inicio mis clases puntualmente y establezco un ambiente cordial.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_2',
+    texto: 'Verifico la asistencia y las condiciones para la participación (normas, netiquetas).',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_3',
+    texto: 'Capto el interés de los estudiantes mediante estrategias de motivación efectivas.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_4',
+    texto: 'Comunico con claridad el tema y los objetivos de aprendizaje de la sesión.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_5',
+    texto: 'Aplico metodologías activas que involucran al estudiante en su proceso de aprendizaje.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_6',
+    texto: 'Promuevo el trabajo colaborativo y la interacción entre estudiantes.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_7',
+    texto: 'Mi expresión oral es clara, con volumen y modulación adecuados, utilizando un lenguaje preciso.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_8',
+    texto: 'Atiendo y resuelvo las dudas de los estudiantes de forma paciente y clara.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_9',
+    texto: 'Fomento la reflexión, el pensamiento crítico y la construcción autónoma del conocimiento.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  {
+    id: 'des_auto_10',
+    texto: 'Integro el desarrollo de valores y actitudes positivas en mis sesiones.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LA SESIÓN Y METODOLOGÍA'
+  },
+  
+  // IV. EVALUACIÓN Y RETROALIMENTACIÓN (5 puntos)
+  {
+    id: 'eval_auto_1',
+    texto: 'Diseño evaluaciones coherentes con los indicadores de logro propuestos.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_auto_2',
+    texto: 'Utilizo diversidad de instrumentos y técnicas de evaluación apropiados.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_auto_3',
+    texto: 'Doy a conocer los criterios de evaluación de forma anticipada y clara.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_auto_4',
+    texto: 'Ofrezco retroalimentación continua, específica y constructiva a los estudiantes.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_auto_5',
+    texto: 'Comunico los resultados de las evaluaciones en los plazos establecidos y de forma que faciliten la comprensión.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  }
 ];
 
-// Subcriterios específicos para supervisión
-const subcriteriosSupervision: SubcriterioTexto[] = [
-  { id: 'sup_1', texto: 'Planifica las clases de manera estructurada y coherente', criterio: 'Planificación y Organización' },
-  { id: 'sup_2', texto: 'Utiliza metodologías pedagógicas apropiadas', criterio: 'Metodología Pedagógica' },
-  { id: 'sup_3', texto: 'Mantiene el control del aula de manera efectiva', criterio: 'Gestión del Aula' },
-  { id: 'sup_4', texto: 'Se comunica claramente con los estudiantes', criterio: 'Comunicación Efectiva' },
-  { id: 'sup_5', texto: 'Utiliza recursos didácticos apropiados', criterio: 'Uso de Recursos' },
-  { id: 'sup_6', texto: 'Evalúa el progreso de los estudiantes adecuadamente', criterio: 'Evaluación del Aprendizaje' },
-  { id: 'sup_7', texto: 'Adapta la enseñanza a diferentes estilos de aprendizaje', criterio: 'Adaptación Pedagógica' },
-  { id: 'sup_8', texto: 'Fomenta la participación activa de los estudiantes', criterio: 'Participación Estudiantil' },
-  { id: 'sup_9', texto: 'Maneja conflictos de manera profesional', criterio: 'Gestión de Conflictos' },
-  { id: 'sup_10', texto: 'Cumple puntualmente con los horarios establecidos', criterio: 'Puntualidad y Responsabilidad' },
-  { id: 'sup_11', texto: 'Proporciona retroalimentación constructiva', criterio: 'Retroalimentación' },
-  { id: 'sup_12', texto: 'Mantiene un ambiente de respeto en el aula', criterio: 'Ambiente de Aprendizaje' },
-  { id: 'sup_13', texto: 'Integra tecnología educativa cuando es apropiado', criterio: 'Innovación Tecnológica' },
-  { id: 'sup_14', texto: 'Colabora efectivamente con colegas', criterio: 'Trabajo Colaborativo' },
-  { id: 'sup_15', texto: 'Reflexiona sobre su práctica docente', criterio: 'Desarrollo Profesional' },
-  { id: 'sup_16', texto: 'Atiende las necesidades individuales de los estudiantes', criterio: 'Atención Personalizada' },
-  { id: 'sup_17', texto: 'Motiva e inspira a los estudiantes', criterio: 'Motivación Estudiantil' },
-  { id: 'sup_18', texto: 'Mantiene registros académicos actualizados', criterio: 'Documentación Académica' },
-  { id: 'sup_19', texto: 'Busca oportunidades de mejora continua', criterio: 'Mejora Continua' },
-  { id: 'sup_20', texto: 'Actúa con ética profesional', criterio: 'Ética Profesional' }
+// Subcriterios para Evaluación del Docente por el Estudiante
+export const subcriteriosEstudiante: Subcriterio[] = [
+  // I. ORGANIZACIÓN DE LA ASIGNATURA (2 puntos)
+  {
+    id: 'org_1',
+    texto: 'El profesor/a deja claro desde el inicio cómo se desarrollará la asignatura (sílado, cronograma).',
+    puntaje: 1,
+    criterio: 'I. ORGANIZACIÓN DE LA ASIGNATURA'
+  },
+  {
+    id: 'org_2',
+    texto: 'Las clases siguen una estructura y planificación comprensible.',
+    puntaje: 1,
+    criterio: 'I. ORGANIZACIÓN DE LA ASIGNATURA'
+  },
+  
+  // II. MATERIALES EDUCATIVOS (3 puntos)
+  {
+    id: 'mat_est_1',
+    texto: 'Los materiales que usa el/la profesor/a (presentaciones, lecturas, etc.) me ayudan a entender los temas.',
+    puntaje: 1,
+    criterio: 'II. MATERIALES EDUCATIVOS'
+  },
+  {
+    id: 'mat_est_2',
+    texto: 'Los materiales son claros y están bien organizados en la plataforma del curso.',
+    puntaje: 1,
+    criterio: 'II. MATERIALES EDUCATIVOS'
+  },
+  {
+    id: 'mat_est_3',
+    texto: 'El profesor/a proporciona guías o instrucciones claras para las tareas o trabajos fuera de clase.',
+    puntaje: 1,
+    criterio: 'II. MATERIALES EDUCATIVOS'
+  },
+  
+  // III. DESARROLLO DE LAS CLASES Y ENSEÑANZA (10 puntos)
+  {
+    id: 'des_est_1',
+    texto: 'El/La profesor/a es puntual y aprovecha bien el tiempo de la clase.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_2',
+    texto: 'El/La profesor/a explica los temas de forma que los entiendo.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_3',
+    texto: 'El/La profesor/a utiliza ejemplos o actividades que facilitan mi aprendizaje.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_4',
+    texto: 'El/La profesor/a fomenta mi participación en clase.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_5',
+    texto: 'Se promueve el trabajo en equipo y la colaboración entre compañeros.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_6',
+    texto: 'El/La profesor/a se expresa con claridad (voz, lenguaje).',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_7',
+    texto: 'El/La profesor/a responde mis preguntas de manera clara y respetuosa.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_8',
+    texto: 'El/La profesor/a muestra entusiasmo por los temas que enseña.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_9',
+    texto: 'Siento un ambiente de respeto y confianza en sus clases.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  {
+    id: 'des_est_10',
+    texto: 'El/La profesor/a me anima a pensar por mí mismo/a y a ser crítico/a.',
+    puntaje: 1,
+    criterio: 'III. DESARROLLO DE LAS CLASES Y ENSEÑANZA'
+  },
+  
+  // IV. EVALUACIÓN Y RETROALIMENTACIÓN (5 puntos)
+  {
+    id: 'eval_est_1',
+    texto: 'Las evaluaciones (exámenes, trabajos) se relacionan con lo que se enseña en clase.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_est_2',
+    texto: 'El/La profesor/a explica claramente cómo seremos evaluados.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_est_3',
+    texto: 'Considero que la forma de evaluar del profesor/a es justa.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_est_4',
+    texto: 'El/La profesor/a me da comentarios útiles (retroalimentación) sobre mis trabajos o mi desempeño.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  },
+  {
+    id: 'eval_est_5',
+    texto: 'El/La profesor/a entrega los resultados de las evaluaciones en un tiempo razonable.',
+    puntaje: 1,
+    criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
+  }
 ];
 
-// Subcriterios específicos para evaluación de estudiantes
-const subcriteriosEstudiante: SubcriterioTexto[] = [
-  { id: 'est_1', texto: 'El profesor explica claramente los temas', criterio: 'Claridad en la Enseñanza' },
-  { id: 'est_2', texto: 'Las clases están bien organizadas', criterio: 'Organización' },
-  { id: 'est_3', texto: 'El profesor resuelve las dudas de manera efectiva', criterio: 'Atención a Estudiantes' },
-  { id: 'est_4', texto: 'Utiliza ejemplos que ayudan a entender mejor', criterio: 'Metodología' },
-  { id: 'est_5', texto: 'Es puntual y cumple con los horarios', criterio: 'Puntualidad' },
-  { id: 'est_6', texto: 'Trata a todos los estudiantes con respeto', criterio: 'Respeto' },
-  { id: 'est_7', texto: 'Fomenta la participación en clase', criterio: 'Participación' },
-  { id: 'est_8', texto: 'Proporciona retroalimentación útil', criterio: 'Retroalimentación' },
-  { id: 'est_9', texto: 'Está disponible para consultas', criterio: 'Disponibilidad' },
-  { id: 'est_10', texto: 'Utiliza material didáctico apropiado', criterio: 'Recursos Didácticos' },
-  { id: 'est_11', texto: 'Evalúa de manera justa', criterio: 'Evaluación Justa' },
-  { id: 'est_12', texto: 'Muestra dominio del tema', criterio: 'Dominio del Contenido' },
-  { id: 'est_13', texto: 'Es innovador en sus métodos de enseñanza', criterio: 'Innovación' },
-  { id: 'est_14', texto: 'Mantiene un ambiente positivo en clase', criterio: 'Ambiente de Clase' },
-  { id: 'est_15', texto: 'Relaciona los temas con situaciones reales', criterio: 'Aplicación Práctica' },
-  { id: 'est_16', texto: 'Es paciente con los estudiantes', criterio: 'Paciencia' },
-  { id: 'est_17', texto: 'Motiva a los estudiantes a aprender', criterio: 'Motivación' },
-  { id: 'est_18', texto: 'Utiliza tecnología de manera efectiva', criterio: 'Uso de Tecnología' },
-  { id: 'est_19', texto: 'Adapta su enseñanza a diferentes ritmos de aprendizaje', criterio: 'Adaptabilidad' },
-  { id: 'est_20', texto: 'Recomendaría este profesor a otros estudiantes', criterio: 'Recomendación General' }
-];
-
-// Función para agrupar subcriterios por criterio
-const getCriteriosAgrupados = (subcriterios: SubcriterioTexto[]): Record<string, SubcriterioTexto[]> => {
-  return subcriterios.reduce((grupos, subcriterio) => {
-    const criterio = subcriterio.criterio;
-    if (!grupos[criterio]) {
-      grupos[criterio] = [];
+export const getCriteriosAgrupados = (subcriterios: Subcriterio[]) => {
+  return subcriterios.reduce((acc, subcriterio) => {
+    if (!acc[subcriterio.criterio]) {
+      acc[subcriterio.criterio] = [];
     }
-    grupos[criterio].push(subcriterio);
-    return grupos;
-  }, {} as Record<string, SubcriterioTexto[]>);
+    acc[subcriterio.criterio].push(subcriterio);
+    return acc;
+  }, {} as Record<string, Subcriterio[]>);
 };
-
-export { 
-  criteriosEvaluacion, 
-  subcriteriosAutoevaluacion, 
-  subcriteriosSupervision, 
-  subcriteriosEstudiante, 
-  getCriteriosAgrupados 
-};
-export type { CriterioEvaluacion, Subcriterio, SubcriterioTexto };
