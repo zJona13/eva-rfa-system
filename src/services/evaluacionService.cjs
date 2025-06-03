@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todas las evaluaciones con información relacionada
@@ -7,7 +8,6 @@ const getAllEvaluaciones = async () => {
       `SELECT e.idEvaluacion as id, e.fechaEvaluacion as date, 
       e.horaEvaluacion as time, e.puntaje as score, e.comentario as comments,
       e.tipo as type, e.estado as status,
-      e.subcriteriosRatings,
       u.nombre as evaluatorName, 
       CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluatedName,
       c.idColaborador as evaluatedId
@@ -16,13 +16,10 @@ const getAllEvaluaciones = async () => {
       JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
       ORDER BY e.fechaEvaluacion DESC`
     );
-    const evaluaciones = rows.map(row => ({
-      ...row,
-      subcriteriosRatings: row.subcriteriosRatings ? JSON.parse(row.subcriteriosRatings) : undefined
-    }));
+    
     return {
       success: true,
-      evaluaciones
+      evaluaciones: rows
     };
   } catch (error) {
     console.error('Error al obtener evaluaciones:', error);
@@ -37,7 +34,6 @@ const getEvaluacionesByEvaluador = async (userId) => {
       `SELECT e.idEvaluacion as id, e.fechaEvaluacion as date, 
       e.horaEvaluacion as time, e.puntaje as score, e.comentario as comments,
       e.tipo as type, e.estado as status,
-      e.subcriteriosRatings,
       CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluatedName,
       c.idColaborador as evaluatedId
       FROM EVALUACION e
@@ -46,14 +42,10 @@ const getEvaluacionesByEvaluador = async (userId) => {
       ORDER BY e.fechaEvaluacion DESC`,
       [userId]
     );
-    // Parsear subcriteriosRatings
-    const evaluaciones = rows.map(row => ({
-      ...row,
-      subcriteriosRatings: row.subcriteriosRatings ? JSON.parse(row.subcriteriosRatings) : undefined
-    }));
+    
     return {
       success: true,
-      evaluaciones
+      evaluaciones: rows
     };
   } catch (error) {
     console.error('Error al obtener evaluaciones por evaluador:', error);
@@ -68,7 +60,6 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
       `SELECT e.idEvaluacion as id, e.fechaEvaluacion as date, 
       e.horaEvaluacion as time, e.puntaje as score, e.comentario as comments,
       e.tipo as type, e.estado as status,
-      e.subcriteriosRatings,
       u.nombre as evaluatorName
       FROM EVALUACION e
       JOIN USUARIO u ON e.idUsuario = u.idUsuario
@@ -76,13 +67,10 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
       ORDER BY e.fechaEvaluacion DESC`,
       [colaboradorId]
     );
-    const evaluaciones = rows.map(row => ({
-      ...row,
-      subcriteriosRatings: row.subcriteriosRatings ? JSON.parse(row.subcriteriosRatings) : undefined
-    }));
+    
     return {
       success: true,
-      evaluaciones
+      evaluaciones: rows
     };
   } catch (error) {
     console.error('Error al obtener evaluaciones por colaborador:', error);
@@ -90,12 +78,14 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
   }
 };
 
-// Crear una nueva evaluación - ahora guarda subcriteriosRatings
+// Crear una nueva evaluación - SIMPLIFICADO (sin subcriterios en tablas separadas)
 const createEvaluacion = async (evaluacionData) => {
   try {
     console.log('Creating evaluacion with data:', evaluacionData);
+    
+    // Crear la evaluación principal - solo en la tabla EVALUACION
     const [evaluacionResult] = await pool.execute(
-      'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntaje, comentario, tipo, estado, idUsuario, idColaborador, subcriteriosRatings) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntaje, comentario, tipo, estado, idUsuario, idColaborador) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
         evaluacionData.date,
         evaluacionData.time,
@@ -104,12 +94,13 @@ const createEvaluacion = async (evaluacionData) => {
         evaluacionData.type,
         evaluacionData.status || 'Completada',
         evaluacionData.evaluatorId,
-        evaluacionData.evaluatedId,
-        evaluacionData.subcriteriosRatings ? JSON.stringify(evaluacionData.subcriteriosRatings) : null
+        evaluacionData.evaluatedId
       ]
     );
+    
     const evaluacionId = evaluacionResult.insertId;
     console.log('Evaluacion created with ID:', evaluacionId);
+    
     return {
       success: true,
       evaluacionId: evaluacionId,
@@ -121,11 +112,12 @@ const createEvaluacion = async (evaluacionData) => {
   }
 };
 
-// Actualizar una evaluación - ahora guarda subcriteriosRatings
+// Actualizar una evaluación - SIMPLIFICADO
 const updateEvaluacion = async (evaluacionId, evaluacionData) => {
   try {
+    // Actualizar solo la evaluación principal
     await pool.execute(
-      'UPDATE EVALUACION SET fechaEvaluacion = ?, horaEvaluacion = ?, puntaje = ?, comentario = ?, tipo = ?, estado = ?, subcriteriosRatings = ? WHERE idEvaluacion = ?',
+      'UPDATE EVALUACION SET fechaEvaluacion = ?, horaEvaluacion = ?, puntaje = ?, comentario = ?, tipo = ?, estado = ? WHERE idEvaluacion = ?',
       [
         evaluacionData.date,
         evaluacionData.time,
@@ -133,10 +125,10 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
         evaluacionData.comments,
         evaluacionData.type,
         evaluacionData.status,
-        evaluacionData.subcriteriosRatings ? JSON.stringify(evaluacionData.subcriteriosRatings) : null,
         evaluacionId
       ]
     );
+    
     return {
       success: true,
       message: 'Evaluación actualizada exitosamente'
@@ -164,7 +156,6 @@ const deleteEvaluacion = async (evaluacionId) => {
 };
 
 // Obtener colaboradores disponibles para evaluar con información completa
-// CORREGIDO: Solo mostrar colaboradores con rol "Docente" o "Evaluado"
 const getColaboradoresParaEvaluar = async () => {
   try {
     const [rows] = await pool.execute(
@@ -174,13 +165,9 @@ const getColaboradoresParaEvaluar = async () => {
       tc.nombre as roleName
       FROM COLABORADOR c
       JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-      WHERE c.estado = 1 
-      AND tc.nombre IN ('Docente', 'Evaluado')
+      WHERE c.estado = 1
       ORDER BY c.nombres, c.apePat`
     );
-    
-    console.log('Colaboradores encontrados:', rows);
-    console.log('Cantidad de colaboradores:', rows.length);
     
     return {
       success: true,
