@@ -24,6 +24,12 @@ CREATE TABLE TIPO_REPORTE (
     descripcion VARCHAR(255)
 );
 
+CREATE TABLE AREA (
+    idArea INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    nombre VARCHAR(200) NOT NULL,
+    descripcion VARCHAR(255)
+);
+
 CREATE TABLE CONTRATO (
     idContrato INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
     fechaInicio DATE,
@@ -57,8 +63,24 @@ CREATE TABLE USUARIO (
     vigencia TINYINT(3),
     idTipoUsu INT(10),
     idColaborador INT(10) UNIQUE,
+    idArea INT(10),
+    FOREIGN KEY (idArea) REFERENCES AREA(idArea) ON DELETE CASCADE,
     FOREIGN KEY (idTipoUsu) REFERENCES TIPO_USUARIO(idTipoUsu) ON DELETE CASCADE,
     FOREIGN KEY (idColaborador) REFERENCES COLABORADOR(idColaborador) ON DELETE CASCADE
+);
+
+-- Nueva tabla ASIGNACION según el diagrama
+CREATE TABLE ASIGNACION (
+    idAsignacion INT(10) NOT NULL AUTO_INCREMENT PRIMARY KEY,
+    idUsuario INT(10) NOT NULL,
+    periodo INT(10) NOT NULL,
+    fecha_inicio DATE NOT NULL,
+    fecha_fin DATE NOT NULL,
+    estado VARCHAR(50) DEFAULT 'Abierta',
+    idArea INT(10) NOT NULL,
+    subarea TEXT NULL,
+    FOREIGN KEY (idArea) REFERENCES AREA(idArea) ON DELETE CASCADE,
+    FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE
 );
 
 CREATE TABLE EVALUACION (
@@ -73,6 +95,15 @@ CREATE TABLE EVALUACION (
     idColaborador INT(10) NOT NULL,
     FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario) ON DELETE CASCADE,
     FOREIGN KEY (idColaborador) REFERENCES COLABORADOR(idColaborador) ON DELETE CASCADE
+);
+
+-- Nueva tabla DETALLE_ASIGNACION según el diagrama
+CREATE TABLE DETALLE_ASIGNACION (
+    idEvaluacion INT(10) NOT NULL,
+    idAsignacion INT(10) NOT NULL,
+    PRIMARY KEY (idEvaluacion, idAsignacion),
+    FOREIGN KEY (idEvaluacion) REFERENCES EVALUACION(idEvaluacion) ON DELETE CASCADE,
+    FOREIGN KEY (idAsignacion) REFERENCES ASIGNACION(idAsignacion) ON DELETE CASCADE
 );
 
 CREATE TABLE REPORTE (
@@ -116,6 +147,7 @@ CREATE TABLE NOTIFICACION (
     FOREIGN KEY (idIncidencia) REFERENCES INCIDENCIA(idIncidencia) ON DELETE SET NULL
 );
 
+-- Datos iniciales
 INSERT INTO TIPO_USUARIO (nombre) VALUES
 ('Administrador'), ('Evaluador'), ('Evaluado'), ('Estudiante');
 
