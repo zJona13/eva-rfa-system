@@ -117,7 +117,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
       toast.warning('Puedes guardar tu avance, pero debes calificar todos los subcriterios para finalizar.');
     }
     const now = new Date();
-    const evaluacionDataToSend: any = {
+    const evaluacionDataToSend = {
       type: 'Estudiante-Docente',
       evaluatorId: user?.id,
       evaluatedId: parseInt(selectedColaborador),
@@ -128,7 +128,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
       status: 'Pendiente',
       subcriteriosRatings
     };
-    // Add id if editing existing evaluation
+    // Forzar el uso de id si está presente
     if (evaluacionData && evaluacionData.id) {
       evaluacionDataToSend.id = evaluacionData.id;
     }
@@ -189,7 +189,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
                 </div>
                 <div>
                   <Label>Asignatura/Módulo</Label>
-                  <Input placeholder="Nombre de la asignatura" {...form.register('comentarios')} />
+                  <Input placeholder="Nombre de la asignatura" {...form.register('asignatura')} />
                 </div>
               </div>
             </CardContent>

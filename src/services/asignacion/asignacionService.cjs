@@ -93,13 +93,13 @@ const getAllAsignaciones = async () => {
     
     console.log('=== RESULTADO CONSULTA ASIGNACIONES ===');
     console.log('Total filas encontradas:', rows.length);
+    console.log('Primera fila (si existe):', rows[0]);
     
     if (rows.length === 0) {
+      console.log('=== RETORNANDO ARRAY VACÍO ===');
       return {
         success: true,
-        data: {
-          asignaciones: []
-        }
+        asignaciones: []
       };
     }
     
@@ -116,17 +116,20 @@ const getAllAsignaciones = async () => {
       duracionDias: row.duracionDias || 0
     }));
     
+    console.log('=== ASIGNACIONES ANTES DE ESTADÍSTICAS ===');
+    console.log('Cantidad:', asignaciones.length);
+    console.log('Primera asignación transformada:', asignaciones[0]);
+    
     // Add statistics to all assignments
     const asignacionesConEstadisticas = await addStatsToAsignaciones(asignaciones);
     
     console.log('=== ASIGNACIONES PROCESADAS ===');
     console.log('Total asignaciones procesadas:', asignacionesConEstadisticas.length);
+    console.log('Primera asignación con estadísticas:', asignacionesConEstadisticas[0]);
     
     return {
       success: true,
-      data: {
-        asignaciones: asignacionesConEstadisticas
-      }
+      asignaciones: asignacionesConEstadisticas
     };
   } catch (error) {
     console.error('=== ERROR AL OBTENER ASIGNACIONES ===');

@@ -784,45 +784,6 @@ app.get('/api/colaboradores-para-evaluar', authenticateToken, async (req, res) =
   }
 });
 
-// Ruta para obtener evaluaciones pendientes por evaluador
-app.get('/evaluaciones/pendientes/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await evaluacionService.getEvaluacionesPendientesByEvaluador(userId);
-    
-    if (result.success) {
-      res.json({
-        success: true,
-        data: { evaluaciones: result.evaluaciones }
-      });
-    } else {
-      res.status(400).json(result);
-    }
-  } catch (error) {
-    console.error('Error en /evaluaciones/pendientes/:userId:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
-});
-
-// Ruta para completar una evaluación
-app.post('/evaluaciones/:id/complete', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const evaluacionData = req.body;
-    
-    const result = await evaluacionService.completeEvaluacion(id, evaluacionData);
-    
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  } catch (error) {
-    console.error('Error en /evaluaciones/:id/complete:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
-});
-
 // ========================
 // CRITERIOS ROUTES
 // ========================

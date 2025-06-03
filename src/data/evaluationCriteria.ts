@@ -1,3 +1,4 @@
+
 // Criterios y subcriterios hardcodeados para las evaluaciones
 
 export interface Subcriterio {
@@ -5,12 +6,6 @@ export interface Subcriterio {
   texto: string;
   puntaje: number;
   criterio: string;
-}
-
-export interface CriterioEvaluacion {
-  nombre: string;
-  descripcion: string;
-  puntajeMaximo: number;
 }
 
 // Subcriterios para Ficha de Supervisión de Aprendizaje
@@ -405,25 +400,6 @@ export const subcriteriosEstudiante: Subcriterio[] = [
     criterio: 'IV. EVALUACIÓN Y RETROALIMENTACIÓN'
   }
 ];
-
-// Add the missing export for criteriosEvaluacion
-export const criteriosEvaluacion: Record<string, CriterioEvaluacion[]> = {
-  'Autoevaluacion': [
-    { nombre: 'Planificación', descripcion: 'Organización y planificación del curso', puntajeMaximo: 5 },
-    { nombre: 'Metodología', descripcion: 'Aplicación de metodologías de enseñanza', puntajeMaximo: 10 },
-    { nombre: 'Evaluación', descripcion: 'Procesos de evaluación y retroalimentación', puntajeMaximo: 5 }
-  ],
-  'Evaluador-Evaluado': [
-    { nombre: 'Desempeño Docente', descripcion: 'Calidad del desempeño en el aula', puntajeMaximo: 10 },
-    { nombre: 'Metodología', descripcion: 'Uso de metodologías apropiadas', puntajeMaximo: 5 },
-    { nombre: 'Evaluación', descripcion: 'Efectividad de la evaluación', puntajeMaximo: 5 }
-  ],
-  'Estudiante-Docente': [
-    { nombre: 'Organización', descripcion: 'Organización del curso y materiales', puntajeMaximo: 5 },
-    { nombre: 'Enseñanza', descripcion: 'Calidad de la enseñanza', puntajeMaximo: 10 },
-    { nombre: 'Evaluación', descripcion: 'Justicia y claridad en la evaluación', puntajeMaximo: 5 }
-  ]
-};
 
 export const getCriteriosAgrupados = (subcriterios: Subcriterio[]) => {
   return subcriterios.reduce((acc, subcriterio) => {
