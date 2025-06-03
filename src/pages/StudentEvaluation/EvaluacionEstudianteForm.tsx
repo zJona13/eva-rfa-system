@@ -31,8 +31,11 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
   const form = useForm({
     defaultValues: evaluacionData ? {
       comentarios: evaluacionData.comments || '',
-      // Aquí puedes mapear otros campos si los tienes en el formulario
-    } : {}
+      asignatura: evaluacionData.asignatura || ''
+    } : {
+      comentarios: '',
+      asignatura: ''
+    }
   });
   const { apiRequest } = useApiWithToken();
   const [selectedColaborador, setSelectedColaborador] = useState<string>(evaluacionData ? String(evaluacionData.evaluatedId) : '');
@@ -117,7 +120,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
       toast.warning('Puedes guardar tu avance, pero debes calificar todos los subcriterios para finalizar.');
     }
     const now = new Date();
-    const evaluacionDataToSend = {
+    const evaluacionDataToSend: any = {
       type: 'Estudiante-Docente',
       evaluatorId: user?.id,
       evaluatedId: parseInt(selectedColaborador),
@@ -128,10 +131,12 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
       status: 'Pendiente',
       subcriteriosRatings
     };
-    // Forzar el uso de id si está presente
+    
+    // Solo agregar id si estamos editando
     if (evaluacionData && evaluacionData.id) {
       evaluacionDataToSend.id = evaluacionData.id;
     }
+    
     saveEvaluacionMutation.mutate(evaluacionDataToSend);
   };
 
