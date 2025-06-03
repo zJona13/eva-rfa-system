@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -20,7 +19,6 @@ import Incidents from "./pages/Incidents/Index";
 import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
 import Roles from "./pages/Roles/Index";
 import Reports from "./pages/Reports/Index";
-import AsignacionEvaluaciones from "./pages/AsignacionEvaluaciones/Index";
 
 // Layout and Protection
 import MainLayout from "./components/Layout/MainLayout";
@@ -78,16 +76,6 @@ const App = () => (
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
                         <ChecklistEvaluation />
-                      </ProtectedRoute>
-                    } 
-                  />
-                  
-                  {/* Asignación de Evaluaciones - Solo admin */}
-                  <Route 
-                    path="/asignacion-evaluaciones" 
-                    element={
-                      <ProtectedRoute allowedRoles={['admin']}>
-                        <AsignacionEvaluaciones />
                       </ProtectedRoute>
                     } 
                   />

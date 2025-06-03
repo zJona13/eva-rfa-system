@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from 'react';
+
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -25,47 +26,39 @@ interface EvaluacionEstudianteFormProps {
   onCancel: () => void;
 }
 
-const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evaluacionData?: any }> = ({ onCancel, evaluacionData }) => {
+const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onCancel }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const form = useForm({
-    defaultValues: evaluacionData ? {
-      comentarios: evaluacionData.comments || '',
-      // Aquí puedes mapear otros campos si los tienes en el formulario
-    } : {}
-  });
+  const form = useForm();
   const { apiRequest } = useApiWithToken();
-  const [selectedColaborador, setSelectedColaborador] = useState<string>(evaluacionData ? String(evaluacionData.evaluatedId) : '');
-  // Precargar ratings solo una vez al abrir en edición
-  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(() => {
-    if (evaluacionData && evaluacionData.subcriteriosRatings) {
-      return evaluacionData.subcriteriosRatings;
-    }
-    return {};
-  });
-  const [ratingsInitialized, setRatingsInitialized] = useState(false);
+  const [selectedColaborador, setSelectedColaborador] = useState<string>('');
+  const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>({});
 
-  // Fetch colaboradores solo si NO es edición
+  // Fetch colaboradores
   const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
     queryKey: ['colaboradores-para-evaluar'],
     queryFn: () => apiRequest('/colaboradores-para-evaluar'),
-    enabled: !evaluacionData
   });
+
+  const createEvaluacionMutation = useMutation({
+    mutationFn: (evaluacionData: any) => apiRequest('/evaluaciones', {
+      method: 'POST',
+      body: evaluacionData
+    }),
+    onSuccess: () => {
+      toast.success('Evaluación creada exitosamente');
+      queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
+      onCancel();
+    },
+    onError: (error: any) => {
+      toast.error(`Error al crear evaluación: ${error.message}`);
+    },
+  });
+
+  const colaboradores: Colaborador[] = colaboradoresData?.data?.colaboradores || [];
 
   // Agrupar subcriterios por criterio
   const criteriosAgrupados = getCriteriosAgrupados(subcriteriosEstudiante);
-
-  // Precargar ratings solo una vez al abrir en edición
-  useEffect(() => {
-    if (
-      evaluacionData &&
-      evaluacionData.subcriteriosRatings &&
-      !ratingsInitialized
-    ) {
-      setSubcriteriosRatings(evaluacionData.subcriteriosRatings);
-      setRatingsInitialized(true);
-    }
-  }, [evaluacionData, ratingsInitialized]);
 
   const handleSubcriterioRating = (subcriterioId: string, rating: number) => {
     setSubcriteriosRatings(prev => ({
@@ -78,64 +71,33 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
     return Object.values(subcriteriosRatings).reduce((sum, rating) => sum + rating, 0);
   };
 
-  // Mutación para crear o actualizar evaluación
-  const saveEvaluacionMutation = useMutation({
-    mutationFn: (evaluacionDataToSend: any) => {
-      if (evaluacionData && evaluacionData.id) {
-        // Actualizar evaluación existente
-        return apiRequest(`/evaluaciones/${evaluacionData.id}`, {
-          method: 'PUT',
-          body: evaluacionDataToSend
-        });
-      } else {
-        // Crear nueva evaluación
-        return apiRequest('/evaluaciones', {
-          method: 'POST',
-          body: evaluacionDataToSend
-        });
-      }
-    },
-    onSuccess: () => {
-      toast.success('Evaluación guardada exitosamente');
-      queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
-      onCancel();
-    },
-    onError: (error: any) => {
-      toast.error(`Error al guardar evaluación: ${error.message}`);
-    },
-  });
-
-  const colaboradores: Colaborador[] = colaboradoresData?.data?.colaboradores || [];
-
   const onSubmit = (data: any) => {
     if (!selectedColaborador) {
       toast.error('Debe seleccionar un colaborador para evaluar');
       return;
     }
-    // Permitir guardar aunque falten subcriterios, pero mostrar advertencia
+
     if (Object.keys(subcriteriosRatings).length !== subcriteriosEstudiante.length) {
-      toast.warning('Puedes guardar tu avance, pero debes calificar todos los subcriterios para finalizar.');
+      toast.error('Debe calificar todos los subcriterios');
+      return;
     }
+
     const now = new Date();
-    const evaluacionDataToSend = {
-      type: 'Estudiante-Docente',
+    const evaluacionData = {
+      type: 'Evaluacion estudiante-docente',
       evaluatorId: user?.id,
       evaluatedId: parseInt(selectedColaborador),
-      date: evaluacionData ? evaluacionData.date : now.toISOString().split('T')[0],
-      time: evaluacionData ? evaluacionData.time : now.toTimeString().split(' ')[0],
+      date: now.toISOString().split('T')[0],
+      time: now.toTimeString().split(' ')[0],
       score: calculateTotalScore(),
       comments: data.comentarios || null,
-      status: 'Pendiente',
-      subcriteriosRatings
+      status: 'Completada'
     };
-    // Forzar el uso de id si está presente
-    if (evaluacionData && evaluacionData.id) {
-      evaluacionDataToSend.id = evaluacionData.id;
-    }
-    saveEvaluacionMutation.mutate(evaluacionDataToSend);
+
+    createEvaluacionMutation.mutate(evaluacionData);
   };
 
-  if (isLoadingColaboradores && !evaluacionData) {
+  if (isLoadingColaboradores) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -164,28 +126,24 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
             <CardContent className="space-y-4">
               <div>
                 <Label htmlFor="colaborador">Profesor/a a evaluar</Label>
-                {evaluacionData ? (
-                  <div className="px-3 py-2 rounded bg-muted text-foreground font-semibold">{evaluacionData.evaluatedName}</div>
-                ) : (
-                  <Select value={selectedColaborador} onValueChange={setSelectedColaborador}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Selecciona un profesor/a" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {colaboradores.map((colaborador) => (
-                        <SelectItem key={colaborador.id} value={colaborador.id.toString()}>
-                          {colaborador.fullName} - {colaborador.roleName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                )}
+                <Select value={selectedColaborador} onValueChange={setSelectedColaborador}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un profesor/a" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {colaboradores.map((colaborador) => (
+                      <SelectItem key={colaborador.id} value={colaborador.id.toString()}>
+                        {colaborador.fullName} - {colaborador.roleName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label>Fecha</Label>
-                  <Input value={evaluacionData ? new Date(evaluacionData.date).toLocaleDateString() : new Date().toLocaleDateString()} disabled />
+                  <Input value={new Date().toLocaleDateString()} disabled />
                 </div>
                 <div>
                   <Label>Asignatura/Módulo</Label>
@@ -327,10 +285,10 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps & { evalu
             </Button>
             <Button 
               type="submit" 
-              disabled={saveEvaluacionMutation.isPending || !selectedColaborador}
+              disabled={createEvaluacionMutation.isPending || !selectedColaborador}
               className="flex-1 bg-gradient-to-r from-secondary to-secondary/80 hover:from-secondary/90 hover:to-secondary/70"
             >
-              {saveEvaluacionMutation.isPending ? 'Guardando...' : 'Guardar Evaluación'}
+              {createEvaluacionMutation.isPending ? 'Guardando...' : 'Guardar Evaluación'}
             </Button>
           </div>
         </form>
