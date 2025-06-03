@@ -33,6 +33,7 @@ const userFormSchema = z.object({
   confirmPassword: z.string().optional(),
   roleId: z.string().min(1, { message: 'Seleccione un rol' }),
   colaboradorId: z.string().optional(), // Cambiamos para permitir valor especial
+  areaId: z.string().optional(), // Nuevo campo para área
   active: z.boolean().default(true),
 }).refine(data => !data.password || data.password === data.confirmPassword, {
   message: "Las contraseñas no coinciden",
@@ -52,6 +53,12 @@ interface Colaborador {
   fullName: string;
 }
 
+interface Area {
+  id: number;
+  name: string;
+  descripcion: string;
+}
+
 interface UserDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -61,9 +68,11 @@ interface UserDialogProps {
     email?: string;
     roleId?: number;
     colaboradorId?: number;
+    areaId?: number; // Nuevo campo
     active?: boolean;
   } | null;
   roles: Role[];
+  areas: Area[]; // Nuevo prop
   onSubmit: (values: UserFormValues & { id?: number }) => void;
   isSubmitting: boolean;
 }
@@ -73,6 +82,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
   onOpenChange,
   userData,
   roles,
+  areas,
   onSubmit,
   isSubmitting
 }) => {
@@ -88,6 +98,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
       confirmPassword: '',
       roleId: '',
       colaboradorId: 'none', // Valor por defecto para "Sin colaborador"
+      areaId: 'none', // Valor por defecto
       active: true,
     },
   });
@@ -126,6 +137,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
         confirmPassword: '',
         roleId: userData?.roleId ? String(userData.roleId) : '',
         colaboradorId: userData?.colaboradorId ? String(userData.colaboradorId) : 'none',
+        areaId: userData?.areaId ? String(userData.areaId) : 'none',
         active: userData?.active !== undefined ? userData.active : true,
       });
       
@@ -138,6 +150,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
     const processedValues = {
       ...values,
       colaboradorId: values.colaboradorId === 'none' ? '' : values.colaboradorId,
+      areaId: values.areaId === 'none' ? null : values.areaId,
       id: userData?.id
     };
     
@@ -278,6 +291,31 @@ const UserDialog: React.FC<UserDialogProps> = ({
                           ))}
                         </>
                       )}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="areaId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Área</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value || "none"}>
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleccione un área" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      <SelectItem value="none">Sin área</SelectItem>
+                      {areas.map((area) => (
+                        <SelectItem key={area.id} value={String(area.id)}>
+                          {area.name}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                   <FormMessage />

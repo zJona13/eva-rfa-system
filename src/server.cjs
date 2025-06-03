@@ -12,6 +12,7 @@ const criteriosService = require('./services/criteriosService.cjs');
 const incidenciaService = require('./services/incidenciaService.cjs');
 const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
+const areaService = require('./services/areaService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3306;
@@ -1357,6 +1358,56 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
       success: false,
       message: 'Error al obtener las evaluaciones recientes'
     });
+  }
+});
+
+// ========================
+// RUTAS DE ÁREA (PROTEGIDAS)
+// ========================
+
+app.get('/api/areas', authenticateToken, async (req, res) => {
+  const result = await areaService.getAllAreas();
+  if (result.success) {
+    res.json({ success: true, areas: result.areas });
+  } else {
+    res.status(500).json(result);
+  }
+});
+
+app.post('/api/areas', authenticateToken, async (req, res) => {
+  const { name, descripcion } = req.body;
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'El nombre es requerido' });
+  }
+  const result = await areaService.createArea(name, descripcion || '');
+  if (result.success) {
+    res.json(result);
+  } else {
+    res.status(500).json(result);
+  }
+});
+
+app.put('/api/areas/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const { name, descripcion } = req.body;
+  if (!name) {
+    return res.status(400).json({ success: false, message: 'El nombre es requerido' });
+  }
+  const result = await areaService.updateArea(id, name, descripcion || '');
+  if (result.success) {
+    res.json(result);
+  } else {
+    res.status(500).json(result);
+  }
+});
+
+app.delete('/api/areas/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const result = await areaService.deleteArea(id);
+  if (result.success) {
+    res.json(result);
+  } else {
+    res.status(500).json(result);
   }
 });
 
