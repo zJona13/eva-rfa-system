@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -40,16 +39,16 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 w-72 border-r bg-sidebar pt-16 transition-transform duration-300 md:translate-x-0 md:z-0",
+          "fixed top-0 bottom-0 left-0 z-50 w-64 md:w-72 border-r bg-sidebar pt-16 transition-transform duration-300 md:translate-x-0 md:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
         <div className="flex flex-col h-full overflow-hidden">
-          <div className="p-6">
-            <h2 className="text-lg font-medium text-sidebar-foreground">
+          <div className="p-4 md:p-6">
+            <h2 className="text-base md:text-lg font-medium text-sidebar-foreground">
               Sistema de Evaluación para Desempeño del Personal
             </h2>
-            <p className="text-sm mt-3 text-sidebar-foreground/70">
+            <p className="text-xs md:text-sm mt-2 md:mt-3 text-sidebar-foreground/70">
               {userRole === 'admin' ? 'Administrador' : 
                userRole === 'evaluator' ? 'Evaluador' : 
                userRole === 'evaluated' ? 'Evaluado' : 

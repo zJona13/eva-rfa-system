@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Button } from '@/components/ui/button';
 import { LogOut, User, Moon, Sun } from 'lucide-react';
@@ -9,7 +8,7 @@ import { toast } from 'sonner';
 import NotificacionesBadge from '@/components/NotificacionesBadge';
 import LanguageSelector from '@/components/LanguageSelector';
 
-const Header = () => {
+const Header = ({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => void }) => {
   const { user, logout } = useAuth();
   const { theme, setTheme } = useTheme();
   const { t } = useLanguage();
@@ -29,8 +28,17 @@ const Header = () => {
 
   return (
     <header className="h-14 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 fixed top-0 left-0 right-0 z-40">
-      <div className="flex h-14 items-center justify-between px-4 md:pl-76">
+      <div className="flex h-14 items-center justify-between px-2 sm:px-4 md:pl-76">
         <div className="flex items-center space-x-2 min-w-0">
+          <button
+            className="md:hidden mr-2 p-2 rounded focus:outline-none focus:ring-2 focus:ring-primary"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Abrir menú"
+          >
+            <svg className="h-6 w-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
           <h1 className="text-base md:text-lg font-semibold truncate">
             {t('header.systemTitle')}
           </h1>

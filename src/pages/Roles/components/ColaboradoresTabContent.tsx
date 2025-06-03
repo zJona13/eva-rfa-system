@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -221,8 +220,8 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
             </p>
           </div>
         ) : (
-          <div className="overflow-auto max-h-[500px]">
-            <Table>
+          <div className="overflow-x-auto">
+            <Table className="min-w-full">
               <TableHeader className="sticky top-0 bg-background z-10">
                 <TableRow>
                   <TableHead>Nombre</TableHead>

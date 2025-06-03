@@ -252,87 +252,89 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nombre</TableHead>
-                <TableHead>Correo electrónico</TableHead>
-                <TableHead>Rol</TableHead>
-                <TableHead>Colaborador</TableHead>
-                <TableHead>Área</TableHead>
-                <TableHead>Estado</TableHead>
-                <TableHead className="text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {isLoading ? (
+          <div className="overflow-x-auto">
+            <Table className="min-w-full">
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    Cargando usuarios...
-                  </TableCell>
+                  <TableHead>Nombre</TableHead>
+                  <TableHead>Correo electrónico</TableHead>
+                  <TableHead>Rol</TableHead>
+                  <TableHead>Colaborador</TableHead>
+                  <TableHead>Área</TableHead>
+                  <TableHead>Estado</TableHead>
+                  <TableHead className="text-right">Acciones</TableHead>
                 </TableRow>
-              ) : filteredUsers.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={7} className="h-24 text-center">
-                    No se encontraron resultados.
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredUsers.map((user) => (
-                  <TableRow key={user.id}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.email}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.role === 'Administrador' ? 'destructive' : 'default'}>
-                        {user.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {user.colaboradorName ? (
-                        <span className="text-sm">{user.colaboradorName}</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Sin asignar</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      {user.areaName ? (
-                        <span className="text-sm">{user.areaName}</span>
-                      ) : (
-                        <span className="text-sm text-muted-foreground">Sin área</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <Switch 
-                        checked={user.active} 
-                        onCheckedChange={() => toggleUserStatus(user)}
-                      />
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-muted-foreground hover:text-foreground"
-                          onClick={() => handleEditUser(user)}
-                        >
-                          <Pencil className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="text-muted-foreground hover:text-destructive"
-                          onClick={() => handleDeleteUser(user.id)}
-                          disabled={user.role === 'Administrador'}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
+              </TableHeader>
+              <TableBody>
+                {isLoading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      Cargando usuarios...
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
+                ) : filteredUsers.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-24 text-center">
+                      No se encontraron resultados.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  filteredUsers.map((user) => (
+                    <TableRow key={user.id}>
+                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell>{user.email}</TableCell>
+                      <TableCell>
+                        <Badge variant={user.role === 'Administrador' ? 'destructive' : 'default'}>
+                          {user.role}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {user.colaboradorName ? (
+                          <span className="text-sm">{user.colaboradorName}</span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Sin asignar</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {user.areaName ? (
+                          <span className="text-sm">{user.areaName}</span>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Sin área</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Switch 
+                          checked={user.active} 
+                          onCheckedChange={() => toggleUserStatus(user)}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-muted-foreground hover:text-foreground"
+                            onClick={() => handleEditUser(user)}
+                          >
+                            <Pencil className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            className="text-muted-foreground hover:text-destructive"
+                            onClick={() => handleDeleteUser(user.id)}
+                            disabled={user.role === 'Administrador'}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
 

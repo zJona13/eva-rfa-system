@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,18 +23,18 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   
   return (
     <Card className="h-full overflow-hidden transition-all hover:shadow-md">
-      <CardHeader className="pb-2">
-        <div className={cn("p-2 w-fit rounded-lg mb-3", color)}>
+      <CardHeader className="pb-1 sm:pb-2">
+        <div className={cn("p-2 w-fit rounded-lg mb-2 sm:mb-3", color)}>
           {icon}
         </div>
-        <CardTitle className="text-lg">{title}</CardTitle>
-        <CardDescription>{description}</CardDescription>
+        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
+        <CardDescription className="text-xs sm:text-sm">{description}</CardDescription>
       </CardHeader>
-      <CardFooter className="pt-2">
+      <CardFooter className="pt-1 sm:pt-2">
         <Button 
           variant="outline" 
           onClick={() => navigate(href)}
-          className="w-full justify-start"
+          className="w-full justify-start text-xs sm:text-sm"
         >
           Acceder
         </Button>

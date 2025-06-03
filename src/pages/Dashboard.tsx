@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +10,7 @@ import StatCard from '@/components/Dashboard/StatCard';
 import ModuleCard from '@/components/Dashboard/ModuleCard';
 import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
 import EvaluationsChart from '@/components/Dashboard/EvaluationsChart';
+import { Badge } from '@/components/ui/badge';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -58,7 +58,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats overview */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
         {isEvaluated ? (
           // Estadísticas para docentes evaluados
           <>
@@ -142,18 +142,16 @@ const Dashboard = () => {
       </div>
 
       {/* Recent evaluations, chart and modules */}
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <div className="space-y-6">
           {/* Recent Evaluations */}
           <RecentEvaluations />
-          
           {/* Evaluations Chart */}
           <EvaluationsChart />
         </div>
-
         {/* Module access */}
         <div className="space-y-4">
-          <div className="grid gap-4">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
             {filteredModules.slice(0, 6).map((module) => (
               <ModuleCard
                 key={module.id}
