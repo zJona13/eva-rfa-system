@@ -1412,7 +1412,9 @@ app.get('/api/asignaciones/areas', authenticateToken, async (req, res) => {
 
 app.post('/api/asignaciones', authenticateToken, async (req, res) => {
   try {
-    const result = await asignacionService.createAsignacion(req.body);
+    // Agregar el idUsuario autenticado a los datos de la asignación
+    const asignacionData = { ...req.body, idUsuario: req.user.id };
+    const result = await asignacionService.createAsignacion(asignacionData);
     
     if (result.success) {
       res.json({

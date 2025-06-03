@@ -23,12 +23,32 @@ const createAsignacion = async (asignacionData) => {
       };
     }
     
+    // Log de los valores antes del INSERT
+    console.log('Valores para INSERT:', {
+      idUsuario: asignacionData.idUsuario,
+      periodo: new Date().getFullYear(),
+      fechaInicio: asignacionData.fechaInicio,
+      fechaFin: asignacionData.fechaFin,
+      estado: 'Abierta',
+      areaId: asignacionData.areaId
+    });
+    // Validación manual para evitar undefined
+    if (
+      asignacionData.idUsuario === undefined ||
+      asignacionData.fechaInicio === undefined ||
+      asignacionData.fechaFin === undefined ||
+      asignacionData.areaId === undefined
+    ) {
+      await connection.rollback();
+      throw new Error('Uno o más campos requeridos para la asignación están undefined. Revisa los datos enviados.');
+    }
+    
     // Create the main assignment with 'Abierta' status
     const [asignacionResult] = await connection.execute(
       `INSERT INTO ASIGNACION (idUsuario, periodo, fecha_inicio, fecha_fin, estado, idArea) 
        VALUES (?, ?, ?, ?, ?, ?)`,
       [
-        1, // Default admin user
+        asignacionData.idUsuario,
         new Date().getFullYear(),
         asignacionData.fechaInicio,
         asignacionData.fechaFin,

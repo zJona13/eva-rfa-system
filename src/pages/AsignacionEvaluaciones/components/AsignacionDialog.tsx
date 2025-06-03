@@ -1,4 +1,3 @@
-
 import React, { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -110,13 +109,12 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
     if (asignacionData) {
       const fechaInicio = asignacionData.fechaInicio ? format(new Date(asignacionData.fechaInicio), 'yyyy-MM-dd') : '';
       const fechaFin = asignacionData.fechaFin ? format(new Date(asignacionData.fechaFin), 'yyyy-MM-dd') : '';
-      
       form.reset({
         fechaInicio,
         fechaFin,
         horaInicio: asignacionData.horaInicio || '08:00',
         horaFin: asignacionData.horaFin || '18:00',
-        areaId: asignacionData.areaId?.toString() || '',
+        areaId: asignacionData.areaId?.toString() || (areas[0]?.id?.toString() || ''),
         descripcion: asignacionData.descripcion || '',
       });
     } else {
@@ -125,18 +123,18 @@ const AsignacionDialog: React.FC<AsignacionDialogProps> = ({
         fechaFin: '',
         horaInicio: '08:00',
         horaFin: '18:00',
-        areaId: '',
+        areaId: areas[0]?.id?.toString() || '',
         descripcion: '',
       });
     }
-  }, [asignacionData, form, today]);
+  }, [asignacionData, form, today, areas]);
 
   const handleSubmit = async (values: z.infer<typeof formSchema>) => {
     const submissionData = {
       ...values,
-      areaId: parseInt(values.areaId),
+      areaId: parseInt(values.areaId, 10),
     };
-    
+    console.log('=== FRONTEND: Datos enviados al backend ===', submissionData);
     await onSubmit(submissionData);
   };
 
