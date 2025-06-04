@@ -19,6 +19,7 @@ import Incidents from "./pages/Incidents/Index";
 import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
 import Roles from "./pages/Roles/Index";
 import Reports from "./pages/Reports/Index";
+import AssignmentEvaluations from "./pages/AssignmentEvaluations/Index";
 
 // Layout and Protection
 import MainLayout from "./components/Layout/MainLayout";
@@ -76,6 +77,16 @@ const App = () => (
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
                         <ChecklistEvaluation />
+                      </ProtectedRoute>
+                    } 
+                  />
+                  
+                  {/* Asignación de Evaluaciones - Solo admin */}
+                  <Route 
+                    path="/assignment-evaluations" 
+                    element={
+                      <ProtectedRoute allowedRoles={['admin']}>
+                        <AssignmentEvaluations />
                       </ProtectedRoute>
                     } 
                   />
