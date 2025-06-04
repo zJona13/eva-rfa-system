@@ -200,7 +200,6 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
   // Lógica de fecha límite para edición/finalización (1 día)
   let fueraDeRango = false;
   let fechaEvaluacionDraft = null;
-  let cancelada = evaluacionDraft?.status === 'Cancelada';
   if (evaluacionDraft?.date && evaluacionDraft?.status === 'Pendiente') {
     fechaEvaluacionDraft = new Date(evaluacionDraft.date);
     const ahora = new Date();
@@ -412,7 +411,7 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
               type="button"
               variant="secondary"
               onClick={() => form.handleSubmit(handleSaveDraft)()}
-              disabled={createEvaluacionMutation.isPending || !selectedColaborador || fueraDeRango || cancelada}
+              disabled={createEvaluacionMutation.isPending || !selectedColaborador || fueraDeRango}
               className="flex-1"
             >
               Guardar Borrador
@@ -420,7 +419,7 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
             <Button 
               type="button"
               onClick={() => form.handleSubmit(handleFinish)()}
-              disabled={createEvaluacionMutation.isPending || !selectedColaborador || fueraDeRango || cancelada}
+              disabled={createEvaluacionMutation.isPending || !selectedColaborador || fueraDeRango}
               className="flex-1 bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 text-white"
             >
               {createEvaluacionMutation.isPending ? 'Guardando...' : 'Finalizar Evaluación'}
@@ -429,11 +428,6 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
           {fueraDeRango && (
             <div className="text-red-600 text-center font-semibold mt-2">
               No puedes editar ni finalizar esta evaluación porque han pasado más de 1 día desde su creación.
-            </div>
-          )}
-          {cancelada && (
-            <div className="text-red-600 text-center font-semibold mt-2">
-              Esta evaluación ha sido cancelada automáticamente por superar la fecha límite.
             </div>
           )}
         </form>

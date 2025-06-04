@@ -162,7 +162,6 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
   // Lógica de fecha límite para edición/finalización (1 día)
   let fueraDeRango = false;
   let fechaEvaluacionDraft = null;
-  let cancelada = evaluacionDraft?.status === 'Cancelada';
   if (evaluacionDraft?.date && evaluacionDraft?.status === 'Pendiente') {
     fechaEvaluacionDraft = new Date(evaluacionDraft.date);
     const ahora = new Date();
@@ -367,7 +366,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
               type="button"
               variant="secondary"
               onClick={() => form.handleSubmit(handleSaveDraft)()}
-              disabled={fueraDeRango || cancelada}
+              disabled={fueraDeRango}
               className="flex-1"
             >
               Guardar Borrador
@@ -376,7 +375,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
               type="button"
               onClick={() => form.handleSubmit(handleFinish)()}
               className="flex-1 bg-gradient-to-r from-primary to-primary/80 hover:from-primary/90 hover:to-primary/70"
-              disabled={fueraDeRango || cancelada}
+              disabled={fueraDeRango}
             >
               Finalizar Evaluación
             </Button>
@@ -384,11 +383,6 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
           {fueraDeRango && (
             <div className="text-red-600 text-center font-semibold mt-2">
               No puedes finalizar esta autoevaluación porque ha pasado más de 1 día desde su creación.
-            </div>
-          )}
-          {cancelada && (
-            <div className="text-red-600 text-center font-semibold mt-2">
-              Esta autoevaluación ha sido cancelada automáticamente por superar la fecha límite.
             </div>
           )}
         </form>

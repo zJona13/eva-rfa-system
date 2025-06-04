@@ -28,7 +28,7 @@ const StudentEvaluation = () => {
   const evaluacionesEstudiante = evaluaciones.filter((e: any) => e.type === 'Evaluacion estudiante-docente');
 
   const pendientesEstudiante = evaluacionesEstudiante.filter((e: any) => e.status === 'Pendiente');
-  const historialEstudiante = evaluacionesEstudiante.filter((e: any) => e.status === 'Completada' || e.status === 'Cancelada');
+  const completadasEstudiante = evaluacionesEstudiante.filter((e: any) => e.status === 'Completada');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for evaluation:', evaluacion);
@@ -122,7 +122,7 @@ const StudentEvaluation = () => {
                   Nueva Evaluación
                 </Button>
               </div>
-              {historialEstudiante.map((evaluacion: any) => (
+              {completadasEstudiante.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
@@ -139,11 +139,9 @@ const StudentEvaluation = () => {
                     </div>
                     <div className="flex gap-2 flex-col items-end">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        evaluacion.status === 'Completada'
-                          ? 'bg-green-100 text-green-800'
-                          : evaluacion.status === 'Cancelada'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                        evaluacion.status === 'Completada' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
                       }`}>
                         {evaluacion.status}
                       </span>

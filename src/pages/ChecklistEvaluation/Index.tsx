@@ -28,7 +28,7 @@ const ChecklistEvaluation = () => {
   const evaluacionesSupervision = evaluaciones.filter((e: any) => e.type === 'Evaluacion a Docente');
 
   const pendientesSupervision = evaluacionesSupervision.filter((e: any) => e.status === 'Pendiente');
-  const historialSupervision = evaluacionesSupervision.filter((e: any) => e.status === 'Completada' || e.status === 'Cancelada');
+  const completadasSupervision = evaluacionesSupervision.filter((e: any) => e.status === 'Completada');
 
   const handleGenerateIncidencia = (evaluacion: any) => {
     console.log('Generating incidencia for supervision:', evaluacion);
@@ -121,7 +121,7 @@ const ChecklistEvaluation = () => {
                   Nueva Supervisión
                 </Button>
               </div>
-              {historialSupervision.map((evaluacion: any) => (
+              {completadasSupervision.map((evaluacion: any) => (
                 <div key={evaluacion.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start">
                     <div>
@@ -138,11 +138,9 @@ const ChecklistEvaluation = () => {
                     </div>
                     <div className="flex gap-2 flex-col items-end">
                       <span className={`px-2 py-1 rounded text-xs ${
-                        evaluacion.status === 'Completada'
-                          ? 'bg-green-100 text-green-800'
-                          : evaluacion.status === 'Cancelada'
-                            ? 'bg-red-100 text-red-800'
-                            : 'bg-yellow-100 text-yellow-800'
+                        evaluacion.status === 'Completada' 
+                          ? 'bg-green-100 text-green-800' 
+                          : 'bg-yellow-100 text-yellow-800'
                       }`}>
                         {evaluacion.status}
                       </span>

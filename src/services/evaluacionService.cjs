@@ -143,8 +143,6 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
         evaluacionId
       ]
     );
-    // Llamar a la cancelación automática después de actualizar
-    await cancelarBorradoresVencidos();
     return {
       success: true,
       message: 'Evaluación actualizada exitosamente'
@@ -253,37 +251,6 @@ const finalizarEvaluacion = async (evaluacionId) => {
   }
 };
 
-// Cancelar automáticamente evaluaciones pendientes vencidas
-const cancelarBorradoresVencidos = async () => {
-  try {
-    // Selecciona evaluaciones pendientes con más de 1 día de antigüedad
-    const [rows] = await pool.execute(
-      `SELECT idEvaluacion, fechaEvaluacion FROM EVALUACION WHERE estado = 'Pendiente'`
-    );
-    const ahora = new Date();
-    let canceladas = 0;
-    for (const row of rows) {
-      const fechaEvaluacion = new Date(row.fechaEvaluacion);
-      const diffMs = ahora - fechaEvaluacion;
-      const diffDias = diffMs / (1000 * 60 * 60 * 24);
-      if (diffDias > 1) {
-        await pool.execute(
-          'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
-          ['Cancelada', row.idEvaluacion]
-        );
-        canceladas++;
-      }
-    }
-    if (canceladas > 0) {
-      console.log(`⏰ Evaluaciones pendientes canceladas automáticamente: ${canceladas}`);
-    }
-    return { success: true, canceladas };
-  } catch (error) {
-    console.error('Error al cancelar borradores vencidos:', error);
-    return { success: false, message: 'Error al cancelar borradores vencidos' };
-  }
-};
-
 module.exports = {
   getAllEvaluaciones,
   getEvaluacionesByEvaluador,
@@ -293,6 +260,5 @@ module.exports = {
   deleteEvaluacion,
   getColaboradoresParaEvaluar,
   getColaboradorByUserId,
-  finalizarEvaluacion,
-  cancelarBorradoresVencidos
+  finalizarEvaluacion
 };
