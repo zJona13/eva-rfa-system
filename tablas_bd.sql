@@ -207,6 +207,24 @@ VALUES ('Tiempo Parcial'), ('Tiempo Completo'), ('Nombrado');
 INSERT INTO TIPO_EVALUACION (nombre) VALUES
 ('Evaluación Estudiante al Docente'), ('Evaluación Evaluador al Docente'), ('Autoevaluación');
 
+INSERT INTO AREA (nombre, descripcion) VALUES
+('Administración de Empresas', 'Área encargada de la formación en administración y gestión empresarial'),
+('Arquitectura de Plataformas y Servicios de Tecnologías de Información', 'Área especializada en arquitectura de sistemas y servicios tecnológicos'),
+('Contabilidad', 'Área encargada de la formación en contabilidad y finanzas'),
+('Electricidad Industrial', 'Área especializada en sistemas eléctricos industriales y automatización'),
+('Electrónica Industrial', 'Área enfocada en electrónica aplicada a procesos industriales'),
+('Enfermería Técnica', 'Área de formación en cuidados de salud y enfermería técnica'),
+('Mecánica de Producción Industrial', 'Área especializada en procesos de manufactura y producción industrial');
+
+INSERT INTO CONTRATO (fechaInicio, fechaFin, estado, idTipoContrato) VALUES
+('2024-03-01', '2025-02-28', 'Activo', 2);
+
+INSERT INTO COLABORADOR (nombreColaborador, apePaColaborador, apeMaColaborador, fechaNacimiento, direccion, telefono, dniColaborador, estado, idTipoColaborador, idContrato, idArea) 
+VALUES ('Jonatan', 'Ching', 'Ayacila', '2003-05-13', 'Av. La Panamericana Norte', '912663649', '76091348', 'Activo', 1, 1, 1);
+
+INSERT INTO USUARIO (correo, contrasena, estado, idTipoUsuario, idColaborador, idArea) 
+VALUES ('jching@iesrfa.edu', '$2a$12$Iig8qm23xy.8L9E13yc8MOCG6QpOvfWfD/QxCQzVOKCyG1Ffg/zVG', 'Activo', 1, 1, 1);
+
 INSERT INTO CRITERIO (nombre) VALUES
 -- Criterios para Evaluación Estudiante al Docente
 ('ORGANIZACIÓN DE LA ASIGNATURA'),
