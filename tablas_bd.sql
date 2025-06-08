@@ -96,6 +96,8 @@ CREATE TABLE ASIGNACION (
     periodo INT NOT NULL,
     fechaInicio DATE NOT NULL,
     fechaFin DATE NOT NULL,
+    horaInicio TIME NOT NULL,
+    horaFin TIME NOT NULL,
     estado ENUM('Activo','Inactivo','Pendiente'),
     idArea INT NOT NULL,
     FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario),
