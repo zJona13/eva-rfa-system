@@ -107,14 +107,9 @@ const UserDialog: React.FC<UserDialogProps> = ({
   const fetchColaboradores = async () => {
     try {
       setLoadingColaboradores(true);
-      const token = localStorage.getItem('iesrfa_token');
       const excludeUserId = userData?.id ? `?excludeUserId=${userData.id}` : '';
       
-      const response = await fetch(`http://localhost:3309/api/users/available-colaboradores${excludeUserId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`
-        }
-      });
+      const response = await fetch(`http://localhost:3309/api/users/available-colaboradores${excludeUserId}`);
       
       if (response.ok) {
         const data = await response.json();

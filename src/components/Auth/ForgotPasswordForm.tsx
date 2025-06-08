@@ -16,7 +16,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [step, setStep] = useState<'email' | 'verify' | 'reset'>('email');
   const [isLoading, setIsLoading] = useState(false);
-  const [resetToken, setResetToken] = useState('');
+  const [resetCodeToken, setResetCodeToken] = useState('');
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -63,7 +63,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
 
       if (data.success) {
         toast.success('Código verificado correctamente');
-        setResetToken(data.token);
+        setResetCodeToken(data.token);
         setStep('reset');
       } else {
         toast.error(data.message || 'Código de verificación incorrecto');
@@ -98,7 +98,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
         },
         body: JSON.stringify({ 
           email, 
-          token: resetToken, 
+          token: resetCodeToken, 
           newPassword 
         }),
       });

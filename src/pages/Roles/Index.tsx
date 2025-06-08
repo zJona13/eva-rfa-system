@@ -72,12 +72,7 @@ interface Area {
 
 // Servicios API - Updated port from 5000 to 3309
 const fetchRoles = async (): Promise<Role[]> => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3309/api/roles', {
-    headers: {
-      'Authorization': `Bearer ${token}`
-    }
-  });
+  const response = await fetch('http://localhost:3309/api/roles');
   
   if (!response.ok) {
     throw new Error('Error al cargar roles');
@@ -88,11 +83,7 @@ const fetchRoles = async (): Promise<Role[]> => {
 };
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
-  const response = await fetch('http://localhost:3309/api/tiposcolaborador', {
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
+  const response = await fetch('http://localhost:3309/api/tiposcolaborador');
   
   if (!response.ok) {
     throw new Error('Error al cargar tipos de colaborador');
@@ -103,11 +94,7 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
 };
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
-  const response = await fetch('http://localhost:3309/api/tiposcontrato', {
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
+  const response = await fetch('http://localhost:3309/api/tiposcontrato');
   
   if (!response.ok) {
     throw new Error('Error al cargar tipos de contrato');
@@ -118,11 +105,7 @@ const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
 };
 
 const fetchUsers = async (): Promise<User[]> => {
-  const response = await fetch('http://localhost:3309/api/users', {
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
+  const response = await fetch('http://localhost:3309/api/users');
   
   if (!response.ok) {
     throw new Error('Error al cargar usuarios');
@@ -137,11 +120,7 @@ const fetchUsers = async (): Promise<User[]> => {
 };
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
-  const response = await fetch('http://localhost:3309/api/colaboradores', {
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
+  const response = await fetch('http://localhost:3309/api/colaboradores');
   
   if (!response.ok) {
     throw new Error('Error al cargar colaboradores');
@@ -152,11 +131,7 @@ const fetchColaboradores = async (): Promise<Colaborador[]> => {
 };
 
 const fetchAreas = async (): Promise<Area[]> => {
-  const response = await fetch('http://localhost:3309/api/areas', {
-    headers: {
-      'Content-Type': 'application/json',
-    }
-  });
+  const response = await fetch('http://localhost:3309/api/areas');
   if (!response.ok) {
     throw new Error('Error al cargar áreas');
   }

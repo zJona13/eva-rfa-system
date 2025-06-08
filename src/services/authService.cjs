@@ -211,7 +211,7 @@ const resetPassword = async (email, token, newPassword) => {
 
     // Verificar que el token existe en BD y no ha sido usado
     const [tokens] = await pool.execute(
-      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND token = ? AND used = TRUE',
+      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND reset_code_token = ? AND used = FALSE',
       [email, token]
     );
 
@@ -238,19 +238,6 @@ const resetPassword = async (email, token, newPassword) => {
       'DELETE FROM PASSWORD_RESET_CODES WHERE email = ?',
       [email]
     );
-
-    // Invalidar todos los tokens activos del usuario
-    const [users] = await pool.execute(
-      'SELECT idUsuario FROM USUARIO WHERE correo = ?',
-      [email]
-    );
-
-    if (users.length > 0) {
-      await pool.execute(
-        'DELETE FROM USER_TOKENS WHERE idUsuario = ?',
-        [users[0].idUsuario]
-      );
-    }
 
     console.log('✅ Contraseña restablecida correctamente para:', email);
 
