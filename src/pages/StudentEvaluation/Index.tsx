@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +19,10 @@ const StudentEvaluation = () => {
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-estudiante', user?.id],
-    queryFn: () => fetch(`/evaluaciones/evaluador/${user?.id}`),
+    queryFn: async () => {
+      const response = await fetch(`/evaluaciones/evaluador/${user?.id}`);
+      return response.json();
+    },
     enabled: !!user?.id,
   });
 

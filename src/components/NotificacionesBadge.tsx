@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -17,15 +18,21 @@ const NotificacionesBadge = () => {
 
   const { data: notificacionesData } = useQuery({
     queryKey: ['notificaciones', userId],
-    queryFn: () => fetch(`/notificaciones/user/${userId}`),
+    queryFn: async () => {
+      const response = await fetch(`/notificaciones/user/${userId}`);
+      return response.json();
+    },
     enabled: !!userId,
     refetchInterval: 30000, // Refetch cada 30 segundos
   });
 
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: number) => fetch(`/notificaciones/${notificationId}/read`, {
-      method: 'PUT'
-    }),
+    mutationFn: async (notificationId: number) => {
+      const response = await fetch(`/notificaciones/${notificationId}/read`, {
+        method: 'PUT'
+      });
+      return response.json();
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
     },

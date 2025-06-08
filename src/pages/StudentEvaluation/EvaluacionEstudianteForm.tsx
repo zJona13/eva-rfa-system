@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -39,14 +40,20 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
   // Fetch colaboradores
   const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
     queryKey: ['colaboradores-para-evaluar'],
-    queryFn: () => fetch('/colaboradores-para-evaluar'),
+    queryFn: async () => {
+      const response = await fetch('/colaboradores-para-evaluar');
+      return response.json();
+    },
   });
 
   const createEvaluacionMutation = useMutation({
-    mutationFn: (evaluacionData: any) => fetch('/evaluaciones', {
-      method: 'POST',
-      body: JSON.stringify(evaluacionData)
-    }),
+    mutationFn: async (evaluacionData: any) => {
+      const response = await fetch('/evaluaciones', {
+        method: 'POST',
+        body: JSON.stringify(evaluacionData)
+      });
+      return response.json();
+    },
     onSuccess: () => {
       toast.success('Evaluación creada exitosamente');
       queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
@@ -105,7 +112,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
         body: JSON.stringify(evaluacionData)
-      }).then(() => {
+      }).then(response => response.json()).then(() => {
         toast.success('Borrador guardado exitosamente');
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
         onCancel();
@@ -158,7 +165,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
         body: JSON.stringify(evaluacionData)
-      }).then(() => {
+      }).then(response => response.json()).then(() => {
         toast.success('Evaluación finalizada exitosamente');
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
         onCancel();

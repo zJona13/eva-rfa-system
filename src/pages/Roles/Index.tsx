@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Users, UserCog, UserSquare2, FileText } from 'lucide-react';
@@ -58,10 +59,11 @@ interface Colaborador {
   contractId: number;
   startDate: string;
   endDate: string;
-  modality: string;
   contractActive: boolean;
   contractTypeId: number;
   contractType: string;
+  areaName: string;
+  areaId: number;
 }
 
 interface Area {
@@ -311,6 +313,8 @@ const Roles = () => {
             searchQuery={searchQuery}
             tiposColaborador={tiposColaborador}
             tiposContrato={tiposContrato}
+            roles={roles}
+            areas={areas}
           />
         </TabsContent>
         

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,10 @@ const SelfEvaluation = () => {
   // Fetch autoevaluaciones del usuario actual
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-colaborador', user?.colaboradorId],
-    queryFn: () => fetch(`/evaluaciones/colaborador/${user?.colaboradorId}`),
+    queryFn: async () => {
+      const response = await fetch(`/evaluaciones/colaborador/${user?.colaboradorId}`);
+      return response.json();
+    },
     enabled: !!user?.colaboradorId,
   });
 

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -179,8 +180,14 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
     } else {
       try {
         const result = await createColaborador(data);
-        if (result && result.id) {
-          setCreatedColaborador({ ...data, id: result.id, fullName: `${data.nombres} ${data.apePat} ${data.apeMat}` });
+        if (result && result.colaboradorId) {
+          setCreatedColaborador({ 
+            ...data, 
+            id: result.colaboradorId, 
+            fullName: `${data.nombres} ${data.apePat} ${data.apeMat}`,
+            areaId: data.areaId ? parseInt(data.areaId) : 0,
+            areaName: areas.find(a => a.id === parseInt(data.areaId))?.name || ''
+          });
           setIsUserDialogOpen(true);
         }
         setIsDialogOpen(false);

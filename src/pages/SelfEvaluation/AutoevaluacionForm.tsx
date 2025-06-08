@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -32,15 +33,21 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
   // Fetch colaborador info by user ID
   const { data: colaboradorData, isLoading: isLoadingColaborador } = useQuery({
     queryKey: ['colaborador-by-user', user?.id],
-    queryFn: () => fetch(`/colaborador-by-user/${user?.id}`),
+    queryFn: async () => {
+      const response = await fetch(`/colaborador-by-user/${user?.id}`);
+      return response.json();
+    },
     enabled: !!user?.id,
   });
 
   const createEvaluacionMutation = useMutation({
-    mutationFn: (evaluacionData: any) => fetch('/evaluaciones', {
-      method: 'POST',
-      body: JSON.stringify(evaluacionData)
-    }),
+    mutationFn: async (evaluacionData: any) => {
+      const response = await fetch('/evaluaciones', {
+        method: 'POST',
+        body: JSON.stringify(evaluacionData)
+      });
+      return response.json();
+    },
     onSuccess: () => {
       toast.success(t('selfEval.created'));
       queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
@@ -94,7 +101,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
         body: JSON.stringify(evaluacionData)
-      }).then(() => {
+      }).then(response => response.json()).then(() => {
         toast.success('Borrador guardado exitosamente');
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
         onCancel();
@@ -144,7 +151,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
         body: JSON.stringify(evaluacionData)
-      }).then(() => {
+      }).then(response => response.json()).then(() => {
         toast.success(t('selfEval.finished'));
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
         onCancel();
@@ -396,4 +403,3 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
 };
 
 export default AutoevaluacionForm;
-

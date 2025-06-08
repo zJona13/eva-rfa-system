@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,10 @@ import { BarChart4 } from 'lucide-react';
 const EvaluationsChart = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard-evaluations-chart'],
-    queryFn: () => fetch('/dashboard/evaluations-chart'),
+    queryFn: async () => {
+      const response = await fetch('/dashboard/evaluations-chart');
+      return response.json();
+    },
   });
 
   const chartData = data?.data?.chartData || [
