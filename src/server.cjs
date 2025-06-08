@@ -461,7 +461,8 @@ app.post('/api/colaboradores', async (req, res) => {
     startDate: colaboradorData.startDate,
     endDate: colaboradorData.endDate,
     contractActive: colaboradorData.contractActive !== undefined ? colaboradorData.contractActive : true,
-    contractTypeId: colaboradorData.contractTypeId
+    contractTypeId: colaboradorData.contractTypeId,
+    areaId: colaboradorData.areaId
   };
   
   const result = await colaboradorService.createColaborador(normalizedData);
@@ -495,7 +496,8 @@ app.put('/api/colaboradores/:id', async (req, res) => {
     startDate: colaboradorData.startDate,
     endDate: colaboradorData.endDate,
     contractActive: colaboradorData.contractActive !== undefined ? colaboradorData.contractActive : true,
-    contractTypeId: colaboradorData.contractTypeId
+    contractTypeId: colaboradorData.contractTypeId,
+    areaId: colaboradorData.areaId
   };
   
   const result = await colaboradorService.updateColaborador(id, normalizedData);
