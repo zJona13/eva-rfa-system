@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 
@@ -7,7 +8,8 @@ const getAllColaboradores = async () => {
     const [rows] = await pool.execute(
       `SELECT c.idColaborador as id, 
       CONCAT(c.nombreColaborador, ' ', c.apePaColaborador, ' ', c.apeMaColaborador) as fullName,
-      c.nombreColaborador, c.apePaColaborador, c.apeMaColaborador, c.fechaNacimiento as birthDate, 
+      c.nombreColaborador as nombres, c.apePaColaborador as apePat, c.apeMaColaborador as apeMat, 
+      c.fechaNacimiento as birthDate, 
       c.direccion as address, c.telefono as phone, c.dniColaborador as dni, 
       c.estado as active, tc.idTipoColaborador as roleId, tc.nombre as roleName,
       co.idContrato as contractId, co.fechaInicio as startDate, 
@@ -19,7 +21,7 @@ const getAllColaboradores = async () => {
       JOIN TIPO_COLABORADOR tc ON c.idTipoColaborador = tc.idTipoColaborador
       JOIN CONTRATO co ON c.idContrato = co.idContrato
       JOIN TIPO_CONTRATO tco ON co.idTipoContrato = tco.idTipoContrato
-      JOIN AREA a ON c.idArea = a.idArea`
+      LEFT JOIN AREA a ON c.idArea = a.idArea`
     );
     
     return {
@@ -72,11 +74,11 @@ const createColaborador = async (colaboradorData) => {
       'INSERT INTO COLABORADOR (nombreColaborador, apePaColaborador, apeMaColaborador, fechaNacimiento, direccion, telefono, dniColaborador, estado, idTipoColaborador, idContrato, idArea) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         colaboradorData.nombres,
-        colaboradorData.apePaColaborador,
-        colaboradorData.apeMaColaborador,
+        colaboradorData.apePat,
+        colaboradorData.apeMat,
         colaboradorData.birthDate,
-        colaboradorData.direccion,
-        colaboradorData.telefono,
+        colaboradorData.address,
+        colaboradorData.phone,
         colaboradorData.dni,
         colaboradorData.active ? 'Activo' : 'Inactivo',
         colaboradorData.roleId,
@@ -156,11 +158,11 @@ const updateColaborador = async (colaboradorId, colaboradorData) => {
       'UPDATE COLABORADOR SET nombreColaborador = ?, apePaColaborador = ?, apeMaColaborador = ?, fechaNacimiento = ?, direccion = ?, telefono = ?, dniColaborador = ?, estado = ?, idTipoColaborador = ?, idArea = ? WHERE idColaborador = ?',
       [
         colaboradorData.nombres,
-        colaboradorData.apePaColaborador,
-        colaboradorData.apeMaColaborador,
+        colaboradorData.apePat,
+        colaboradorData.apeMat,
         colaboradorData.birthDate,
-        colaboradorData.direccion,
-        colaboradorData.telefono,
+        colaboradorData.address,
+        colaboradorData.phone,
         colaboradorData.dni,
         colaboradorData.active ? 'Activo' : 'Inactivo',
         colaboradorData.roleId,

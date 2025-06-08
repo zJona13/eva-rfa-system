@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,11 @@ interface TipoContrato {
   name: string;
 }
 
+interface Area {
+  id: number;
+  name: string;
+}
+
 interface Colaborador {
   id?: number;
   nombres: string;
@@ -48,6 +54,7 @@ interface Colaborador {
   endDate: string;
   contractActive: boolean;
   contractTypeId: number;
+  areaId?: number;
 }
 
 interface ColaboradorDialogProps {
@@ -57,7 +64,7 @@ interface ColaboradorDialogProps {
   tiposColaborador: TipoColaborador[];
   tiposContrato: TipoContrato[];
   roles: { id: number; name: string }[];
-  areas: { id: number; name: string }[];
+  areas: Area[];
   onSave: (data: any) => void;
 }
 
@@ -76,6 +83,7 @@ const colaboradorSchema = z.object({
   endDate: z.string(),
   contractActive: z.boolean().default(true),
   contractTypeId: z.number().positive({ message: 'Debe seleccionar un tipo de contrato' }),
+  areaId: z.number().optional(),
 });
 
 type ColaboradorFormValues = z.infer<typeof colaboradorSchema>;
@@ -115,14 +123,12 @@ const ColaboradorDialog = ({
       startDate: new Date().toISOString().split('T')[0],
       endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
       contractActive: true,
-      contractTypeId: 0
+      contractTypeId: 0,
+      areaId: 0
     }
   });
   
-  // 1. Estado para el área seleccionada (aplica para colaborador y usuario)
-  const [selectedAreaId, setSelectedAreaId] = useState('');
-  
-  // Cuando el colaborador cambia, actualiza el formulario y limpia usuario
+  // Cuando el colaborador cambia, actualiza el formulario
   useEffect(() => {
     if (colaborador) {
       form.reset({
@@ -138,9 +144,9 @@ const ColaboradorDialog = ({
         startDate: toDateInputValue(colaborador.startDate),
         endDate: toDateInputValue(colaborador.endDate),
         contractActive: colaborador.contractActive,
-        contractTypeId: colaborador.contractTypeId
+        contractTypeId: colaborador.contractTypeId,
+        areaId: colaborador.areaId || 0
       });
-      setSelectedAreaId(colaborador.areaId?.toString() || '');
     } else {
       const today = new Date();
       const nextYear = new Date();
@@ -158,15 +164,14 @@ const ColaboradorDialog = ({
         startDate: toDateInputValue(today),
         endDate: toDateInputValue(nextYear),
         contractActive: true,
-        contractTypeId: 0
+        contractTypeId: 0,
+        areaId: 0
       });
-      setSelectedAreaId('');
     }
   }, [colaborador, form]);
   
   const onSubmit = (values: ColaboradorFormValues) => {
-    let data = { ...values };
-    onSave(data);
+    onSave(values);
   };
   
   return (
@@ -288,34 +293,65 @@ const ColaboradorDialog = ({
                 )}
               />
               
-              <FormField
-                control={form.control}
-                name="roleId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Tipo de Colaborador</FormLabel>
-                    <Select
-                      onValueChange={(value) => field.onChange(parseInt(value))}
-                      defaultValue={field.value ? String(field.value) : undefined}
-                      value={field.value ? String(field.value) : undefined}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Seleccione un tipo de colaborador" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {tiposColaborador.map((tipo) => (
-                          <SelectItem key={tipo.id} value={String(tipo.id)}>
-                            {tipo.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <FormField
+                  control={form.control}
+                  name="roleId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Tipo de Colaborador</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        defaultValue={field.value ? String(field.value) : undefined}
+                        value={field.value ? String(field.value) : undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione un tipo de colaborador" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {tiposColaborador.map((tipo) => (
+                            <SelectItem key={tipo.id} value={String(tipo.id)}>
+                              {tipo.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="areaId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Área</FormLabel>
+                      <Select
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        defaultValue={field.value ? String(field.value) : undefined}
+                        value={field.value ? String(field.value) : undefined}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleccione un área" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {areas.map((area) => (
+                            <SelectItem key={area.id} value={String(area.id)}>
+                              {area.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
               
               <FormField
                 control={form.control}
@@ -334,31 +370,6 @@ const ColaboradorDialog = ({
                         onCheckedChange={field.onChange}
                       />
                     </FormControl>
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="areaId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Área (aplica para colaborador y usuario)</FormLabel>
-                    <select
-                      className="w-full border rounded px-2 py-1"
-                      value={selectedAreaId}
-                      onChange={e => {
-                        setSelectedAreaId(e.target.value);
-                        field.onChange(parseInt(e.target.value));
-                      }}
-                      required
-                    >
-                      <option value="">Seleccione un área</option>
-                      {(areas || []).map(a => (
-                        <option key={a.id} value={a.id}>{a.name}</option>
-                      ))}
-                    </select>
-                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -397,36 +408,34 @@ const ColaboradorDialog = ({
                 />
               </div>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormField
-                  control={form.control}
-                  name="contractTypeId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo de Contrato</FormLabel>
-                      <Select
-                        onValueChange={(value) => field.onChange(parseInt(value))}
-                        defaultValue={field.value ? String(field.value) : undefined}
-                        value={field.value ? String(field.value) : undefined}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleccione un tipo de contrato" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {tiposContrato.map((tipo) => (
-                            <SelectItem key={tipo.id} value={String(tipo.id)}>
-                              {tipo.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
+              <FormField
+                control={form.control}
+                name="contractTypeId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de Contrato</FormLabel>
+                    <Select
+                      onValueChange={(value) => field.onChange(parseInt(value))}
+                      defaultValue={field.value ? String(field.value) : undefined}
+                      value={field.value ? String(field.value) : undefined}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleccione un tipo de contrato" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {tiposContrato.map((tipo) => (
+                          <SelectItem key={tipo.id} value={String(tipo.id)}>
+                            {tipo.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
               
               <FormField
                 control={form.control}

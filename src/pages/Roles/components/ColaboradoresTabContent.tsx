@@ -50,8 +50,8 @@ interface ColaboradoresTabContentProps {
   searchQuery: string;
   tiposColaborador: TipoColaborador[];
   tiposContrato: TipoContrato[];
-  roles: any[];
-  areas: any[];
+  roles?: any[];
+  areas?: any[];
 }
 
 const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({ 
@@ -60,8 +60,8 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   searchQuery,
   tiposColaborador,
   tiposContrato,
-  roles,
-  areas
+  roles = [],
+  areas = []
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedColaborador, setSelectedColaborador] = useState<Colaborador | null>(null);
@@ -267,7 +267,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
                     <TableCell className="font-medium">{colaborador.fullName}</TableCell>
                     <TableCell>{colaborador.dni}</TableCell>
                     <TableCell>{colaborador.roleName}</TableCell>
-                    <TableCell>{colaborador.areaName}</TableCell>
+                    <TableCell>{colaborador.areaName || 'Sin área asignada'}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">
