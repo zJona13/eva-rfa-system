@@ -38,6 +38,7 @@ interface Role {
 const createRole = async (name: string): Promise<{ success: boolean, message: string }> => {
   const response = await fetch('http://localhost:3309/api/roles', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   });
   
@@ -53,6 +54,7 @@ const createRole = async (name: string): Promise<{ success: boolean, message: st
 const updateRole = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
   const response = await fetch(`http://localhost:3309/api/roles/${id}`, {
     method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   });
   

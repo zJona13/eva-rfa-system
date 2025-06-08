@@ -38,6 +38,7 @@ interface TipoColaborador {
 const createTipoColaborador = async (name: string): Promise<{ success: boolean, message: string }> => {
   const response = await fetch('http://localhost:3309/api/tiposcolaborador', {
     method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   });
   
@@ -50,9 +51,10 @@ const createTipoColaborador = async (name: string): Promise<{ success: boolean, 
   return data;
 };
 
-const updateTipoColaborador = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
+const updateTipoColaborador = async ({ id, name }: { id: number; name: string }): Promise<{ success: boolean, message: string }> => {
   const response = await fetch(`http://localhost:3309/api/tiposcolaborador/${id}`, {
     method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ name })
   });
   

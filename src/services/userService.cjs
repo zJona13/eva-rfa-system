@@ -66,9 +66,8 @@ const createUser = async (userData) => {
     const saltRounds = 10;
     const hashedPassword = await bcrypt.hash(userData.password, saltRounds);
     const [result] = await pool.execute(
-      'INSERT INTO USUARIO (nombre, correo, contrasena, estado, idTipoUsuario, idColaborador, idArea) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO USUARIO (correo, contrasena, estado, idTipoUsuario, idColaborador, idArea) VALUES (?, ?, ?, ?, ?, ?)',
       [
-        userData.name, 
         userData.email, 
         hashedPassword, 
         userData.active ? 'Activo' : 'Inactivo',

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -94,15 +93,13 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   const createColaborador = async (data: any) => {
     const response = await fetch('http://localhost:3309/api/colaboradores', {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    
     const result = await response.json();
-    
     if (!response.ok) {
       throw new Error(result.message || 'Error al crear colaborador');
     }
-    
     return result;
   };
   
@@ -175,18 +172,26 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   
   // Guardar colaborador
   const handleSaveColaborador = async (data: any) => {
+    // Normaliza los campos numéricos obligatorios
+    const payload = {
+      ...data,
+      areaId: data.areaId ? Number(data.areaId) : undefined,
+      roleId: data.roleId ? Number(data.roleId) : undefined,
+      contractTypeId: data.contractTypeId ? Number(data.contractTypeId) : undefined,
+    };
+    console.log('Payload enviado:', payload);
     if (selectedColaborador) {
-      updateMutation.mutate({ id: selectedColaborador.id, data });
+      updateMutation.mutate({ id: selectedColaborador.id, data: payload });
     } else {
       try {
-        const result = await createColaborador(data);
+        const result = await createColaborador(payload);
         if (result && result.colaboradorId) {
           setCreatedColaborador({ 
-            ...data, 
+            ...payload, 
             id: result.colaboradorId, 
-            fullName: `${data.nombres} ${data.apePat} ${data.apeMat}`,
-            areaId: data.areaId ? parseInt(data.areaId) : 0,
-            areaName: areas.find(a => a.id === parseInt(data.areaId))?.name || ''
+            fullName: `${payload.nombres} ${payload.apePat} ${payload.apeMat}`,
+            areaId: payload.areaId,
+            areaName: areas.find(a => a.id === payload.areaId)?.name || ''
           });
           setIsUserDialogOpen(true);
         }
