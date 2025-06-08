@@ -10,13 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 const API_BASE_URL = 'http://localhost:3309/api';
 
 const fetchIncidencias = async (userId: number) => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`);
 
   if (!response.ok) {
     throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -26,13 +20,8 @@ const fetchIncidencias = async (userId: number) => {
 };
 
 const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: string }) => {
-  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
     method: 'PUT',
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
     body: JSON.stringify({ estado }),
   });
 

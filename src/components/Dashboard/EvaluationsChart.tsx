@@ -1,18 +1,14 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { BarChart4 } from 'lucide-react';
 
 const EvaluationsChart = () => {
-  const { apiRequest } = useApiWithToken();
-
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard-evaluations-chart'],
-    queryFn: () => apiRequest('/dashboard/evaluations-chart'),
+    queryFn: () => fetch('/dashboard/evaluations-chart'),
   });
 
   const chartData = data?.data?.chartData || [

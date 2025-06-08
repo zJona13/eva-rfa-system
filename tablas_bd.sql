@@ -203,3 +203,6 @@ INSERT INTO TIPO_COLABORADOR (nombre) VALUES
 
 INSERT INTO TIPO_CONTRATO (nombre) 
 VALUES ('Tiempo Parcial'), ('Tiempo Completo'), ('Nombrado');
+
+INSERT INTO TIPO_EVALUACION (nombre) VALUES
+('Evaluación Estudiante al Docente'), ('Evaluación Evaluador al Docente'), ('Autoevaluación');

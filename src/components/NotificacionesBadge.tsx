@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -7,26 +6,24 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Bell, Check } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { toast } from 'sonner';
 
 const NotificacionesBadge = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { apiRequest } = useApiWithToken();
   const [open, setOpen] = useState(false);
 
   const userId = user?.id ? parseInt(user.id) : 0;
 
   const { data: notificacionesData } = useQuery({
     queryKey: ['notificaciones', userId],
-    queryFn: () => apiRequest(`/notificaciones/user/${userId}`),
+    queryFn: () => fetch(`/notificaciones/user/${userId}`),
     enabled: !!userId,
     refetchInterval: 30000, // Refetch cada 30 segundos
   });
 
   const markAsReadMutation = useMutation({
-    mutationFn: (notificationId: number) => apiRequest(`/notificaciones/${notificationId}/read`, {
+    mutationFn: (notificationId: number) => fetch(`/notificaciones/${notificationId}/read`, {
       method: 'PUT'
     }),
     onSuccess: () => {

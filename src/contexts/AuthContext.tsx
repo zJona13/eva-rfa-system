@@ -59,73 +59,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Función para obtener el token almacenado
-  const getStoredToken = () => {
-    return localStorage.getItem('iesrfa_token');
-  };
-
-  // Función para guardar el token
-  const saveToken = (token: string) => {
-    localStorage.setItem('iesrfa_token', token);
-    console.log('🔑 Token guardado en localStorage');
-  };
-
-  // Función para eliminar el token
-  const removeToken = () => {
-    localStorage.removeItem('iesrfa_token');
-    localStorage.removeItem('current_user');
-    console.log('🗑️ Token y usuario eliminados del localStorage');
-  };
-
-  // Verificar token al cargar la aplicación
+  // Eliminar verificación de token al cargar la app
   useEffect(() => {
-    const verifyStoredToken = async () => {
-      const token = getStoredToken();
-      
-      if (!token) {
-        console.log('⚠️ No se encontró token almacenado');
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        console.log('🔍 Verificando token almacenado...');
-        const response = await fetch(`${API_URL}/auth/me`, {
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success && data.user) {
-            const mappedUser = {
-              id: data.user.id.toString(),
-              name: data.user.name,
-              email: data.user.email,
-              role: mapRole(data.user.role),
-              colaboradorId: data.user.colaboradorId,
-              colaboradorName: data.user.colaboradorName
-            };
-            
-            setUser(mappedUser);
-            localStorage.setItem('current_user', JSON.stringify(mappedUser));
-            console.log('✅ Sesión restaurada para:', mappedUser.name);
-          }
-        } else {
-          console.log('❌ Token inválido o expirado, eliminando...');
-          removeToken();
-        }
-      } catch (error) {
-        console.error('❌ Error verificando token:', error);
-        removeToken();
-      }
-      
-      setIsLoading(false);
-    };
-
-    verifyStoredToken();
+    // Ya no se verifica token, solo limpiar loading
+    setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
@@ -147,14 +84,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (!response.ok) {
         toast.error(data.message || 'Credenciales incorrectas');
         setIsLoading(false);
-        // Throw error to trigger failed attempt handling
         throw new Error(data.message || 'Credenciales incorrectas');
       }
       
-      if (data.success && data.user && data.token) {
-        // Guardar el token JWT
-        saveToken(data.token);
-        
+      if (data.success && data.user) {
+        // Solo guardar el usuario en el estado
         const mappedUser = {
           id: data.user.id.toString(),
           name: data.user.name,
@@ -163,14 +97,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           colaboradorId: data.user.colaboradorId,
           colaboradorName: data.user.colaboradorName
         };
-        
         setUser(mappedUser);
-        localStorage.setItem('current_user', JSON.stringify(mappedUser));
-        console.log('✅ Login exitoso, usuario y token guardados');
-        
-        // Mostrar nombre del colaborador si está disponible
-        const displayName = mappedUser.colaboradorName || mappedUser.name;
-        toast.success(`Bienvenido, ${displayName}`);
+        toast.success(`Bienvenido, ${mappedUser.colaboradorName || mappedUser.name}`);
         navigate('/dashboard');
       } else {
         toast.error('Error al iniciar sesión');
@@ -179,7 +107,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.error('❌ Error en login:', error);
       if (error instanceof Error && error.message !== 'Error al conectar con el servidor') {
-        // Re-throw the error so LoginForm can handle failed attempts
         throw error;
       } else {
         toast.error('Error al conectar con el servidor');
@@ -205,29 +132,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    try {
-      const token = getStoredToken();
-      
-      if (token) {
-        // Notificar al servidor para invalidar el token
-        await fetch(`${API_URL}/auth/logout`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      }
-    } catch (error) {
-      console.error('❌ Error en logout del servidor:', error);
-    } finally {
-      // Limpiar estado local
-      setUser(null);
-      removeToken();
-      console.log('🔓 Logout completado, redirigiendo a login');
-      toast.info('Sesión cerrada');
-      navigate('/login');
-    }
+    // Limpiar usuario del estado y redirigir
+    setUser(null);
+    toast.info('Sesión cerrada');
+    navigate('/login');
   };
 
   const value = {

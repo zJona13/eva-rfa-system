@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4 } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { modulesData } from '@/config/navigation';
 import StatCard from '@/components/Dashboard/StatCard';
 import ModuleCard from '@/components/Dashboard/ModuleCard';
@@ -16,7 +15,6 @@ const Dashboard = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const navigate = useNavigate();
-  const { apiRequest } = useApiWithToken();
   
   // Filter modules based on user role
   const userRole = user?.role || 'guest';
@@ -27,7 +25,7 @@ const Dashboard = () => {
   // Fetch dashboard statistics using authenticated API
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: () => apiRequest('/dashboard/stats'),
+    queryFn: () => fetch('/api/dashboard/stats'),
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 

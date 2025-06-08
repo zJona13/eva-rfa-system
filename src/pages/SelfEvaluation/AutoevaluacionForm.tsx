@@ -11,7 +11,6 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { ArrowLeft } from 'lucide-react';
 import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
@@ -25,7 +24,6 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
   const { t } = useLanguage();
   const queryClient = useQueryClient();
   const form = useForm();
-  const { apiRequest } = useApiWithToken();
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(
     evaluacionDraft?.subcriteriosRatings || {}
   );
@@ -34,14 +32,14 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
   // Fetch colaborador info by user ID
   const { data: colaboradorData, isLoading: isLoadingColaborador } = useQuery({
     queryKey: ['colaborador-by-user', user?.id],
-    queryFn: () => apiRequest(`/colaborador-by-user/${user?.id}`),
+    queryFn: () => fetch(`/colaborador-by-user/${user?.id}`),
     enabled: !!user?.id,
   });
 
   const createEvaluacionMutation = useMutation({
-    mutationFn: (evaluacionData: any) => apiRequest('/evaluaciones', {
+    mutationFn: (evaluacionData: any) => fetch('/evaluaciones', {
       method: 'POST',
-      body: evaluacionData
+      body: JSON.stringify(evaluacionData)
     }),
     onSuccess: () => {
       toast.success(t('selfEval.created'));
@@ -93,9 +91,9 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
         comments: data.comentarios || null,
         status: 'Pendiente'
       };
-      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+      fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
-        body: evaluacionData
+        body: JSON.stringify(evaluacionData)
       }).then(() => {
         toast.success('Borrador guardado exitosamente');
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
@@ -143,9 +141,9 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     };
     if (evaluacionDraft?.id) {
       // Actualizar evaluación existente
-      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+      fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
-        body: evaluacionData
+        body: JSON.stringify(evaluacionData)
       }).then(() => {
         toast.success(t('selfEval.finished'));
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });

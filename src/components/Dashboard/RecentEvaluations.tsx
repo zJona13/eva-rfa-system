@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,13 +9,7 @@ import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
 const API_BASE_URL = 'http://localhost:3309';
 
 const fetchRecentEvaluations = async () => {
-  const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`${API_BASE_URL}/api/dashboard/recent-evaluations`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    },
-  });
+  const response = await fetch(`${API_BASE_URL}/api/dashboard/recent-evaluations`);
 
   if (!response.ok) {
     throw new Error(`Error ${response.status}: ${response.statusText}`);

@@ -11,7 +11,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 import { ArrowLeft } from 'lucide-react';
 import { subcriteriosEstudiante, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
@@ -30,7 +29,6 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const form = useForm();
-  const { apiRequest } = useApiWithToken();
   const [selectedColaborador, setSelectedColaborador] = useState<string>(evaluacionDraft?.evaluatedId ? evaluacionDraft.evaluatedId.toString() : '');
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(
     evaluacionDraft?.subcriteriosRatings || {}
@@ -41,13 +39,13 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
   // Fetch colaboradores
   const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
     queryKey: ['colaboradores-para-evaluar'],
-    queryFn: () => apiRequest('/colaboradores-para-evaluar'),
+    queryFn: () => fetch('/colaboradores-para-evaluar'),
   });
 
   const createEvaluacionMutation = useMutation({
-    mutationFn: (evaluacionData: any) => apiRequest('/evaluaciones', {
+    mutationFn: (evaluacionData: any) => fetch('/evaluaciones', {
       method: 'POST',
-      body: evaluacionData
+      body: JSON.stringify(evaluacionData)
     }),
     onSuccess: () => {
       toast.success('Evaluación creada exitosamente');
@@ -104,9 +102,9 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
         comments: data.comentarios || null,
         status: 'Pendiente'
       };
-      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+      fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
-        body: evaluacionData
+        body: JSON.stringify(evaluacionData)
       }).then(() => {
         toast.success('Borrador guardado exitosamente');
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });
@@ -157,9 +155,9 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
     };
     if (evaluacionDraft?.id) {
       // Actualizar evaluación existente
-      apiRequest(`/evaluaciones/${evaluacionDraft.id}`, {
+      fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
-        body: evaluacionData
+        body: JSON.stringify(evaluacionData)
       }).then(() => {
         toast.success('Evaluación finalizada exitosamente');
         queryClient.invalidateQueries({ queryKey: ['evaluaciones-evaluador'] });

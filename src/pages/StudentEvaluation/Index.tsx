@@ -4,14 +4,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 import EvaluacionEstudianteForm from './EvaluacionEstudianteForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
 
 const StudentEvaluation = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
-  const { apiRequest } = useApiWithToken();
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
@@ -20,7 +18,7 @@ const StudentEvaluation = () => {
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-estudiante', user?.id],
-    queryFn: () => apiRequest(`/evaluaciones/evaluador/${user?.id}`),
+    queryFn: () => fetch(`/evaluaciones/evaluador/${user?.id}`),
     enabled: !!user?.id,
   });
 

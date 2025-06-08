@@ -1,6 +1,4 @@
-
 import React, { useState } from 'react';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,7 +7,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 
 interface IncidenciaDialogProps {
   open: boolean;
@@ -24,32 +21,10 @@ interface IncidenciaDialogProps {
 
 const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange, evaluacionData }) => {
   const { user } = useAuth();
-  const queryClient = useQueryClient();
-  const { apiRequest } = useApiWithToken();
   const [descripcion, setDescripcion] = useState('');
   const [tipo, setTipo] = useState('Académica');
 
   console.log('IncidenciaDialog props:', { open, evaluacionData, user });
-
-  const createIncidenciaMutation = useMutation({
-    mutationFn: (incidenciaData: any) => apiRequest('/incidencias', {
-      method: 'POST',
-      body: incidenciaData
-    }),
-    onSuccess: (data) => {
-      console.log('Incidencia creation success:', data);
-      toast.success('Incidencia creada exitosamente. Se ha notificado al docente.');
-      queryClient.invalidateQueries({ queryKey: ['incidencias'] });
-      queryClient.invalidateQueries({ queryKey: ['notificaciones'] });
-      onOpenChange(false);
-      setDescripcion('');
-      setTipo('Académica');
-    },
-    onError: (error: any) => {
-      console.error('Incidencia creation error:', error);
-      toast.error(`Error al crear incidencia: ${error.message}`);
-    },
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,7 +58,26 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
     };
 
     console.log('Sending incidencia data:', incidenciaData);
-    createIncidenciaMutation.mutate(incidenciaData);
+
+    fetch('/incidencias', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(incidenciaData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      console.log('Incidencia creation success:', data);
+      toast.success('Incidencia creada exitosamente. Se ha notificado al docente.');
+      onOpenChange(false);
+      setDescripcion('');
+      setTipo('Académica');
+    })
+    .catch(error => {
+      console.error('Incidencia creation error:', error);
+      toast.error(`Error al crear incidencia: ${error.message}`);
+    });
   };
 
   return (
@@ -134,8 +128,8 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={createIncidenciaMutation.isPending}>
-              {createIncidenciaMutation.isPending ? 'Creando...' : 'Crear Incidencia'}
+            <Button type="submit">
+              Crear Incidencia
             </Button>
           </div>
         </form>

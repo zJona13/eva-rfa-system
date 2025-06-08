@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -82,10 +81,8 @@ const reportTypes: ReportType[] = [
 ];
 
 const fetchReportData = async (endpoint: string) => {
-  const token = localStorage.getItem('iesrfa_token');
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
-      'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json',
     },
   });

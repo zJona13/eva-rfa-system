@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
-import { useApiWithToken } from '@/hooks/useApiWithToken';
 import AutoevaluacionForm from './AutoevaluacionForm';
 import IncidenciaDialog from '@/components/IncidenciaDialog';
 
@@ -13,7 +12,6 @@ const SelfEvaluation = () => {
   const { user } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
-  const { apiRequest } = useApiWithToken();
   const [showForm, setShowForm] = useState(false);
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
@@ -22,7 +20,7 @@ const SelfEvaluation = () => {
   // Fetch autoevaluaciones del usuario actual
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-colaborador', user?.colaboradorId],
-    queryFn: () => apiRequest(`/evaluaciones/colaborador/${user?.colaboradorId}`),
+    queryFn: () => fetch(`/evaluaciones/colaborador/${user?.colaboradorId}`),
     enabled: !!user?.colaboradorId,
   });
 

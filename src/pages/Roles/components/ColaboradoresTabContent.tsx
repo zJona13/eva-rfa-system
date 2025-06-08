@@ -84,10 +84,6 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   const createColaborador = async (data: any) => {
     const response = await fetch('http://localhost:3309/api/colaboradores', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('iesrfa_token')}`
-      },
       body: JSON.stringify(data)
     });
     
@@ -104,10 +100,6 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   const updateColaborador = async ({ id, data }: { id: number; data: any }) => {
     const response = await fetch(`http://localhost:3309/api/colaboradores/${id}`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${localStorage.getItem('iesrfa_token')}`
-      },
       body: JSON.stringify(data)
     });
     
@@ -123,10 +115,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   // Eliminar colaborador
   const deleteColaborador = async (id: number) => {
     const response = await fetch(`http://localhost:3309/api/colaboradores/${id}`, {
-      method: 'DELETE',
-      headers: {
-        'Authorization': `Bearer ${localStorage.getItem('iesrfa_token')}`
-      }
+      method: 'DELETE'
     });
     
     const result = await response.json();
