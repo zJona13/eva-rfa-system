@@ -30,7 +30,7 @@ const createTipoContrato = async (name: string): Promise<{ success: boolean, mes
   try {
     const token = localStorage.getItem('iesrfa_token');
     console.log('Creating tipo contrato with token:', token ? 'Token exists' : 'No token');
-    const response = await fetch('http://localhost:3306/api/tiposcontrato', {
+    const response = await fetch('http://localhost:3309/api/tiposcontrato', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -59,7 +59,7 @@ const createTipoContrato = async (name: string): Promise<{ success: boolean, mes
 const updateTipoContrato = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
   try {
     const token = localStorage.getItem('iesrfa_token');
-    const response = await fetch(`http://localhost:3306/api/tiposcontrato/${id}`, {
+    const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -86,7 +86,7 @@ const updateTipoContrato = async ({ id, name }: { id: number, name: string }): P
 const deleteTipoContrato = async (id: number): Promise<{ success: boolean, message: string }> => {
   try {
     const token = localStorage.getItem('iesrfa_token');
-    const response = await fetch(`http://localhost:3306/api/tiposcontrato/${id}`, {
+    const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
       method: 'DELETE',
       headers: {
         'Authorization': `Bearer ${token}`

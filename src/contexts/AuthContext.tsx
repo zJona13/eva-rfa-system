@@ -34,7 +34,7 @@ export const useAuth = () => {
 };
 
 // API URL
-const API_URL = 'http://localhost:3306/api';
+const API_URL = 'http://localhost:3309/api';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);

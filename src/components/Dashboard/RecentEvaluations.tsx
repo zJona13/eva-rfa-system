@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth } from '@/contexts/AuthContext';
 import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:3306';
+const API_BASE_URL = 'http://localhost:3309';
 
 const fetchRecentEvaluations = async () => {
   const token = localStorage.getItem('iesrfa_token');

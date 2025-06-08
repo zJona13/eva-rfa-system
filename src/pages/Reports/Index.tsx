@@ -11,7 +11,7 @@ import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calend
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
 
-const API_BASE_URL = 'http://localhost:3306';
+const API_BASE_URL = 'http://localhost:3309';
 
 interface ReportType {
   id: string;

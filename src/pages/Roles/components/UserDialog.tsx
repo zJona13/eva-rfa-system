@@ -110,7 +110,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
       const token = localStorage.getItem('iesrfa_token');
       const excludeUserId = userData?.id ? `?excludeUserId=${userData.id}` : '';
       
-      const response = await fetch(`http://localhost:3306/api/users/available-colaboradores${excludeUserId}`, {
+      const response = await fetch(`http://localhost:3309/api/users/available-colaboradores${excludeUserId}`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

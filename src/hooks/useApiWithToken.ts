@@ -1,9 +1,8 @@
-
 import { useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-const API_BASE_URL = 'http://localhost:3306/api';
+const API_BASE_URL = 'http://localhost:3309/api';
 
 interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE';

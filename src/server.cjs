@@ -15,7 +15,7 @@ const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
 
 const app = express();
-const PORT = process.env.PORT || 3306;
+const PORT = process.env.PORT || 3309;
 
 // Middleware
 app.use(cors({

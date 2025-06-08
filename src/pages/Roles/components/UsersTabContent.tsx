@@ -56,7 +56,7 @@ interface UsersTabContentProps {
 // Servicios API - Fixed token name
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/users', {
+  const response = await fetch('http://localhost:3309/api/users', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ const createUser = async (userData: UserFormValues): Promise<{ success: boolean,
 
 const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`http://localhost:3306/api/users/${userData.id}`, {
+  const response = await fetch(`http://localhost:3309/api/users/${userData.id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -120,7 +120,7 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
 
 const deleteUser = async (id: number): Promise<{ success: boolean, message: string }> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch(`http://localhost:3306/api/users/${id}`, {
+  const response = await fetch(`http://localhost:3309/api/users/${id}`, {
     method: 'DELETE',
     headers: {
       'Authorization': `Bearer ${token}`

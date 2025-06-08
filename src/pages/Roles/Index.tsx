@@ -70,10 +70,10 @@ interface Area {
   descripcion: string;
 }
 
-// Servicios API - Updated port from 5000 to 3306
+// Servicios API - Updated port from 5000 to 3309
 const fetchRoles = async (): Promise<Role[]> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/roles', {
+  const response = await fetch('http://localhost:3309/api/roles', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -89,7 +89,7 @@ const fetchRoles = async (): Promise<Role[]> => {
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/tiposcolaborador', {
+  const response = await fetch('http://localhost:3309/api/tiposcolaborador', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -105,7 +105,7 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/tiposcontrato', {
+  const response = await fetch('http://localhost:3309/api/tiposcontrato', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -121,7 +121,7 @@ const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
 
 const fetchUsers = async (): Promise<User[]> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/users', {
+  const response = await fetch('http://localhost:3309/api/users', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -141,7 +141,7 @@ const fetchUsers = async (): Promise<User[]> => {
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/colaboradores', {
+  const response = await fetch('http://localhost:3309/api/colaboradores', {
     headers: {
       'Authorization': `Bearer ${token}`
     }
@@ -157,7 +157,7 @@ const fetchColaboradores = async (): Promise<Colaborador[]> => {
 
 const fetchAreas = async (): Promise<Area[]> => {
   const token = localStorage.getItem('iesrfa_token');
-  const response = await fetch('http://localhost:3306/api/areas', {
+  const response = await fetch('http://localhost:3309/api/areas', {
     headers: {
       'Authorization': `Bearer ${token}`
     }

@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 
-const API_BASE_URL = 'http://localhost:3306/api';
+const API_BASE_URL = 'http://localhost:3309/api';
 
 const fetchIncidencias = async (userId: number) => {
   const token = localStorage.getItem('iesrfa_token');

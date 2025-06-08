@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +23,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3306/api/auth/forgot-password', {
+      const response = await fetch('http://localhost:3309/api/auth/forgot-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -52,7 +51,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3306/api/auth/verify-reset-code', {
+      const response = await fetch('http://localhost:3309/api/auth/verify-reset-code', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -92,7 +91,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3306/api/auth/reset-password', {
+      const response = await fetch('http://localhost:3309/api/auth/reset-password', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
