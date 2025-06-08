@@ -29,11 +29,6 @@ app.use(express.json());
 // Logging middleware
 app.use((req, res, next) => {
   console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
-  if (req.headers.authorization) {
-    console.log('🔑 Authorization header presente');
-  } else {
-    console.log('⚠️ No authorization header');
-  }
   next();
 });
 
@@ -54,7 +49,7 @@ testConnection()
 // RUTAS DE AUTENTICACIÓN (SIN PROTECCIÓN)
 // ========================
 
-// Login con JWT
+// Login sin JWT
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -162,8 +157,7 @@ app.post('/api/auth/verify-reset-code', async (req, res) => {
       console.log('✅ Código verificado para:', email);
       res.json({
         success: true,
-        message: result.message,
-        token: result.token
+        message: result.message
       });
     } else {
       console.log('❌ Error verificando código para:', email, '-', result.message);
@@ -184,14 +178,14 @@ app.post('/api/auth/verify-reset-code', async (req, res) => {
 // Restablecer contraseña
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
-    const { email, token, newPassword } = req.body;
+    const { email, code, newPassword } = req.body;
     
     console.log('🔐 Restablecimiento de contraseña para:', email);
     
-    if (!email || !token || !newPassword) {
+    if (!email || !code || !newPassword) {
       return res.status(400).json({ 
         success: false, 
-        message: 'Email, token y nueva contraseña son requeridos' 
+        message: 'Email, código y nueva contraseña son requeridos' 
       });
     }
 
@@ -202,7 +196,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
       });
     }
     
-    const result = await authService.resetPassword(email, token, newPassword);
+    const result = await authService.resetPassword(email, code, newPassword);
     
     if (result.success) {
       console.log('✅ Contraseña restablecida para:', email);
@@ -226,17 +220,10 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// Logout con invalidación de token
+// Logout sin token
 app.post('/api/auth/logout', async (req, res) => {
   try {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (token) {
-      await authService.invalidateToken(token);
-      console.log('🔓 Logout exitoso, token invalidado');
-    }
-    
+    console.log('🔓 Logout exitoso');
     res.json({ success: true, message: 'Logout exitoso' });
   } catch (error) {
     console.error('❌ Error en logout:', error);
@@ -247,31 +234,14 @@ app.post('/api/auth/logout', async (req, res) => {
   }
 });
 
-// Verificar token y obtener usuario actual
-app.get('/api/auth/me', async (req, res) => {
-  try {
-    console.log('👤 Obteniendo información del usuario actual');
-    res.json({
-      success: true,
-      user: req.user
-    });
-  } catch (error) {
-    console.error('❌ Error obteniendo usuario actual:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Error interno del servidor' 
-    });
-  }
-});
-
 // ========================
-// TODAS LAS DEMÁS RUTAS REQUIEREN AUTENTICACIÓN
+// TODAS LAS DEMÁS RUTAS (SIN VERIFICACIÓN DE TOKEN)
 // ========================
 
 // Rutas de roles
 app.get('/api/roles', async (req, res) => {
   try {
-    console.log('📋 Obteniendo roles - Usuario:', req.user.name);
+    console.log('📋 Obteniendo roles');
     const result = await roleService.getAllRoles();
     
     if (!result.success) {
@@ -928,23 +898,9 @@ app.get('/api/notificaciones/unread-count/:userId', async (req, res) => {
 // Reporte de evaluaciones aprobadas
 app.get('/api/reportes/evaluaciones-aprobadas', async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-aprobadas - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    console.log('GET /api/reportes/evaluaciones-aprobadas');
     
-    // Verificar permisos (solo admin y evaluadores)
-    const userRole = req.user?.role?.toLowerCase();
-    console.log('Verificando permisos para rol:', userRole);
-    
-    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
-      console.log('Acceso denegado para rol:', userRole);
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para acceder a los reportes'
-      });
-    }
-
-    console.log('Acceso autorizado, obteniendo datos...');
     const result = await reportesService.getEvaluacionesAprobadas();
-    console.log('Resultado evaluaciones aprobadas:', result);
     
     if (result.success) {
       res.json(result);
@@ -960,18 +916,9 @@ app.get('/api/reportes/evaluaciones-aprobadas', async (req, res) => {
 // Reporte de evaluaciones desaprobadas
 app.get('/api/reportes/evaluaciones-desaprobadas', async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-desaprobadas - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    console.log('GET /api/reportes/evaluaciones-desaprobadas');
     
-    const userRole = req.user?.role?.toLowerCase();
-    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para acceder a los reportes'
-      });
-    }
-
     const result = await reportesService.getEvaluacionesDesaprobadas();
-    console.log('Resultado evaluaciones desaprobadas:', result);
     
     if (result.success) {
       res.json(result);
@@ -987,18 +934,9 @@ app.get('/api/reportes/evaluaciones-desaprobadas', async (req, res) => {
 // Reporte de evaluados con incidencias
 app.get('/api/reportes/evaluados-con-incidencias', async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluados-con-incidencias - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    console.log('GET /api/reportes/evaluados-con-incidencias');
     
-    const userRole = req.user?.role?.toLowerCase();
-    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para acceder a los reportes'
-      });
-    }
-
     const result = await reportesService.getEvaluadosConIncidencias();
-    console.log('Resultado evaluados con incidencias:', result);
     
     if (result.success) {
       res.json(result);
@@ -1014,18 +952,9 @@ app.get('/api/reportes/evaluados-con-incidencias', async (req, res) => {
 // Reporte de personal de baja
 app.get('/api/reportes/personal-de-baja', async (req, res) => {
   try {
-    console.log('GET /api/reportes/personal-de-baja - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    console.log('GET /api/reportes/personal-de-baja');
     
-    const userRole = req.user?.role?.toLowerCase();
-    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para acceder a los reportes'
-      });
-    }
-
     const result = await reportesService.getPersonalDeBaja();
-    console.log('Resultado personal de baja:', result);
     
     if (result.success) {
       res.json(result);
@@ -1041,18 +970,9 @@ app.get('/api/reportes/personal-de-baja', async (req, res) => {
 // Reporte de personal con alta calificación
 app.get('/api/reportes/personal-alta-calificacion', async (req, res) => {
   try {
-    console.log('GET /api/reportes/personal-alta-calificacion - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    console.log('GET /api/reportes/personal-alta-calificacion');
     
-    const userRole = req.user?.role?.toLowerCase();
-    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para acceder a los reportes'
-      });
-    }
-
     const result = await reportesService.getPersonalAltaCalificacion();
-    console.log('Resultado personal alta calificación:', result);
     
     if (result.success) {
       res.json(result);
@@ -1068,18 +988,9 @@ app.get('/api/reportes/personal-alta-calificacion', async (req, res) => {
 // Reporte de evaluaciones por semestre
 app.get('/api/reportes/evaluaciones-por-semestre', async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-por-semestre - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    console.log('GET /api/reportes/evaluaciones-por-semestre');
     
-    const userRole = req.user?.role?.toLowerCase();
-    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para acceder a los reportes'
-      });
-    }
-
     const result = await reportesService.getEvaluacionesPorSemestre();
-    console.log('Resultado evaluaciones por semestre:', result);
     
     if (result.success) {
       res.json(result);
@@ -1095,18 +1006,9 @@ app.get('/api/reportes/evaluaciones-por-semestre', async (req, res) => {
 // Reporte de evaluaciones por área
 app.get('/api/reportes/evaluaciones-por-area', async (req, res) => {
   try {
-    console.log('GET /api/reportes/evaluaciones-por-area - Usuario:', req.user?.name, 'Rol:', req.user?.role);
+    console.log('GET /api/reportes/evaluaciones-por-area');
     
-    const userRole = req.user?.role?.toLowerCase();
-    if (!userRole || (!userRole.includes('admin') && !userRole.includes('evaluador'))) {
-      return res.status(403).json({
-        success: false,
-        message: 'No tienes permisos para acceder a los reportes'
-      });
-    }
-
     const result = await reportesService.getEvaluacionesPorArea();
-    console.log('Resultado evaluaciones por área:', result);
     
     if (result.success) {
       res.json(result);
@@ -1124,7 +1026,7 @@ console.log('Rutas de reportes configuradas exitosamente');
 // Endpoint para obtener datos del gráfico de evaluaciones para el dashboard
 app.get('/api/dashboard/evaluations-chart', async (req, res) => {
   try {
-    console.log(`GET /api/dashboard/evaluations-chart - Usuario: ${req.user?.name} Rol: ${req.user?.role}`);
+    console.log('GET /api/dashboard/evaluations-chart');
     
     // Obtener conteo de evaluaciones por estado
     const [completadas] = await pool.execute(
@@ -1184,79 +1086,12 @@ app.get('/api/dashboard/evaluations-chart', async (req, res) => {
 // Endpoint para obtener estadísticas del dashboard
 app.get('/api/dashboard/stats', async (req, res) => {
   try {
-    console.log(`GET /api/dashboard/stats - Usuario: ${req.user?.name} Rol: ${req.user?.role}`);
+    console.log('GET /api/dashboard/stats');
     
-    const userId = req.user.id;
-    const userRole = req.user.role;
-    const colaboradorId = req.user.colaboradorId;
+    // Como no hay token, no hay usuario en req.user, se puede implementar según necesidad
+    // Aquí se devuelve un objeto vacío o se puede implementar lógica según sesión
     
-    let stats = {};
-    
-    if (userRole === 'Evaluado' && colaboradorId) {
-      // Estadísticas para evaluados (docentes)
-      const [evaluacionesRecibidas] = await pool.execute(
-        'SELECT COUNT(*) as total FROM EVALUACION WHERE idColaborador = ?',
-        [colaboradorId]
-      );
-      
-      const [evaluacionesAprobadas] = await pool.execute(
-        'SELECT COUNT(*) as total FROM EVALUACION WHERE idColaborador = ? AND puntaje >= 11',
-        [colaboradorId]
-      );
-      
-      const [promedioCalificacion] = await pool.execute(
-        'SELECT AVG(puntaje) as promedio FROM EVALUACION WHERE idColaborador = ?',
-        [colaboradorId]
-      );
-      
-      const [incidenciasPersonales] = await pool.execute(
-        `SELECT COUNT(i.idIncidencia) as total 
-         FROM INCIDENCIA i 
-         JOIN USUARIO u ON i.idUsuarioAfectado = u.idUsuario 
-         WHERE u.idColaborador = ?`,
-        [colaboradorId]
-      );
-      
-      stats = {
-        evaluacionesRecibidas: evaluacionesRecibidas[0].total,
-        evaluacionesAprobadas: evaluacionesAprobadas[0].total,
-        promedioCalificacion: parseFloat(promedioCalificacion[0].promedio || 0).toFixed(1),
-        incidenciasPersonales: incidenciasPersonales[0].total
-      };
-      
-    } else if (userRole === 'Administrador' || userRole === 'Evaluador') {
-      // Estadísticas generales para administradores y evaluadores
-      const [totalEvaluaciones] = await pool.execute(
-        'SELECT COUNT(*) as total FROM EVALUACION'
-      );
-      
-      const [evaluacionesPendientes] = await pool.execute(
-        'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "Pendiente"'
-      );
-      
-      const [totalIncidencias] = await pool.execute(
-        'SELECT COUNT(*) as total FROM INCIDENCIA'
-      );
-      
-      const [validacionesPendientes] = await pool.execute(
-        'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "En Revisión"'
-      );
-      
-      const [promedioGeneral] = await pool.execute(
-        'SELECT AVG(puntaje) as promedio FROM EVALUACION'
-      );
-      
-      stats = {
-        totalEvaluaciones: totalEvaluaciones[0].total,
-        evaluacionesPendientes: evaluacionesPendientes[0].total,
-        totalIncidencias: totalIncidencias[0].total,
-        validacionesPendientes: validacionesPendientes[0].total,
-        promedioGeneral: parseFloat(promedioGeneral[0].promedio || 0).toFixed(1)
-      };
-    }
-    
-    console.log('Dashboard stats obtenidas:', stats);
-    res.json({ success: true, stats });
+    res.json({ success: true, stats: {} });
     
   } catch (error) {
     console.error('Error al obtener estadísticas del dashboard:', error);
@@ -1267,42 +1102,21 @@ app.get('/api/dashboard/stats', async (req, res) => {
 // Endpoint para obtener evaluaciones recientes para el dashboard
 app.get('/api/dashboard/recent-evaluations', async (req, res) => {
   try {
-    console.log('Getting recent evaluations for user:', req.user.id, 'Role:', req.user.role);
+    console.log('GET /api/dashboard/recent-evaluations');
 
-    let query;
-    let params = [];
-
-    if (req.user.role === 'Evaluado') {
-      // Para usuarios evaluados: mostrar sus evaluaciones recibidas
-      query = `
-        SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
-               e.puntaje, e.tipo, e.estado,
-               CONCAT(evaluador.nombres, ' ', evaluador.apePat, ' ', evaluador.apeMat) as evaluadorNombre
-        FROM EVALUACION e
-        JOIN USUARIO u_evaluador ON e.idUsuario = u_evaluador.idUsuario
-        JOIN COLABORADOR evaluador ON u_evaluador.idColaborador = evaluador.idColaborador
-        WHERE e.idColaborador = ?
-        ORDER BY e.fechaEvaluacion DESC
-        LIMIT 10
-      `;
-      params = [req.user.colaboradorId];
-    } else {
-      // Para administradores y evaluadores: mostrar evaluaciones del sistema
-      query = `
-        SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
-               e.puntaje, e.tipo, e.estado,
-               CONCAT(evaluado.nombres, ' ', evaluado.apePat, ' ', evaluado.apeMat) as evaluadoNombre,
-               CONCAT(evaluador.nombres, ' ', evaluador.apePat, ' ', evaluador.apeMat) as evaluadorNombre
-        FROM EVALUACION e
-        JOIN COLABORADOR evaluado ON e.idColaborador = evaluado.idColaborador
-        JOIN USUARIO u_evaluador ON e.idUsuario = u_evaluador.idUsuario
-        JOIN COLABORADOR evaluador ON u_evaluador.idColaborador = evaluador.idColaborador
-        ORDER BY e.fechaEvaluacion DESC
-        LIMIT 10
-      `;
-    }
-
-    const [evaluaciones] = await pool.execute(query, params);
+    // Sin usuario autenticado, se puede devolver evaluaciones generales o vacías
+    const [evaluaciones] = await pool.execute(
+      `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
+              e.puntaje, e.tipo, e.estado,
+              CONCAT(evaluado.nombres, ' ', evaluado.apePat, ' ', evaluado.apeMat) as evaluadoNombre,
+              CONCAT(evaluador.nombres, ' ', evaluador.apePat, ' ', evaluador.apeMat) as evaluadorNombre
+       FROM EVALUACION e
+       JOIN COLABORADOR evaluado ON e.idColaborador = evaluado.idColaborador
+       JOIN USUARIO u_evaluador ON e.idUsuario = u_evaluador.idUsuario
+       JOIN COLABORADOR evaluador ON u_evaluador.idColaborador = evaluador.idColaborador
+       ORDER BY e.fechaEvaluacion DESC
+       LIMIT 10`
+    );
     
     console.log('Recent evaluations fetched:', evaluaciones.length);
     
@@ -1382,7 +1196,7 @@ setInterval(() => {
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
-  console.log(`🔐 Autenticación JWT habilitada`);
+  console.log(`🔓 Sistema sin autenticación JWT`);
 });
 
 app.put('/api/evaluaciones/:id/finalizar', async (req, res) => {

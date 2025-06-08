@@ -1,8 +1,6 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
-
-const JWT_SECRET = process.env.JWT_SECRET || 'your_secret_key_here_change_in_production';
-const JWT_EXPIRATION = '24h';
 
 // Crear tabla de códigos de recuperación si no existe
 const createPasswordResetTable = async () => {
@@ -22,13 +20,11 @@ const createPasswordResetTable = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           email VARCHAR(255) NOT NULL,
           code VARCHAR(6) NOT NULL,
-          verificationCodeToken VARCHAR(500) NOT NULL,
           expiration DATETIME NOT NULL,
           used BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           INDEX idx_email (email),
           INDEX idx_code (code),
-          INDEX idx_verificationCodeToken (verificationCodeToken),
           INDEX idx_expiration (expiration)
         )
       `);
@@ -43,7 +39,7 @@ const createPasswordResetTable = async () => {
       `);
       
       const columnNames = columns.map(col => col.COLUMN_NAME);
-      const requiredColumns = ['id', 'email', 'code', 'verificationCodeToken', 'expiration', 'used', 'created_at'];
+      const requiredColumns = ['id', 'email', 'code', 'expiration', 'used', 'created_at'];
       
       const missingColumns = requiredColumns.filter(col => !columnNames.includes(col));
       
@@ -55,13 +51,11 @@ const createPasswordResetTable = async () => {
             id INT AUTO_INCREMENT PRIMARY KEY,
             email VARCHAR(255) NOT NULL,
             code VARCHAR(6) NOT NULL,
-            verificationCodeToken VARCHAR(500) NOT NULL,
             expiration DATETIME NOT NULL,
             used BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_email (email),
             INDEX idx_code (code),
-            INDEX idx_verificationCodeToken (verificationCodeToken),
             INDEX idx_expiration (expiration)
           )
         `);
@@ -78,7 +72,7 @@ const createPasswordResetTable = async () => {
 // Inicializar tablas al cargar el módulo
 createPasswordResetTable();
 
-// Generar código de verificación para recuperación de contraseña
+// Generar código de verificación para recuperación de contraseña (sin token)
 const generatePasswordResetCode = async (email) => {
   try {
     console.log('🔐 Generando código de recuperación para:', email);
@@ -96,9 +90,6 @@ const generatePasswordResetCode = async (email) => {
     // Generar código de 6 dígitos
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Generar token único para la validación
-    const verificationCodeToken = jwt.sign({ email, code }, JWT_SECRET, { expiresIn: '15m' });
-    
     // Calcular fecha de expiración (15 minutos)
     const expiration = new Date();
     expiration.setMinutes(expiration.getMinutes() + 15);
@@ -111,8 +102,8 @@ const generatePasswordResetCode = async (email) => {
 
     // Guardar código en BD
     await pool.execute(
-      'INSERT INTO PASSWORD_RESET_CODES (email, code, verificationCodeToken, expiration) VALUES (?, ?, ?, ?)',
-      [email, code, verificationCodeToken, expiration]
+      'INSERT INTO PASSWORD_RESET_CODES (email, code, expiration) VALUES (?, ?, ?)',
+      [email, code, expiration]
     );
 
     // Simular envío de email (en producción aquí iría el servicio de email)
@@ -131,7 +122,7 @@ const generatePasswordResetCode = async (email) => {
   }
 };
 
-// Verificar código de recuperación
+// Verificar código de recuperación (sin token)
 const verifyPasswordResetCode = async (email, code) => {
   try {
     console.log('🔍 Verificando código de recuperación para:', email);
@@ -185,7 +176,6 @@ const verifyPasswordResetCode = async (email, code) => {
 
     return {
       success: true,
-      verificationCodeToken: resetData.verificationCodeToken,
       message: 'Código verificado correctamente'
     };
   } catch (error) {
@@ -194,29 +184,29 @@ const verifyPasswordResetCode = async (email, code) => {
   }
 };
 
-// Restablecer contraseña
-const resetPassword = async (email, codigoVerificacion, newPassword) => {
+// Restablecer contraseña (sin token)
+const resetPassword = async (email, code, newPassword) => {
   try {
     console.log('🔐 Restableciendo contraseña para:', email);
     
-    // Verificar token
-    try {
-      const decoded = jwt.verify(codigoVerificacion, JWT_SECRET);
-      if (decoded.email !== email) {
-        return { success: false, message: 'Token inválido' };
-      }
-    } catch (error) {
-      return { success: false, message: 'Token expirado o inválido' };
-    }
-
-    // Verificar que el token existe en BD y no ha sido usado
-    const [tokens] = await pool.execute(
-      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND verificationCodeToken = ? AND used = FALSE',
-      [email, codigoVerificacion]
+    // Verificar que el código existe y es válido
+    const [codes] = await pool.execute(
+      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND code = ? AND used = FALSE ORDER BY created_at DESC LIMIT 1',
+      [email, code]
     );
 
-    if (tokens.length === 0) {
-      return { success: false, message: 'Token no válido o ya utilizado' };
+    if (codes.length === 0) {
+      return { success: false, message: 'Código no válido o ya utilizado' };
+    }
+
+    const resetData = codes[0];
+    
+    // Verificar si el código ha expirado
+    const now = new Date();
+    const expirationDate = new Date(resetData.expiration);
+    
+    if (now > expirationDate) {
+      return { success: false, message: 'El código ha expirado. Solicita uno nuevo.' };
     }
 
     // Hash de la nueva contraseña
