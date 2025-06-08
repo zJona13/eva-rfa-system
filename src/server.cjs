@@ -220,7 +220,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// Logout sin token
 app.post('/api/auth/logout', async (req, res) => {
   try {
     console.log('🔓 Logout exitoso');
@@ -233,10 +232,6 @@ app.post('/api/auth/logout', async (req, res) => {
     });
   }
 });
-
-// ========================
-// TODAS LAS DEMÁS RUTAS (SIN VERIFICACIÓN DE TOKEN)
-// ========================
 
 // Rutas de roles
 app.get('/api/roles', async (req, res) => {
@@ -1087,9 +1082,7 @@ app.get('/api/dashboard/evaluations-chart', async (req, res) => {
 app.get('/api/dashboard/stats', async (req, res) => {
   try {
     console.log('GET /api/dashboard/stats');
-    
-    // Como no hay token, no hay usuario en req.user, se puede implementar según necesidad
-    // Aquí se devuelve un objeto vacío o se puede implementar lógica según sesión
+  
     
     res.json({ success: true, stats: {} });
     

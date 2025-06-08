@@ -60,9 +60,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  // Eliminar verificación de token al cargar la app
   useEffect(() => {
-    // Ya no se verifica token, solo limpiar loading
     setIsLoading(false);
   }, []);
 

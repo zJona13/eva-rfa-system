@@ -72,7 +72,6 @@ const createPasswordResetTable = async () => {
 // Inicializar tablas al cargar el módulo
 createPasswordResetTable();
 
-// Generar código de verificación para recuperación de contraseña (sin token)
 const generatePasswordResetCode = async (email) => {
   try {
     console.log('🔐 Generando código de recuperación para:', email);
@@ -122,7 +121,6 @@ const generatePasswordResetCode = async (email) => {
   }
 };
 
-// Verificar código de recuperación (sin token)
 const verifyPasswordResetCode = async (email, code) => {
   try {
     console.log('🔍 Verificando código de recuperación para:', email);
@@ -184,7 +182,6 @@ const verifyPasswordResetCode = async (email, code) => {
   }
 };
 
-// Restablecer contraseña (sin token)
 const resetPassword = async (email, code, newPassword) => {
   try {
     console.log('🔐 Restableciendo contraseña para:', email);
@@ -241,7 +238,6 @@ const resetPassword = async (email, code, newPassword) => {
   }
 };
 
-// Login sin token
 const login = async (correo, contrasena) => {
   try {
     console.log('🔐 Iniciando proceso de login para:', correo);
@@ -300,7 +296,6 @@ const login = async (correo, contrasena) => {
   }
 };
 
-// Registro sin token
 const register = async (nombre, correo, contrasena, roleId = 4) => {
   try {
     const [existingUsers] = await pool.execute(

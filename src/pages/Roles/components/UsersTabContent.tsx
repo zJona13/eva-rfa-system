@@ -53,7 +53,6 @@ interface UsersTabContentProps {
   areas: Area[];
 }
 
-// Servicios API - Fixed token name
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
   const response = await fetch('http://localhost:3309/api/users', {
     method: 'POST',
