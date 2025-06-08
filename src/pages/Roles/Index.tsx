@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
 import { Search, Users, UserCog, UserSquare2, FileText } from 'lucide-react';
@@ -13,6 +12,7 @@ import TipoContratoTabContent from './components/TipoContratoTabContent';
 import UsersTabContent from './components/UsersTabContent';
 import ColaboradoresTabContent from './components/ColaboradoresTabContent';
 import AreaTabContent from './components/AreaTabContent';
+import EstudiantesTabContent from './components/EstudiantesTabContent';
 
 // Tipos
 interface Role {
@@ -70,6 +70,22 @@ interface Area {
   id: number;
   name: string;
   descripcion: string;
+}
+
+interface Estudiante {
+  id: number;
+  codigo: string;
+  sexo: string;
+  semestre: string;
+  areaId: number;
+  areaName: string;
+  usuarioId: number;
+  usuarioCorreo: string;
+}
+
+interface Usuario {
+  id: number;
+  correo: string;
 }
 
 // Servicios API - Updated port from 5000 to 3309
@@ -141,6 +157,24 @@ const fetchAreas = async (): Promise<Area[]> => {
   return data.areas;
 };
 
+const fetchEstudiantes = async (): Promise<Estudiante[]> => {
+  const response = await fetch('http://localhost:3309/api/estudiantes');
+  if (!response.ok) {
+    throw new Error('Error al cargar estudiantes');
+  }
+  const data = await response.json();
+  return data.estudiantes;
+};
+
+const fetchUsuarios = async (): Promise<Usuario[]> => {
+  const response = await fetch('http://localhost:3309/api/users');
+  if (!response.ok) {
+    throw new Error('Error al cargar usuarios');
+  }
+  const data = await response.json();
+  return data.users.map((user: any) => ({ id: user.id, correo: user.email }));
+};
+
 // Componente principal
 const Roles = () => {
   // State
@@ -202,6 +236,24 @@ const Roles = () => {
     queryFn: fetchAreas
   });
   
+  const { 
+    data: estudiantes = [], 
+    isLoading: estudiantesLoading,
+    error: estudiantesError
+  } = useQuery({
+    queryKey: ['estudiantes'],
+    queryFn: fetchEstudiantes
+  });
+  
+  const { 
+    data: usuarios = [], 
+    isLoading: usuariosLoading,
+    error: usuariosError
+  } = useQuery({
+    queryKey: ['usuarios'],
+    queryFn: fetchUsuarios
+  });
+  
   // Manejo de errores
   if (rolesError && activeTab === 'roles') {
     toast.error('Error al cargar los roles');
@@ -225,6 +277,14 @@ const Roles = () => {
   
   if (areasError && activeTab === 'areas') {
     toast.error('Error al cargar las áreas');
+  }
+  
+  if (estudiantesError && activeTab === 'estudiantes') {
+    toast.error('Error al cargar los estudiantes');
+  }
+  
+  if (usuariosError && activeTab === 'estudiantes') {
+    toast.error('Error al cargar los usuarios');
   }
 
   return (
@@ -254,6 +314,10 @@ const Roles = () => {
             <TabsTrigger value="colaboradores" className="flex items-center gap-1">
               <UserSquare2 className="h-4 w-4" />
               <span>Colaboradores</span>
+            </TabsTrigger>
+            <TabsTrigger value="estudiantes" className="flex items-center gap-1">
+              <UserSquare2 className="h-4 w-4" />
+              <span>Estudiantes</span>
             </TabsTrigger>
             <TabsTrigger value="users" className="flex items-center gap-1">
               <UserCog className="h-4 w-4" />
@@ -315,6 +379,17 @@ const Roles = () => {
             tiposContrato={tiposContrato}
             roles={roles}
             areas={areas}
+          />
+        </TabsContent>
+        
+        {/* Tab de Estudiantes */}
+        <TabsContent value="estudiantes" className="space-y-4">
+          <EstudiantesTabContent
+            estudiantes={estudiantes}
+            isLoading={estudiantesLoading}
+            searchQuery={searchQuery}
+            areas={areas}
+            usuarios={usuarios}
           />
         </TabsContent>
         
