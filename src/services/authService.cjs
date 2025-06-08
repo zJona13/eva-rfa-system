@@ -1,4 +1,3 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
 
@@ -242,17 +241,17 @@ const login = async (correo, contrasena) => {
   try {
     console.log('🔐 Iniciando proceso de login para:', correo);
     
-    // Consulta mejorada para obtener también el nombre del colaborador
+    // Consulta ajustada a la estructura real de la base de datos
     const [users] = await pool.execute(
-      `SELECT u.idUsuario, u.nombre, u.correo, u.vigencia, u.contrasena,
-              t.nombre as role, t.idTipoUsu as roleId, u.idColaborador,
+      `SELECT u.idUsuario, u.correo, u.contrasena, u.estado,
+              t.nombre as role, t.idTipoUsuario as roleId, u.idColaborador,
               CASE 
                 WHEN u.idColaborador IS NOT NULL 
-                THEN CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat)
-                ELSE u.nombre
+                THEN CONCAT(c.nombreColaborador, ' ', c.apePaColaborador, ' ', c.apeMaColaborador)
+                ELSE ''
               END as colaboradorName
        FROM USUARIO u 
-       JOIN TIPO_USUARIO t ON u.idTipoUsu = t.idTipoUsu 
+       JOIN TIPO_USUARIO t ON u.idTipoUsuario = t.idTipoUsuario 
        LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
        WHERE u.correo = ?`,
       [correo]
@@ -265,7 +264,7 @@ const login = async (correo, contrasena) => {
 
     const user = users[0];
 
-    if (!user.vigencia) {
+    if (user.estado !== 'Activo') {
       console.log('❌ Usuario inactivo:', correo);
       return { success: false, message: 'Usuario inactivo' };
     }
@@ -282,7 +281,6 @@ const login = async (correo, contrasena) => {
       success: true,
       user: {
         id: user.idUsuario,
-        name: user.nombre,
         email: user.correo,
         role: user.role,
         roleId: user.roleId,

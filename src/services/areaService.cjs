@@ -14,9 +14,12 @@ const getAllAreas = async () => {
 // Crear un área
 const createArea = async (nombre, descripcion) => {
   try {
+    // Permitir que el parámetro sea 'nombre' o 'name'
+    const areaNombre = nombre || arguments[0]?.name;
+    const areaDesc = descripcion || arguments[1]?.descripcion;
     const [result] = await pool.execute(
       'INSERT INTO AREA (nombre, descripcion) VALUES (?, ?)',
-      [nombre, descripcion]
+      [areaNombre, areaDesc]
     );
     return { success: true, id: result.insertId, message: 'Área creada exitosamente' };
   } catch (error) {
@@ -28,9 +31,13 @@ const createArea = async (nombre, descripcion) => {
 // Actualizar un área
 const updateArea = async (id, nombre, descripcion) => {
   try {
+    // Permitir que el parámetro sea 'nombre' o 'name'
+    const areaNombre = nombre || arguments[1]?.name;
+    const areaDesc = descripcion || arguments[2]?.descripcion;
+    const areaId = id || arguments[0]?.id;
     const [result] = await pool.execute(
       'UPDATE AREA SET nombre = ?, descripcion = ? WHERE idArea = ?',
-      [nombre, descripcion, id]
+      [areaNombre, areaDesc, areaId]
     );
     if (result.affectedRows === 0) {
       return { success: false, message: 'Área no encontrada' };

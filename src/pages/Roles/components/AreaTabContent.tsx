@@ -21,7 +21,10 @@ interface Area {
 const createArea = async ({ name, descripcion }: { name: string; descripcion: string }): Promise<{ success: boolean, message: string }> => {
   const response = await fetch('http://localhost:3309/api/areas', {
     method: 'POST',
-    body: JSON.stringify({ name, descripcion })
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ name: name.trim(), descripcion })
   });
   const data = await response.json();
   if (!response.ok) {
@@ -33,7 +36,10 @@ const createArea = async ({ name, descripcion }: { name: string; descripcion: st
 const updateArea = async ({ id, name, descripcion }: { id: number; name: string; descripcion: string }): Promise<{ success: boolean, message: string }> => {
   const response = await fetch(`http://localhost:3309/api/areas/${id}`, {
     method: 'PUT',
-    body: JSON.stringify({ name, descripcion })
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify({ name: name.trim(), descripcion })
   });
   const data = await response.json();
   if (!response.ok) {

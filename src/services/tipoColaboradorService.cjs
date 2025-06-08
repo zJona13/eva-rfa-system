@@ -1,10 +1,9 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todos los tipos de colaborador
 const getAllTiposColaborador = async () => {
   try {
-    const [rows] = await pool.execute('SELECT idTipoColab as id, nombre as name FROM TIPO_COLABORADOR');
+    const [rows] = await pool.execute('SELECT idTipoColaborador as id, nombre as name FROM TIPO_COLABORADOR');
     
     return {
       success: true,
@@ -39,7 +38,7 @@ const createTipoColaborador = async (nombre) => {
 const updateTipoColaborador = async (id, nombre) => {
   try {
     const [result] = await pool.execute(
-      'UPDATE TIPO_COLABORADOR SET nombre = ? WHERE idTipoColab = ?',
+      'UPDATE TIPO_COLABORADOR SET nombre = ? WHERE idTipoColaborador = ?',
       [nombre, id]
     );
     
@@ -62,7 +61,7 @@ const deleteTipoColaborador = async (id) => {
   try {
     // Comprobar si hay colaboradores asignados a este tipo
     const [colaboradores] = await pool.execute(
-      'SELECT COUNT(*) as count FROM COLABORADOR WHERE idTipoColab = ?',
+      'SELECT COUNT(*) as count FROM COLABORADOR WHERE idTipoColaborador = ?',
       [id]
     );
     
@@ -71,7 +70,7 @@ const deleteTipoColaborador = async (id) => {
     }
     
     const [result] = await pool.execute(
-      'DELETE FROM TIPO_COLABORADOR WHERE idTipoColab = ?',
+      'DELETE FROM TIPO_COLABORADOR WHERE idTipoColaborador = ?',
       [id]
     );
     

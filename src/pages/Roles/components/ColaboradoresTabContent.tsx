@@ -9,6 +9,7 @@ import { Edit, Trash, Plus, UserSquare2 } from 'lucide-react';
 import { format } from 'date-fns';
 import ColaboradorDialog from './ColaboradorDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import UserDialog from './UserDialog';
 
 interface TipoColaborador {
   id: number;
@@ -39,6 +40,8 @@ interface Colaborador {
   contractActive: boolean;
   contractTypeId: number;
   contractType: string;
+  areaName: string;
+  areaId: number;
 }
 
 interface ColaboradoresTabContentProps {
@@ -47,6 +50,8 @@ interface ColaboradoresTabContentProps {
   searchQuery: string;
   tiposColaborador: TipoColaborador[];
   tiposContrato: TipoContrato[];
+  roles: any[];
+  areas: any[];
 }
 
 const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({ 
@@ -54,10 +59,14 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   isLoading, 
   searchQuery,
   tiposColaborador,
-  tiposContrato
+  tiposContrato,
+  roles,
+  areas
 }) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [selectedColaborador, setSelectedColaborador] = useState<Colaborador | null>(null);
+  const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
+  const [createdColaborador, setCreatedColaborador] = useState<Colaborador | null>(null);
   const queryClient = useQueryClient();
   
   // Filtrar colaboradores basado en la búsqueda
@@ -164,11 +173,41 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   });
   
   // Guardar colaborador
-  const handleSaveColaborador = (data: any) => {
+  const handleSaveColaborador = async (data: any) => {
     if (selectedColaborador) {
       updateMutation.mutate({ id: selectedColaborador.id, data });
     } else {
-      createMutation.mutate(data);
+      try {
+        const result = await createColaborador(data);
+        if (result && result.id) {
+          setCreatedColaborador({ ...data, id: result.id, fullName: `${data.nombres} ${data.apePat} ${data.apeMat}` });
+          setIsUserDialogOpen(true);
+        }
+        setIsDialogOpen(false);
+        queryClient.invalidateQueries({ queryKey: ['colaboradores'] });
+        toast.success('Colaborador creado exitosamente');
+      } catch (error: any) {
+        toast.error(error.message);
+      }
+    }
+  };
+  
+  // Guardar usuario asociado
+  const handleSaveUser = async (userData: any) => {
+    try {
+      const response = await fetch('http://localhost:3309/api/users', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...userData, colaboradorId: createdColaborador?.id })
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.message || 'Error al crear usuario');
+      toast.success('Usuario creado exitosamente');
+      setIsUserDialogOpen(false);
+      setCreatedColaborador(null);
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+    } catch (error: any) {
+      toast.error(error.message);
     }
   };
   
@@ -216,6 +255,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
                   <TableHead>Nombre</TableHead>
                   <TableHead>DNI</TableHead>
                   <TableHead>Rol</TableHead>
+                  <TableHead>Área</TableHead>
                   <TableHead className="hidden md:table-cell">Contrato</TableHead>
                   <TableHead className="hidden md:table-cell">Vigencia</TableHead>
                   <TableHead className="text-right">Acciones</TableHead>
@@ -227,6 +267,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
                     <TableCell className="font-medium">{colaborador.fullName}</TableCell>
                     <TableCell>{colaborador.dni}</TableCell>
                     <TableCell>{colaborador.roleName}</TableCell>
+                    <TableCell>{colaborador.areaName}</TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="space-y-1">
                         <div className="text-xs text-muted-foreground">
@@ -290,7 +331,27 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
           colaborador={selectedColaborador}
           tiposColaborador={tiposColaborador}
           tiposContrato={tiposContrato}
+          roles={roles}
+          areas={areas}
           onSave={handleSaveColaborador}
+        />
+        
+        {/* Diálogo de usuario asociado (paso 2) */}
+        <UserDialog
+          open={isUserDialogOpen}
+          onOpenChange={setIsUserDialogOpen}
+          userData={{
+            name: createdColaborador?.fullName || '',
+            email: '',
+            roleId: '',
+            colaboradorId: createdColaborador?.id,
+            areaId: createdColaborador?.areaId ? String(createdColaborador.areaId) : '',
+            active: true
+          }}
+          roles={roles}
+          areas={areas}
+          onSubmit={handleSaveUser}
+          isSubmitting={false}
         />
       </CardContent>
     </Card>

@@ -1,10 +1,9 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todos los roles
 const getAllRoles = async () => {
   try {
-    const [rows] = await pool.execute('SELECT idTipoUsu as id, nombre as name FROM TIPO_USUARIO');
+    const [rows] = await pool.execute('SELECT idTipoUsuario as id, nombre as name FROM TIPO_USUARIO');
     
     return {
       success: true,
@@ -20,7 +19,7 @@ const getAllRoles = async () => {
 const getUsersByRole = async (roleId) => {
   try {
     const [rows] = await pool.execute(
-      'SELECT u.idUsuario as id, u.nombre as name, u.correo as email, u.vigencia as active FROM USUARIO u WHERE u.idTipoUsu = ?',
+      'SELECT u.idUsuario as id, u.nombre as name, u.correo as email, u.estado as active FROM USUARIO u WHERE u.idTipoUsuario = ?',
       [roleId]
     );
     
@@ -28,7 +27,7 @@ const getUsersByRole = async (roleId) => {
       success: true,
       users: rows.map(user => ({
         ...user,
-        active: user.active === 1
+        active: user.active === 'Activo'
       }))
     };
   } catch (error) {
@@ -60,7 +59,7 @@ const createRole = async (roleName) => {
 const updateRole = async (roleId, roleName) => {
   try {
     const [result] = await pool.execute(
-      'UPDATE TIPO_USUARIO SET nombre = ? WHERE idTipoUsu = ?',
+      'UPDATE TIPO_USUARIO SET nombre = ? WHERE idTipoUsuario = ?',
       [roleName, roleId]
     );
     
@@ -83,7 +82,7 @@ const deleteRole = async (roleId) => {
   try {
     // Comprobar si hay usuarios asignados a este rol
     const [users] = await pool.execute(
-      'SELECT COUNT(*) as count FROM USUARIO WHERE idTipoUsu = ?',
+      'SELECT COUNT(*) as count FROM USUARIO WHERE idTipoUsuario = ?',
       [roleId]
     );
     
@@ -92,7 +91,7 @@ const deleteRole = async (roleId) => {
     }
     
     const [result] = await pool.execute(
-      'DELETE FROM TIPO_USUARIO WHERE idTipoUsu = ?',
+      'DELETE FROM TIPO_USUARIO WHERE idTipoUsuario = ?',
       [roleId]
     );
     

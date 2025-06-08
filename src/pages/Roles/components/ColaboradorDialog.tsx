@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -57,7 +56,9 @@ interface ColaboradorDialogProps {
   colaborador: Colaborador | null;
   tiposColaborador: TipoColaborador[];
   tiposContrato: TipoContrato[];
-  onSave: (data: ColaboradorFormValues) => void;
+  roles: { id: number; name: string }[];
+  areas: { id: number; name: string }[];
+  onSave: (data: any) => void;
 }
 
 // Esquema de validación con Zod
@@ -79,12 +80,22 @@ const colaboradorSchema = z.object({
 
 type ColaboradorFormValues = z.infer<typeof colaboradorSchema>;
 
+// Utilidad para formatear fecha a yyyy-MM-dd
+function toDateInputValue(dateString) {
+  if (!dateString) return '';
+  const d = new Date(dateString);
+  const pad = n => n < 10 ? '0' + n : n;
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 const ColaboradorDialog = ({ 
   open, 
   onOpenChange, 
   colaborador, 
   tiposColaborador, 
   tiposContrato,
+  roles,
+  areas,
   onSave 
 }: ColaboradorDialogProps) => {
   const isEditing = !!colaborador?.id;
@@ -108,45 +119,54 @@ const ColaboradorDialog = ({
     }
   });
   
-  // Cuando el colaborador cambia, actualiza el formulario
+  // 1. Estado para el área seleccionada (aplica para colaborador y usuario)
+  const [selectedAreaId, setSelectedAreaId] = useState('');
+  
+  // Cuando el colaborador cambia, actualiza el formulario y limpia usuario
   useEffect(() => {
     if (colaborador) {
       form.reset({
         nombres: colaborador.nombres,
         apePat: colaborador.apePat,
         apeMat: colaborador.apeMat || '',
-        birthDate: colaborador.birthDate,
+        birthDate: toDateInputValue(colaborador.birthDate),
         address: colaborador.address || '',
         phone: colaborador.phone,
         dni: colaborador.dni,
         active: colaborador.active,
         roleId: colaborador.roleId,
-        startDate: colaborador.startDate,
-        endDate: colaborador.endDate,
+        startDate: toDateInputValue(colaborador.startDate),
+        endDate: toDateInputValue(colaborador.endDate),
         contractActive: colaborador.contractActive,
         contractTypeId: colaborador.contractTypeId
       });
+      setSelectedAreaId(colaborador.areaId?.toString() || '');
     } else {
+      const today = new Date();
+      const nextYear = new Date();
+      nextYear.setFullYear(today.getFullYear() + 1);
       form.reset({
         nombres: '',
         apePat: '',
         apeMat: '',
-        birthDate: new Date().toISOString().split('T')[0],
+        birthDate: toDateInputValue(today),
         address: '',
         phone: '',
         dni: '',
         active: true,
         roleId: 0,
-        startDate: new Date().toISOString().split('T')[0],
-        endDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0],
+        startDate: toDateInputValue(today),
+        endDate: toDateInputValue(nextYear),
         contractActive: true,
         contractTypeId: 0
       });
+      setSelectedAreaId('');
     }
   }, [colaborador, form]);
   
   const onSubmit = (values: ColaboradorFormValues) => {
-    onSave(values);
+    let data = { ...values };
+    onSave(data);
   };
   
   return (
@@ -232,7 +252,7 @@ const ColaboradorDialog = ({
                     <FormItem>
                       <FormLabel>Fecha de Nacimiento</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} value={field.value} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -317,6 +337,31 @@ const ColaboradorDialog = ({
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="areaId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Área (aplica para colaborador y usuario)</FormLabel>
+                    <select
+                      className="w-full border rounded px-2 py-1"
+                      value={selectedAreaId}
+                      onChange={e => {
+                        setSelectedAreaId(e.target.value);
+                        field.onChange(parseInt(e.target.value));
+                      }}
+                      required
+                    >
+                      <option value="">Seleccione un área</option>
+                      {(areas || []).map(a => (
+                        <option key={a.id} value={a.id}>{a.name}</option>
+                      ))}
+                    </select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </div>
             
             <div className="space-y-4 pt-4 border-t">
@@ -330,7 +375,7 @@ const ColaboradorDialog = ({
                     <FormItem>
                       <FormLabel>Fecha de Inicio</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} value={field.value} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -344,7 +389,7 @@ const ColaboradorDialog = ({
                     <FormItem>
                       <FormLabel>Fecha de Fin</FormLabel>
                       <FormControl>
-                        <Input type="date" {...field} />
+                        <Input type="date" {...field} value={field.value} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

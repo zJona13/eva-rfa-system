@@ -53,36 +53,6 @@ interface UsersTabContentProps {
   areas: Area[];
 }
 
-const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
-  const response = await fetch('http://localhost:3309/api/users', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify({ 
-      name: userData.name,
-      email: userData.email,
-      password: userData.password,
-      active: userData.active,
-      roleId: parseInt(userData.roleId),
-      colaboradorId: userData.colaboradorId && userData.colaboradorId !== 'none' 
-        ? parseInt(userData.colaboradorId) 
-        : null,
-      areaId: userData.areaId && userData.areaId !== 'none'
-        ? parseInt(userData.areaId)
-        : null
-    })
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Error al crear usuario');
-  }
-  
-  return data;
-};
-
 const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{ success: boolean, message: string }> => {
   const response = await fetch(`http://localhost:3309/api/users/${userData.id}`, {
     method: 'PUT',
@@ -113,20 +83,6 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
   return data;
 };
 
-const deleteUser = async (id: number): Promise<{ success: boolean, message: string }> => {
-  const response = await fetch(`http://localhost:3309/api/users/${id}`, {
-    method: 'DELETE'
-  });
-  
-  const data = await response.json();
-  
-  if (!response.ok) {
-    throw new Error(data.message || 'Error al eliminar usuario');
-  }
-  
-  return data;
-};
-
 const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, searchQuery, roles, areas }) => {
   // State
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
@@ -136,22 +92,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
   // Query client
   const queryClient = useQueryClient();
 
-  // Mutations
-  const createUserMutation = useMutation({
-    mutationFn: createUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Usuario creado exitosamente');
-      setIsUserDialogOpen(false);
-      setSelectedUser(null);
-      setIsSubmitting(false);
-    },
-    onError: (error: Error) => {
-      toast.error(`Error: ${error.message}`);
-      setIsSubmitting(false);
-    }
-  });
-
+  // Solo mutación de actualización
   const updateUserMutation = useMutation({
     mutationFn: updateUser,
     onSuccess: () => {
@@ -167,41 +108,16 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
     }
   });
 
-  const deleteUserMutation = useMutation({
-    mutationFn: deleteUser,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Usuario eliminado exitosamente');
-    },
-    onError: (error: Error) => {
-      toast.error(`Error: ${error.message}`);
-    }
-  });
-
   // Event handlers
-  const handleCreateUser = () => {
-    setSelectedUser(null);
-    setIsUserDialogOpen(true);
-  };
-
   const handleEditUser = (user: User) => {
     setSelectedUser(user);
     setIsUserDialogOpen(true);
   };
 
-  const handleDeleteUser = (userId: number) => {
-    if (window.confirm('¿Está seguro que desea eliminar este usuario?')) {
-      deleteUserMutation.mutate(userId);
-    }
-  };
-
   const handleSubmitUser = (values: UserFormValues & { id?: number }) => {
     setIsSubmitting(true);
-    
     if (values.id) {
       updateUserMutation.mutate(values);
-    } else {
-      createUserMutation.mutate(values);
     }
   };
 
@@ -215,7 +131,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
       colaboradorId: user.colaboradorId ? String(user.colaboradorId) : undefined,
       areaId: user.areaId ? String(user.areaId) : undefined
     };
-    
     updateUserMutation.mutate(updatedUser);
   };
 
@@ -230,11 +145,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
 
   return (
     <>
-      <div className="flex justify-end mb-4">
-        <Button onClick={handleCreateUser}>
-          <PlusCircle className="h-4 w-4 mr-1" /> Nuevo Usuario
-        </Button>
-      </div>
       <Card>
         <CardHeader className="pb-3">
           <CardTitle>Lista de Usuarios</CardTitle>
@@ -309,15 +219,6 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                           >
                             <Pencil className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            className="text-muted-foreground hover:text-destructive"
-                            onClick={() => handleDeleteUser(user.id)}
-                            disabled={user.role === 'Administrador'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -329,7 +230,7 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
         </CardContent>
       </Card>
 
-      {/* Diálogo para crear/editar usuario */}
+      {/* Diálogo solo para editar usuario */}
       <UserDialog
         open={isUserDialogOpen}
         onOpenChange={setIsUserDialogOpen}
