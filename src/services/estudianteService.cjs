@@ -1,3 +1,4 @@
+
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener todos los estudiantes con info de usuario y área
@@ -62,4 +63,4 @@ module.exports = {
   createEstudiante,
   updateEstudiante,
   deleteEstudiante
-}; 
+};

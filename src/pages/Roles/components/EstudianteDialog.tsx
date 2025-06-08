@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -120,4 +121,4 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
   );
 };
 
-export default EstudianteDialog; 
+export default EstudianteDialog;

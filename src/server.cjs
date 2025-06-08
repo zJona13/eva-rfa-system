@@ -1218,14 +1218,10 @@ app.put('/api/evaluaciones/:id/finalizar', async (req, res) => {
 app.get('/api/estudiantes', async (req, res) => {
   try {
     const result = await estudianteService.getAllEstudiantes();
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
+    res.json(result);
   } catch (error) {
-    console.error('Error en GET /api/estudiantes:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error al obtener estudiantes:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
@@ -1233,46 +1229,32 @@ app.get('/api/estudiantes', async (req, res) => {
 app.post('/api/estudiantes', async (req, res) => {
   try {
     const result = await estudianteService.createEstudiante(req.body);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
+    res.json(result);
   } catch (error) {
-    console.error('Error en POST /api/estudiantes:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error al crear estudiante:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Actualizar estudiante
 app.put('/api/estudiantes/:id', async (req, res) => {
   try {
-    const id = req.params.id;
-    const result = await estudianteService.updateEstudiante(id, req.body);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
+    const result = await estudianteService.updateEstudiante(req.params.id, req.body);
+    res.json(result);
   } catch (error) {
-    console.error('Error en PUT /api/estudiantes/:id:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error al actualizar estudiante:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
 // Eliminar estudiante
 app.delete('/api/estudiantes/:id', async (req, res) => {
   try {
-    const id = req.params.id;
-    const result = await estudianteService.deleteEstudiante(id);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
+    const result = await estudianteService.deleteEstudiante(req.params.id);
+    res.json(result);
   } catch (error) {
-    console.error('Error en DELETE /api/estudiantes/:id:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
+    console.error('Error al eliminar estudiante:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
 
