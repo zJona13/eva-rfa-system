@@ -22,13 +22,13 @@ const createPasswordResetTable = async () => {
           id INT AUTO_INCREMENT PRIMARY KEY,
           email VARCHAR(255) NOT NULL,
           code VARCHAR(6) NOT NULL,
-          reset_code_token VARCHAR(500) NOT NULL,
+          verificationCodeToken VARCHAR(500) NOT NULL,
           expiration DATETIME NOT NULL,
           used BOOLEAN DEFAULT FALSE,
           created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
           INDEX idx_email (email),
           INDEX idx_code (code),
-          INDEX idx_reset_code_token (reset_code_token),
+          INDEX idx_verificationCodeToken (verificationCodeToken),
           INDEX idx_expiration (expiration)
         )
       `);
@@ -43,7 +43,7 @@ const createPasswordResetTable = async () => {
       `);
       
       const columnNames = columns.map(col => col.COLUMN_NAME);
-      const requiredColumns = ['id', 'email', 'code', 'reset_code_token', 'expiration', 'used', 'created_at'];
+      const requiredColumns = ['id', 'email', 'code', 'verificationCodeToken', 'expiration', 'used', 'created_at'];
       
       const missingColumns = requiredColumns.filter(col => !columnNames.includes(col));
       
@@ -55,13 +55,13 @@ const createPasswordResetTable = async () => {
             id INT AUTO_INCREMENT PRIMARY KEY,
             email VARCHAR(255) NOT NULL,
             code VARCHAR(6) NOT NULL,
-            reset_code_token VARCHAR(500) NOT NULL,
+            verificationCodeToken VARCHAR(500) NOT NULL,
             expiration DATETIME NOT NULL,
             used BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             INDEX idx_email (email),
             INDEX idx_code (code),
-            INDEX idx_reset_code_token (reset_code_token),
+            INDEX idx_verificationCodeToken (verificationCodeToken),
             INDEX idx_expiration (expiration)
           )
         `);
@@ -97,7 +97,7 @@ const generatePasswordResetCode = async (email) => {
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     
     // Generar token único para la validación
-    const resetToken = jwt.sign({ email, code }, JWT_SECRET, { expiresIn: '15m' });
+    const verificationCodeToken = jwt.sign({ email, code }, JWT_SECRET, { expiresIn: '15m' });
     
     // Calcular fecha de expiración (15 minutos)
     const expiration = new Date();
@@ -111,8 +111,8 @@ const generatePasswordResetCode = async (email) => {
 
     // Guardar código en BD
     await pool.execute(
-      'INSERT INTO PASSWORD_RESET_CODES (email, code, reset_code_token, expiration) VALUES (?, ?, ?, ?)',
-      [email, code, resetToken, expiration]
+      'INSERT INTO PASSWORD_RESET_CODES (email, code, verificationCodeToken, expiration) VALUES (?, ?, ?, ?)',
+      [email, code, verificationCodeToken, expiration]
     );
 
     // Simular envío de email (en producción aquí iría el servicio de email)
@@ -185,7 +185,7 @@ const verifyPasswordResetCode = async (email, code) => {
 
     return {
       success: true,
-      reset_code_token: resetData.reset_code_token,
+      verificationCodeToken: resetData.verificationCodeToken,
       message: 'Código verificado correctamente'
     };
   } catch (error) {
@@ -195,13 +195,13 @@ const verifyPasswordResetCode = async (email, code) => {
 };
 
 // Restablecer contraseña
-const resetPassword = async (email, token, newPassword) => {
+const resetPassword = async (email, codigoVerificacion, newPassword) => {
   try {
     console.log('🔐 Restableciendo contraseña para:', email);
     
     // Verificar token
     try {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      const decoded = jwt.verify(codigoVerificacion, JWT_SECRET);
       if (decoded.email !== email) {
         return { success: false, message: 'Token inválido' };
       }
@@ -211,8 +211,8 @@ const resetPassword = async (email, token, newPassword) => {
 
     // Verificar que el token existe en BD y no ha sido usado
     const [tokens] = await pool.execute(
-      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND reset_code_token = ? AND used = FALSE',
-      [email, token]
+      'SELECT * FROM PASSWORD_RESET_CODES WHERE email = ? AND verificationCodeToken = ? AND used = FALSE',
+      [email, codigoVerificacion]
     );
 
     if (tokens.length === 0) {
