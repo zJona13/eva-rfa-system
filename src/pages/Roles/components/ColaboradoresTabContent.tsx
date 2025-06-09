@@ -211,7 +211,11 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
       const response = await fetch('http://localhost:3309/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...userData, colaboradorId: createdColaborador?.id })
+        body: JSON.stringify({ 
+          ...userData, 
+          colaboradorId: createdColaborador?.id,
+          areaId: Number(userData.areaId)
+        })
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Error al crear usuario');
