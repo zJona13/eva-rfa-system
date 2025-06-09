@@ -291,53 +291,55 @@ const Roles = () => {
   }
 
   return (
-    <div className="container mx-auto p-2 sm:p-4 space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Mantenimientos</h1>
-        <p className="text-muted-foreground mt-2">
+    <div className="container mx-auto p-4 space-y-6 max-w-7xl">
+      <div className="flex flex-col space-y-3">
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+          Mantenimientos del Sistema
+        </h1>
+        <p className="text-muted-foreground">
           Gestione los roles, tipos de colaborador, tipos de contrato, usuarios y colaboradores en el sistema
         </p>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
-          <TabsList className="flex flex-wrap">
-            <TabsTrigger value="roles" className="flex items-center gap-1">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <div className="flex flex-col lg:flex-row justify-between lg:items-center gap-4 p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border">
+          <TabsList className="grid grid-cols-3 lg:grid-cols-7 gap-1 bg-background/50 p-1 h-auto">
+            <TabsTrigger value="roles" className="flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <Users className="h-4 w-4" />
-              <span>Roles Usuario</span>
+              <span className="text-xs">Roles Usuario</span>
             </TabsTrigger>
-            <TabsTrigger value="tiposColaborador" className="flex items-center gap-1">
+            <TabsTrigger value="tiposColaborador" className="flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserSquare2 className="h-4 w-4" />
-              <span>Roles Colaborador</span>
+              <span className="text-xs">Roles Colaborador</span>
             </TabsTrigger>
-            <TabsTrigger value="tiposContrato" className="flex items-center gap-1">
+            <TabsTrigger value="tiposContrato" className="flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <FileText className="h-4 w-4" />
-              <span>Tipos Contrato</span>
+              <span className="text-xs">Tipos Contrato</span>
             </TabsTrigger>
-            <TabsTrigger value="colaboradores" className="flex items-center gap-1">
+            <TabsTrigger value="colaboradores" className="flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserSquare2 className="h-4 w-4" />
-              <span>Colaboradores</span>
+              <span className="text-xs">Colaboradores</span>
             </TabsTrigger>
-            <TabsTrigger value="estudiantes" className="flex items-center gap-1">
+            <TabsTrigger value="estudiantes" className="flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserSquare2 className="h-4 w-4" />
-              <span>Estudiantes</span>
+              <span className="text-xs">Estudiantes</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-1">
+            <TabsTrigger value="users" className="flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserCog className="h-4 w-4" />
-              <span>Usuarios</span>
+              <span className="text-xs">Usuarios</span>
             </TabsTrigger>
-            <TabsTrigger value="areas" className="flex items-center gap-1">
+            <TabsTrigger value="areas" className="flex flex-col items-center gap-1 px-3 py-2 data-[state=active]:bg-primary data-[state=active]:text-primary-foreground">
               <UserSquare2 className="h-4 w-4" />
-              <span>Áreas</span>
+              <span className="text-xs">Áreas</span>
             </TabsTrigger>
           </TabsList>
           
           <div className="flex items-center gap-2">
-            <div className="relative w-full md:w-auto">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <div className="relative w-full lg:w-80">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input 
-                placeholder="Buscar..." 
-                className="pl-8 pr-4"
+                placeholder="Buscar en mantenimientos..." 
+                className="pl-10 pr-4 bg-background/80 backdrop-blur-sm border-2 focus:border-primary"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -347,73 +349,87 @@ const Roles = () => {
 
         {/* Tab de Roles de Usuario */}
         <TabsContent value="roles" className="space-y-4">
-          <RolesTabContent 
-            roles={roles} 
-            isLoading={rolesLoading} 
-            searchQuery={searchQuery}
-          />
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
+            <RolesTabContent 
+              roles={roles} 
+              isLoading={rolesLoading} 
+              searchQuery={searchQuery}
+            />
+          </div>
         </TabsContent>
 
         {/* Tab de Tipos de Colaborador */}
         <TabsContent value="tiposColaborador" className="space-y-4">
-          <TipoColaboradorTabContent 
-            tiposColaborador={tiposColaborador}
-            isLoading={tiposColabLoading}
-            searchQuery={searchQuery}
-          />
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
+            <TipoColaboradorTabContent 
+              tiposColaborador={tiposColaborador}
+              isLoading={tiposColabLoading}
+              searchQuery={searchQuery}
+            />
+          </div>
         </TabsContent>
 
         {/* Tab de Tipos de Contrato */}
         <TabsContent value="tiposContrato" className="space-y-4">
-          <TipoContratoTabContent 
-            tiposContrato={tiposContrato}
-            isLoading={tiposContratoLoading}
-            searchQuery={searchQuery}
-          />
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
+            <TipoContratoTabContent 
+              tiposContrato={tiposContrato}
+              isLoading={tiposContratoLoading}
+              searchQuery={searchQuery}
+            />
+          </div>
         </TabsContent>
 
         {/* Tab de Colaboradores */}
         <TabsContent value="colaboradores" className="space-y-4">
-          <ColaboradoresTabContent 
-            colaboradores={colaboradores}
-            isLoading={colaboradoresLoading}
-            searchQuery={searchQuery}
-            tiposColaborador={tiposColaborador}
-            tiposContrato={tiposContrato}
-            roles={roles}
-            areas={areas}
-          />
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
+            <ColaboradoresTabContent 
+              colaboradores={colaboradores}
+              isLoading={colaboradoresLoading}
+              searchQuery={searchQuery}
+              tiposColaborador={tiposColaborador}
+              tiposContrato={tiposContrato}
+              roles={roles}
+              areas={areas}
+            />
+          </div>
         </TabsContent>
         
         {/* Tab de Estudiantes */}
         <TabsContent value="estudiantes" className="space-y-4">
-          <EstudiantesTabContent
-            estudiantes={estudiantes}
-            isLoading={estudiantesLoading}
-            searchQuery={searchQuery}
-            areas={areas}
-            usuarios={usuarios}
-          />
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
+            <EstudiantesTabContent
+              estudiantes={estudiantes}
+              isLoading={estudiantesLoading}
+              searchQuery={searchQuery}
+              areas={areas}
+              usuarios={usuarios}
+            />
+          </div>
         </TabsContent>
         
         {/* Tab de Usuarios */}
         <TabsContent value="users" className="space-y-4">
-          <UsersTabContent 
-            users={users}
-            isLoading={usersLoading}
-            searchQuery={searchQuery}
-            roles={roles}
-            areas={areas}
-          />
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
+            <UsersTabContent 
+              users={users}
+              isLoading={usersLoading}
+              searchQuery={searchQuery}
+              roles={roles}
+              areas={areas}
+            />
+          </div>
         </TabsContent>
 
         {/* Tab de Áreas */}
         <TabsContent value="areas" className="space-y-4">
-          <AreaTabContent 
-            areas={areas}
-            isLoading={areasLoading}
-            searchQuery={searchQuery}
-          />
+          <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
+            <AreaTabContent 
+              areas={areas}
+              isLoading={areasLoading}
+              searchQuery={searchQuery}
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

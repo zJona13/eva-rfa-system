@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -25,7 +26,10 @@ const Dashboard = () => {
   // Fetch dashboard statistics using authenticated API
   const { data: statsData, isLoading: statsLoading } = useQuery({
     queryKey: ['dashboard-stats'],
-    queryFn: () => fetch('/api/dashboard/stats'),
+    queryFn: async () => {
+      const response = await fetch('/api/dashboard/stats');
+      return response.json();
+    },
     refetchInterval: 30000, // Refetch every 30 seconds
   });
 

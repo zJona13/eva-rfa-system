@@ -191,8 +191,8 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
             ...payload, 
             id: result.colaboradorId, 
             fullName: `${payload.nombres} ${payload.apePat} ${payload.apeMat}`,
-            areaId: payload.areaId,
-            areaName: areas.find(a => a.id === payload.areaId)?.name || ''
+            areaId: Number(payload.areaId),
+            areaName: areas.find(a => a.id === Number(payload.areaId))?.name || ''
           });
           setIsUserDialogOpen(true);
         }
@@ -234,107 +234,202 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   };
   
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-lg font-medium">
-          Colaboradores
-        </CardTitle>
-        <Button 
-          size="sm" 
-          className="h-8 gap-1" 
-          onClick={handleCreateColaborador}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          <span>Nuevo Colaborador</span>
-        </Button>
+    <Card className="border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-background to-muted/20">
+      <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-t-lg border-b-2 border-primary/10">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-primary/10 rounded-lg">
+              <UserSquare2 className="h-6 w-6 text-primary" />
+            </div>
+            <div>
+              <CardTitle className="text-xl font-bold text-primary">
+                Gestión de Colaboradores
+              </CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Administra la información de todos los colaboradores
+              </p>
+            </div>
+          </div>
+          <Button 
+            size="sm" 
+            className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300" 
+            onClick={handleCreateColaborador}
+          >
+            <Plus className="h-4 w-4 mr-2" />
+            Nuevo Colaborador
+          </Button>
+        </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-6">
         {isLoading ? (
-          <div className="flex justify-center p-8">
-            <div className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full"></div>
+          <div className="flex justify-center items-center py-12">
+            <div className="relative">
+              <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+              <div className="absolute inset-0 animate-ping h-8 w-8 border-4 border-primary/20 rounded-full"></div>
+            </div>
+            <span className="ml-3 text-muted-foreground">Cargando colaboradores...</span>
           </div>
         ) : filteredColaboradores.length === 0 ? (
-          <div className="text-center py-8 space-y-2">
-            <UserSquare2 className="mx-auto h-8 w-8 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              {searchQuery ? 'No se encontraron colaboradores que coincidan con la búsqueda' : 'No hay colaboradores registrados'}
-            </p>
+          <div className="text-center py-12 space-y-4">
+            <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
+              <UserSquare2 className="h-8 w-8 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-lg font-semibold text-foreground">
+                {searchQuery ? 'No se encontraron colaboradores' : 'No hay colaboradores registrados'}
+              </h3>
+              <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                {searchQuery 
+                  ? 'Intenta ajustar los términos de búsqueda para encontrar colaboradores.'
+                  : 'Comienza agregando el primer colaborador al sistema.'
+                }
+              </p>
+            </div>
+            {!searchQuery && (
+              <Button 
+                onClick={handleCreateColaborador}
+                className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Agregar Primer Colaborador
+              </Button>
+            )}
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <Table className="min-w-full">
-              <TableHeader className="sticky top-0 bg-background z-10">
-                <TableRow>
-                  <TableHead>Nombre</TableHead>
-                  <TableHead>DNI</TableHead>
-                  <TableHead>Rol</TableHead>
-                  <TableHead>Área</TableHead>
-                  <TableHead className="hidden md:table-cell">Contrato</TableHead>
-                  <TableHead className="hidden md:table-cell">Vigencia</TableHead>
-                  <TableHead className="text-right">Acciones</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredColaboradores.map((colaborador) => (
-                  <TableRow key={colaborador.id}>
-                    <TableCell className="font-medium">{colaborador.fullName}</TableCell>
-                    <TableCell>{colaborador.dni}</TableCell>
-                    <TableCell>{colaborador.roleName}</TableCell>
-                    <TableCell>{colaborador.areaName || 'Sin área asignada'}</TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <div className="space-y-1">
-                        <div className="text-xs text-muted-foreground">
-                          {formatDate(colaborador.startDate)} - {formatDate(colaborador.endDate)}
-                        </div>
-                        <div className="text-xs font-medium">{colaborador.contractType}</div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      <Badge variant={colaborador.active && colaborador.contractActive ? "default" : "destructive"} className={`text-xs ${colaborador.active && colaborador.contractActive ? "bg-green-500 hover:bg-green-600" : ""}`}>
-                        {colaborador.active && colaborador.contractActive ? "Activo" : "Inactivo"}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex justify-end gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => handleEditColaborador(colaborador)}
-                        >
-                          <Edit className="h-4 w-4" />
-                          <span className="sr-only">Editar</span>
-                        </Button>
-                        <AlertDialog>
-                          <AlertDialogTrigger asChild>
-                            <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive">
-                              <Trash className="h-4 w-4" />
-                              <span className="sr-only">Eliminar</span>
-                            </Button>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Esta acción no se puede deshacer. Esto eliminará permanentemente al colaborador <strong>{colaborador.fullName}</strong>.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                              <AlertDialogAction 
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                onClick={() => deleteMutation.mutate(colaborador.id)}
-                              >
-                                Eliminar
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </div>
-                    </TableCell>
+          <div className="space-y-4">
+            <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border">
+              <div className="flex items-center gap-2">
+                <span className="text-sm font-medium text-primary">
+                  {filteredColaboradores.length} colaborador{filteredColaboradores.length !== 1 ? 'es' : ''} encontrado{filteredColaboradores.length !== 1 ? 's' : ''}
+                </span>
+                {searchQuery && (
+                  <Badge variant="secondary" className="text-xs">
+                    Filtrado por: "{searchQuery}"
+                  </Badge>
+                )}
+              </div>
+            </div>
+            
+            <div className="overflow-x-auto bg-background rounded-lg border-2 border-primary/10">
+              <Table className="min-w-full">
+                <TableHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
+                  <TableRow className="hover:bg-muted/50">
+                    <TableHead className="font-semibold text-primary">Nombre Completo</TableHead>
+                    <TableHead className="font-semibold text-primary">DNI</TableHead>
+                    <TableHead className="font-semibold text-primary">Rol</TableHead>
+                    <TableHead className="font-semibold text-primary">Área</TableHead>
+                    <TableHead className="hidden md:table-cell font-semibold text-primary">Contrato</TableHead>
+                    <TableHead className="hidden md:table-cell font-semibold text-primary">Estado</TableHead>
+                    <TableHead className="text-right font-semibold text-primary">Acciones</TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
+                </TableHeader>
+                <TableBody>
+                  {filteredColaboradores.map((colaborador, index) => (
+                    <TableRow 
+                      key={colaborador.id} 
+                      className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-200 ${
+                        index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                      }`}
+                    >
+                      <TableCell className="font-medium">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
+                            <span className="text-xs font-bold text-primary">
+                              {colaborador.fullName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <span>{colaborador.fullName}</span>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="font-mono">
+                          {colaborador.dni}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <Badge className="bg-primary/10 text-primary border-primary/20">
+                          {colaborador.roleName}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {colaborador.areaName || (
+                            <span className="text-muted-foreground italic">Sin área asignada</span>
+                          )}
+                        </span>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <div className="space-y-1">
+                          <div className="text-xs text-muted-foreground font-mono">
+                            {formatDate(colaborador.startDate)} - {formatDate(colaborador.endDate)}
+                          </div>
+                          <Badge variant="secondary" className="text-xs">
+                            {colaborador.contractType}
+                          </Badge>
+                        </div>
+                      </TableCell>
+                      <TableCell className="hidden md:table-cell">
+                        <Badge 
+                          variant={colaborador.active && colaborador.contractActive ? "default" : "destructive"} 
+                          className={`text-xs font-medium ${
+                            colaborador.active && colaborador.contractActive 
+                              ? "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/30 dark:text-green-400" 
+                              : "bg-red-100 text-red-800 border-red-200 dark:bg-red-900/30 dark:text-red-400"
+                          }`}
+                        >
+                          {colaborador.active && colaborador.contractActive ? "Activo" : "Inactivo"}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-2">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            onClick={() => handleEditColaborador(colaborador)}
+                            className="hover:bg-primary/10 hover:text-primary transition-colors"
+                          >
+                            <Edit className="h-4 w-4" />
+                            <span className="sr-only">Editar</span>
+                          </Button>
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+                              >
+                                <Trash className="h-4 w-4" />
+                                <span className="sr-only">Eliminar</span>
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent className="border-2 border-destructive/20">
+                              <AlertDialogHeader>
+                                <AlertDialogTitle className="text-destructive">
+                                  ¿Confirmar eliminación?
+                                </AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  Esta acción no se puede deshacer. Esto eliminará permanentemente al colaborador{' '}
+                                  <strong className="text-foreground">{colaborador.fullName}</strong> y todos sus datos asociados.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                <AlertDialogAction 
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => deleteMutation.mutate(colaborador.id)}
+                                >
+                                  Eliminar Colaborador
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
           </div>
         )}
         
