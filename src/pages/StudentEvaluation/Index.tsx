@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,7 +15,6 @@ const StudentEvaluation = () => {
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
   const [editingEvaluacion, setEditingEvaluacion] = useState<any>(null);
-  const [colaboradores, setColaboradores] = useState<any[]>([]);
 
   // Fetch evaluaciones realizadas por este estudiante
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -57,18 +57,8 @@ const StudentEvaluation = () => {
     return evaluacion.score < 11;
   };
 
-  const fetchColaboradores = async () => {
-    try {
-      const response = await fetch('http://localhost:3309/api/colaboradores');
-      const data = await response.json();
-      setColaboradores(data.colaboradores || []);
-    } catch (error) {
-      toast.error('Error al cargar colaboradores');
-    }
-  };
-
-  if (showForm) {
-    return <EvaluacionEstudianteForm />;
+  if (showForm || editingEvaluacion) {
+    return <EvaluacionEstudianteForm onCancel={() => { setShowForm(false); setEditingEvaluacion(null); }} evaluacionDraft={editingEvaluacion} />;
   }
 
   return (

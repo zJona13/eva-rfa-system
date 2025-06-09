@@ -1,11 +1,9 @@
-
 import React, { useState } from 'react';
 import { Input } from '@/components/ui/input';
-import { Search, Users, UserCog, UserSquare2, FileText, Building2, GraduationCap } from 'lucide-react';
+import { Search, Users, UserCog, UserSquare2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 // Import our separate tab content components
 import RolesTabContent from './components/RolesTabContent';
@@ -292,212 +290,132 @@ const Roles = () => {
     toast.error('Error al cargar los usuarios');
   }
 
-  // Configuración de tabs con iconos y descripciones mejoradas
-  const tabsConfig = [
-    {
-      value: 'roles',
-      label: 'Roles Usuario',
-      icon: Users,
-      description: 'Gestión de roles del sistema'
-    },
-    {
-      value: 'tiposColaborador',
-      label: 'Roles Colaborador',
-      icon: UserSquare2,
-      description: 'Tipos de colaboradores'
-    },
-    {
-      value: 'tiposContrato',
-      label: 'Tipos Contrato',
-      icon: FileText,
-      description: 'Modalidades contractuales'
-    },
-    {
-      value: 'areas',
-      label: 'Áreas',
-      icon: Building2,
-      description: 'Departamentos y áreas'
-    },
-    {
-      value: 'colaboradores',
-      label: 'Colaboradores',
-      icon: UserSquare2,
-      description: 'Personal de la institución'
-    },
-    {
-      value: 'estudiantes',
-      label: 'Estudiantes',
-      icon: GraduationCap,
-      description: 'Alumnos registrados'
-    },
-    {
-      value: 'users',
-      label: 'Usuarios',
-      icon: UserCog,
-      description: 'Usuarios del sistema'
-    }
-  ];
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-muted/20">
-      <div className="container mx-auto p-4 lg:p-8 space-y-8">
-        {/* Header mejorado */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
-            <UserCog className="h-8 w-8 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-4xl font-bold tracking-tight bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
-              Sistema de Mantenimientos
-            </h1>
-            <p className="text-lg text-muted-foreground mt-3 max-w-2xl mx-auto">
-              Administre de forma integral todos los elementos del sistema: roles, usuarios, colaboradores y configuraciones
-            </p>
+    <div className="container mx-auto p-2 sm:p-4 space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">Mantenimientos</h1>
+        <p className="text-muted-foreground mt-2">
+          Gestione los roles, tipos de colaborador, tipos de contrato, usuarios y colaboradores en el sistema
+        </p>
+      </div>
+
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <div className="flex flex-col md:flex-row justify-between md:items-center gap-4">
+          <TabsList className="flex flex-wrap">
+            <TabsTrigger value="roles" className="flex items-center gap-1">
+              <Users className="h-4 w-4" />
+              <span>Roles Usuario</span>
+            </TabsTrigger>
+            <TabsTrigger value="tiposColaborador" className="flex items-center gap-1">
+              <UserSquare2 className="h-4 w-4" />
+              <span>Roles Colaborador</span>
+            </TabsTrigger>
+            <TabsTrigger value="tiposContrato" className="flex items-center gap-1">
+              <FileText className="h-4 w-4" />
+              <span>Tipos Contrato</span>
+            </TabsTrigger>
+            <TabsTrigger value="colaboradores" className="flex items-center gap-1">
+              <UserSquare2 className="h-4 w-4" />
+              <span>Colaboradores</span>
+            </TabsTrigger>
+            <TabsTrigger value="estudiantes" className="flex items-center gap-1">
+              <UserSquare2 className="h-4 w-4" />
+              <span>Estudiantes</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="flex items-center gap-1">
+              <UserCog className="h-4 w-4" />
+              <span>Usuarios</span>
+            </TabsTrigger>
+            <TabsTrigger value="areas" className="flex items-center gap-1">
+              <UserSquare2 className="h-4 w-4" />
+              <span>Áreas</span>
+            </TabsTrigger>
+          </TabsList>
+          
+          <div className="flex items-center gap-2">
+            <div className="relative w-full md:w-auto">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input 
+                placeholder="Buscar..." 
+                className="pl-8 pr-4"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
           </div>
         </div>
 
-        {/* Card principal con diseño mejorado */}
-        <Card className="border-0 shadow-xl bg-card/50 backdrop-blur-sm">
-          <CardHeader className="pb-6">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-              <div>
-                <CardTitle className="text-2xl font-semibold">Panel de Administración</CardTitle>
-                <CardDescription className="text-base mt-2">
-                  Seleccione una categoría para gestionar la información correspondiente
-                </CardDescription>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input 
-                    placeholder="Buscar en mantenimientos..." 
-                    className="pl-10 pr-4 w-full lg:w-80 h-11 bg-background/50 border-muted-foreground/20 focus:border-primary"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                </div>
-              </div>
-            </div>
-          </CardHeader>
+        {/* Tab de Roles de Usuario */}
+        <TabsContent value="roles" className="space-y-4">
+          <RolesTabContent 
+            roles={roles} 
+            isLoading={rolesLoading} 
+            searchQuery={searchQuery}
+          />
+        </TabsContent>
 
-          <CardContent>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-              {/* Tabs mejoradas con diseño de grid */}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-7 gap-3">
-                {tabsConfig.map((tab) => (
-                  <button
-                    key={tab.value}
-                    onClick={() => setActiveTab(tab.value)}
-                    className={`relative p-4 rounded-xl border transition-all duration-200 text-left group hover:shadow-md ${
-                      activeTab === tab.value
-                        ? 'bg-primary text-primary-foreground border-primary shadow-lg shadow-primary/25'
-                        : 'bg-background/50 hover:bg-muted/50 border-border hover:border-primary/30'
-                    }`}
-                  >
-                    <div className="flex flex-col items-center text-center space-y-2">
-                      <div className={`p-2 rounded-lg transition-colors ${
-                        activeTab === tab.value
-                          ? 'bg-primary-foreground/20'
-                          : 'bg-muted group-hover:bg-primary/10'
-                      }`}>
-                        <tab.icon className={`h-5 w-5 ${
-                          activeTab === tab.value
-                            ? 'text-primary-foreground'
-                            : 'text-foreground group-hover:text-primary'
-                        }`} />
-                      </div>
-                      <div>
-                        <div className={`font-medium text-sm ${
-                          activeTab === tab.value
-                            ? 'text-primary-foreground'
-                            : 'text-foreground'
-                        }`}>
-                          {tab.label}
-                        </div>
-                        <div className={`text-xs mt-1 ${
-                          activeTab === tab.value
-                            ? 'text-primary-foreground/80'
-                            : 'text-muted-foreground'
-                        }`}>
-                          {tab.description}
-                        </div>
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
+        {/* Tab de Tipos de Colaborador */}
+        <TabsContent value="tiposColaborador" className="space-y-4">
+          <TipoColaboradorTabContent 
+            tiposColaborador={tiposColaborador}
+            isLoading={tiposColabLoading}
+            searchQuery={searchQuery}
+          />
+        </TabsContent>
 
-              {/* Contenido de las tabs */}
-              <div className="mt-8">
-                <TabsContent value="roles" className="mt-0">
-                  <RolesTabContent 
-                    roles={roles} 
-                    isLoading={rolesLoading} 
-                    searchQuery={searchQuery}
-                  />
-                </TabsContent>
+        {/* Tab de Tipos de Contrato */}
+        <TabsContent value="tiposContrato" className="space-y-4">
+          <TipoContratoTabContent 
+            tiposContrato={tiposContrato}
+            isLoading={tiposContratoLoading}
+            searchQuery={searchQuery}
+          />
+        </TabsContent>
 
-                <TabsContent value="tiposColaborador" className="mt-0">
-                  <TipoColaboradorTabContent 
-                    tiposColaborador={tiposColaborador}
-                    isLoading={tiposColabLoading}
-                    searchQuery={searchQuery}
-                  />
-                </TabsContent>
+        {/* Tab de Colaboradores */}
+        <TabsContent value="colaboradores" className="space-y-4">
+          <ColaboradoresTabContent 
+            colaboradores={colaboradores}
+            isLoading={colaboradoresLoading}
+            searchQuery={searchQuery}
+            tiposColaborador={tiposColaborador}
+            tiposContrato={tiposContrato}
+            roles={roles}
+            areas={areas}
+          />
+        </TabsContent>
+        
+        {/* Tab de Estudiantes */}
+        <TabsContent value="estudiantes" className="space-y-4">
+          <EstudiantesTabContent
+            estudiantes={estudiantes}
+            isLoading={estudiantesLoading}
+            searchQuery={searchQuery}
+            areas={areas}
+            usuarios={usuarios}
+          />
+        </TabsContent>
+        
+        {/* Tab de Usuarios */}
+        <TabsContent value="users" className="space-y-4">
+          <UsersTabContent 
+            users={users}
+            isLoading={usersLoading}
+            searchQuery={searchQuery}
+            roles={roles}
+            areas={areas}
+          />
+        </TabsContent>
 
-                <TabsContent value="tiposContrato" className="mt-0">
-                  <TipoContratoTabContent 
-                    tiposContrato={tiposContrato}
-                    isLoading={tiposContratoLoading}
-                    searchQuery={searchQuery}
-                  />
-                </TabsContent>
-
-                <TabsContent value="areas" className="mt-0">
-                  <AreaTabContent 
-                    areas={areas}
-                    isLoading={areasLoading}
-                    searchQuery={searchQuery}
-                  />
-                </TabsContent>
-
-                <TabsContent value="colaboradores" className="mt-0">
-                  <ColaboradoresTabContent 
-                    colaboradores={colaboradores}
-                    isLoading={colaboradoresLoading}
-                    searchQuery={searchQuery}
-                    tiposColaborador={tiposColaborador}
-                    tiposContrato={tiposContrato}
-                    roles={roles}
-                    areas={areas}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="estudiantes" className="mt-0">
-                  <EstudiantesTabContent
-                    estudiantes={estudiantes}
-                    isLoading={estudiantesLoading}
-                    searchQuery={searchQuery}
-                    areas={areas}
-                    usuarios={usuarios}
-                  />
-                </TabsContent>
-                
-                <TabsContent value="users" className="mt-0">
-                  <UsersTabContent 
-                    users={users}
-                    isLoading={usersLoading}
-                    searchQuery={searchQuery}
-                    roles={roles}
-                    areas={areas}
-                  />
-                </TabsContent>
-              </div>
-            </Tabs>
-          </CardContent>
-        </Card>
-      </div>
+        {/* Tab de Áreas */}
+        <TabsContent value="areas" className="space-y-4">
+          <AreaTabContent 
+            areas={areas}
+            isLoading={areasLoading}
+            searchQuery={searchQuery}
+          />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
