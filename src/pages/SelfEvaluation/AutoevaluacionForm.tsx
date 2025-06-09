@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft } from 'lucide-react';
+import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
 interface AutoevaluacionFormProps {
   onCancel: () => void;
@@ -27,15 +28,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(
     evaluacionDraft?.subcriteriosRatings || {}
   );
-
-  // Fetch criterios para autoevaluación desde la BD
-  const { data: criteriosData, isLoading: isLoadingCriterios } = useQuery({
-    queryKey: ['criterios-autoevaluacion'],
-    queryFn: async () => {
-      const response = await fetch('/criterios/autoevaluacion');
-      return response.json();
-    },
-  });
+  const [isDraft, setIsDraft] = useState(false);
 
   // Fetch colaborador info by user ID
   const { data: colaboradorData, isLoading: isLoadingColaborador } = useQuery({
@@ -65,25 +58,8 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     },
   });
 
-  const updateEvaluacionMutation = useMutation({
-    mutationFn: async ({ id, data }: { id: string; data: any }) => {
-      const response = await fetch(`/evaluaciones/${id}`, {
-        method: 'PUT',
-        body: JSON.stringify(data)
-      });
-      return response.json();
-    },
-    onSuccess: () => {
-      toast.success('Evaluación actualizada exitosamente');
-      queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
-      onCancel();
-    },
-    onError: (error: any) => {
-      toast.error(`Error al actualizar: ${error.message}`);
-    },
-  });
-
-  const criterios = criteriosData?.data?.criterios || [];
+  // Agrupar subcriterios por criterio
+  const criteriosAgrupados = getCriteriosAgrupados(subcriteriosAutoevaluacion);
 
   const handleSubcriterioRating = (subcriterioId: string, rating: number) => {
     setSubcriteriosRatings(prev => ({
@@ -96,67 +72,69 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     return Object.values(subcriteriosRatings).reduce((sum, rating) => sum + rating, 0);
   };
 
-  const getTotalSubcriterios = () => {
-    return criterios.reduce((total: number, criterio: any) => total + (criterio.subcriterios?.length || 0), 0);
-  };
-
-  const prepareCriteriosDetalle = () => {
-    const detalle: any[] = [];
-    
-    criterios.forEach((criterio: any) => {
-      criterio.subcriterios?.forEach((subcriterio: any) => {
-        const puntaje = subcriteriosRatings[subcriterio.id] || 0;
-        detalle.push({
-          criterio: criterio.nombre,
-          subcriterio: subcriterio.texto,
-          puntaje: puntaje
-        });
-      });
-    });
-    
-    return detalle;
-  };
-
+  // Guardar borrador de autoevaluación
   const handleSaveDraft = (data: any) => {
     const colaborador = colaboradorData?.data?.colaborador;
     if (!colaborador) {
       toast.error(t('selfEval.noColaborador'));
       return;
     }
-
-    const now = new Date();
-    const evaluacionData = {
-      type: 'Autoevaluacion',
-      evaluatorId: user?.id,
-      evaluatedId: colaborador.id,
-      date: now.toISOString().split('T')[0],
-      time: now.toTimeString().split(' ')[0],
-      score: calculateTotalScore(),
-      comments: data.comentarios || null,
-      status: 'Pendiente',
-      criteriosDetalle: prepareCriteriosDetalle()
-    };
-
+    // Guardar en localStorage
+    const borradorId = evaluacionDraft?.id || `temp-${user?.id}-autoeval`;
+    localStorage.setItem(`autoevaluacion-borrador-${borradorId}`, JSON.stringify({
+      subcriteriosRatings,
+      comments: data.comentarios || '',
+    }));
+    // Si es un borrador real, guardar en BD
     if (evaluacionDraft?.id) {
-      updateEvaluacionMutation.mutate({ id: evaluacionDraft.id, data: evaluacionData });
+      const now = new Date();
+      const evaluacionData = {
+        type: 'Autoevaluacion',
+        evaluatorId: user?.id,
+        evaluatedId: colaborador.id,
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0],
+        score: calculateTotalScore(),
+        comments: data.comentarios || null,
+        status: 'Pendiente'
+      };
+      fetch(`/evaluaciones/${evaluacionDraft.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(evaluacionData)
+      }).then(response => response.json()).then(() => {
+        toast.success('Borrador guardado exitosamente');
+        queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
+        onCancel();
+      }).catch((error: any) => {
+        toast.error(`Error al guardar borrador: ${error.message}`);
+      });
     } else {
+      // Si no hay borrador en BD, crear uno nuevo
+      const now = new Date();
+      const evaluacionData = {
+        type: 'Autoevaluacion',
+        evaluatorId: user?.id,
+        evaluatedId: colaborador.id,
+        date: now.toISOString().split('T')[0],
+        time: now.toTimeString().split(' ')[0],
+        score: calculateTotalScore(),
+        comments: data.comentarios || null,
+        status: 'Pendiente'
+      };
       createEvaluacionMutation.mutate(evaluacionData);
     }
   };
 
   const handleFinish = (data: any) => {
-    const totalSubcriterios = getTotalSubcriterios();
-    if (Object.keys(subcriteriosRatings).length !== totalSubcriterios) {
+    if (Object.keys(subcriteriosRatings).length !== subcriteriosAutoevaluacion.length) {
       toast.error(t('selfEval.rateAll'));
       return;
     }
-
     const colaborador = colaboradorData?.data?.colaborador;
     if (!colaborador) {
       toast.error(t('selfEval.noColaborador'));
       return;
     }
-
     const now = new Date();
     const evaluacionData = {
       type: 'Autoevaluacion',
@@ -166,13 +144,22 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
       time: now.toTimeString().split(' ')[0],
       score: calculateTotalScore(),
       comments: data.comentarios || null,
-      status: 'Completada',
-      criteriosDetalle: prepareCriteriosDetalle()
+      status: 'Completada'
     };
-
     if (evaluacionDraft?.id) {
-      updateEvaluacionMutation.mutate({ id: evaluacionDraft.id, data: evaluacionData });
+      // Actualizar evaluación existente
+      fetch(`/evaluaciones/${evaluacionDraft.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(evaluacionData)
+      }).then(response => response.json()).then(() => {
+        toast.success(t('selfEval.finished'));
+        queryClient.invalidateQueries({ queryKey: ['evaluaciones-colaborador'] });
+        onCancel();
+      }).catch((error: any) => {
+        toast.error(`${t('selfEval.finishError')}: ${error.message}`);
+      });
     } else {
+      // Crear nueva evaluación
       createEvaluacionMutation.mutate(evaluacionData);
     }
   };
@@ -204,7 +191,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     }
   }, [evaluacionDraft]);
 
-  if (isLoadingColaborador || isLoadingCriterios) {
+  if (isLoadingColaborador) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -278,14 +265,14 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
             </div>
           </div>
 
-          {criterios.map((criterio: any) => (
-            <Card key={criterio.id} className="border-l-4 border-l-primary">
+          {Object.entries(criteriosAgrupados).map(([criterioNombre, subcriteriosGrupo]) => (
+            <Card key={criterioNombre} className="border-l-4 border-l-primary">
               <CardHeader className="bg-gradient-to-r from-primary/5 to-primary/10 dark:from-primary/10 dark:to-primary/20">
-                <CardTitle className="text-lg text-primary">{criterio.nombre}</CardTitle>
+                <CardTitle className="text-lg text-primary">{criterioNombre}</CardTitle>
               </CardHeader>
               <CardContent className="p-6">
                 <div className="space-y-6">
-                  {criterio.subcriterios?.map((subcriterio: any, index: number) => (
+                  {subcriteriosGrupo.map((subcriterio, index) => (
                     <div key={subcriterio.id} className="border rounded-lg p-4 bg-muted/30 hover:bg-muted/50 transition-colors">
                       <div className="flex items-start justify-between gap-6">
                         <div className="flex-1">
@@ -348,7 +335,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
             </CardHeader>
             <CardContent className="p-6">
               <div className="text-4xl font-bold text-center text-primary">
-                {calculateTotalScore()}<span className="text-2xl text-muted-foreground">/{getTotalSubcriterios()}</span>
+                {calculateTotalScore()}<span className="text-2xl text-muted-foreground">/20</span>
               </div>
             </CardContent>
           </Card>
