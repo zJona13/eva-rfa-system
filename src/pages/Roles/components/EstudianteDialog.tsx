@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -22,7 +21,15 @@ interface Estudiante {
   sexo: string;
   semestre: string;
   areaId: number;
-  usuarioId: number;
+  nombreEstudiante: string;
+  apePaEstudiante: string;
+  apeMaEstudiante: string;
+  usuarioId?: number;
+  user?: {
+    email: string;
+    password: string;
+    confirmPassword: string;
+  };
 }
 
 interface EstudianteDialogProps {
@@ -41,24 +48,48 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
       sexo: '',
       semestre: '',
       areaId: undefined,
-      usuarioId: undefined
+      nombreEstudiante: '',
+      apePaEstudiante: '',
+      apeMaEstudiante: '',
+      user: { email: '', password: '', confirmPassword: '' }
     }
   });
 
   React.useEffect(() => {
     if (estudiante) {
-      reset(estudiante);
+      reset({ ...estudiante, user: { email: '', password: '', confirmPassword: '' } });
     } else {
-      reset({ codigo: '', sexo: '', semestre: '', areaId: undefined, usuarioId: undefined });
+      reset({ codigo: '', sexo: '', semestre: '', areaId: undefined, nombreEstudiante: '', apePaEstudiante: '', apeMaEstudiante: '', user: { email: '', password: '', confirmPassword: '' } });
     }
   }, [estudiante, reset]);
 
   const onSubmit = (data: any) => {
-    onSave({
-      ...data,
-      areaId: Number(data.areaId),
-      usuarioId: Number(data.usuarioId)
-    });
+    if (!estudiante) {
+      // Solo validar usuario al crear
+      if (!data.user.email || !data.user.password || !data.user.confirmPassword) {
+        alert('Debe completar los datos de usuario');
+        return;
+      }
+      if (data.user.password !== data.user.confirmPassword) {
+        alert('Las contraseñas no coinciden');
+        return;
+      }
+      onSave({
+        ...data,
+        areaId: Number(data.areaId),
+        user: {
+          email: data.user.email,
+          password: data.user.password
+        }
+      });
+    } else {
+      // Al editar, no enviar ni validar user
+      const { user, ...rest } = data;
+      onSave({
+        ...rest,
+        areaId: Number(data.areaId)
+      });
+    }
   };
 
   return (
@@ -68,50 +99,75 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
           <DialogTitle>{estudiante ? 'Editar Estudiante' : 'Nuevo Estudiante'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          <div>
-            <label className="block mb-1">Código</label>
-            <Input {...register('codigo', { required: 'El código es obligatorio' })} />
-            {errors.codigo && <span className="text-red-500 text-xs">{errors.codigo.message}</span>}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block mb-1">Código</label>
+              <Input {...register('codigo', { required: 'El código es obligatorio' })} />
+              {errors.codigo && <span className="text-red-500 text-xs">{errors.codigo.message}</span>}
+            </div>
+            <div>
+              <label className="block mb-1">Nombres</label>
+              <Input {...register('nombreEstudiante', { required: 'El nombre es obligatorio' })} />
+              {errors.nombreEstudiante && <span className="text-red-500 text-xs">{errors.nombreEstudiante.message}</span>}
+            </div>
+            <div>
+              <label className="block mb-1">Apellido Paterno</label>
+              <Input {...register('apePaEstudiante', { required: 'El apellido paterno es obligatorio' })} />
+              {errors.apePaEstudiante && <span className="text-red-500 text-xs">{errors.apePaEstudiante.message}</span>}
+            </div>
+            <div>
+              <label className="block mb-1">Apellido Materno</label>
+              <Input {...register('apeMaEstudiante', { required: 'El apellido materno es obligatorio' })} />
+              {errors.apeMaEstudiante && <span className="text-red-500 text-xs">{errors.apeMaEstudiante.message}</span>}
+            </div>
+            <div>
+              <label className="block mb-1">Sexo</label>
+              <Input {...register('sexo', { required: 'El sexo es obligatorio' })} maxLength={1} placeholder="M/F" />
+              {errors.sexo && <span className="text-red-500 text-xs">{errors.sexo.message}</span>}
+            </div>
+            <div>
+              <label className="block mb-1">Semestre</label>
+              <Input {...register('semestre', { required: 'El semestre es obligatorio' })} />
+              {errors.semestre && <span className="text-red-500 text-xs">{errors.semestre.message}</span>}
+            </div>
+            <div className="md:col-span-2">
+              <label className="block mb-1">Área</label>
+              <Select value={String(watch('areaId') || '')} onValueChange={val => setValue('areaId', Number(val))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione un área" />
+                </SelectTrigger>
+                <SelectContent>
+                  {areas.map(area => (
+                    <SelectItem key={area.id} value={String(area.id)}>{area.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {errors.areaId && <span className="text-red-500 text-xs">El área es obligatoria</span>}
+            </div>
           </div>
-          <div>
-            <label className="block mb-1">Sexo</label>
-            <Input {...register('sexo', { required: 'El sexo es obligatorio' })} maxLength={1} placeholder="M/F" />
-            {errors.sexo && <span className="text-red-500 text-xs">{errors.sexo.message}</span>}
-          </div>
-          <div>
-            <label className="block mb-1">Semestre</label>
-            <Input {...register('semestre', { required: 'El semestre es obligatorio' })} />
-            {errors.semestre && <span className="text-red-500 text-xs">{errors.semestre.message}</span>}
-          </div>
-          <div>
-            <label className="block mb-1">Área</label>
-            <Select value={String(watch('areaId') || '')} onValueChange={val => setValue('areaId', Number(val))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccione un área" />
-              </SelectTrigger>
-              <SelectContent>
-                {areas.map(area => (
-                  <SelectItem key={area.id} value={String(area.id)}>{area.name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.areaId && <span className="text-red-500 text-xs">El área es obligatoria</span>}
-          </div>
-          <div>
-            <label className="block mb-1">Usuario</label>
-            <Select value={String(watch('usuarioId') || '')} onValueChange={val => setValue('usuarioId', Number(val))}>
-              <SelectTrigger>
-                <SelectValue placeholder="Seleccione un usuario" />
-              </SelectTrigger>
-              <SelectContent>
-                {usuarios.map(usuario => (
-                  <SelectItem key={usuario.id} value={String(usuario.id)}>{usuario.correo}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {errors.usuarioId && <span className="text-red-500 text-xs">El usuario es obligatorio</span>}
-          </div>
-          <div className="flex justify-end gap-2">
+          {!estudiante && (
+            <div className="border-t pt-4 mt-4">
+              <h4 className="font-semibold mb-2">Datos de Usuario</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block mb-1">Correo electrónico</label>
+                  <Input {...register('user.email', { required: 'El correo es obligatorio' })} type="email" />
+                  {errors.user?.email && <span className="text-red-500 text-xs">{errors.user.email.message}</span>}
+                </div>
+                <div>
+                  <label className="block mb-1">Contraseña</label>
+                  <Input {...register('user.password', { required: 'La contraseña es obligatoria' })} type="password" />
+                  {errors.user?.password && <span className="text-red-500 text-xs">{errors.user.password.message}</span>}
+                </div>
+                <div>
+                  <label className="block mb-1">Repetir contraseña</label>
+                  <Input {...register('user.confirmPassword', { required: 'Repita la contraseña' })} type="password" />
+                  {errors.user?.confirmPassword && <span className="text-red-500 text-xs">{errors.user.confirmPassword.message}</span>}
+                </div>
+              </div>
+            </div>
+          )}
+          <div className="flex justify-end gap-2 pt-4 border-t mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
             <Button type="submit" variant="default">{estudiante ? 'Actualizar' : 'Crear'}</Button>
           </div>

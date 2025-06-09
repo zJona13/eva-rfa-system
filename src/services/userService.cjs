@@ -14,18 +14,24 @@ const getAllUsers = async () => {
         ELSE NULL 
       END as colaboradorName,
       u.idArea as areaId,
-      a.nombre as areaName
+      a.nombre as areaName,
+      CASE 
+        WHEN e.idEstudiante IS NOT NULL 
+        THEN CONCAT(e.nombreEstudiante, ' ', e.apePaEstudiante, ' ', e.apeMaEstudiante)
+        ELSE NULL 
+      END as estudianteName
       FROM USUARIO u 
       JOIN TIPO_USUARIO t ON u.idTipoUsuario = t.idTipoUsuario
       LEFT JOIN COLABORADOR c ON u.idColaborador = c.idColaborador
-      LEFT JOIN AREA a ON u.idArea = a.idArea`
+      LEFT JOIN AREA a ON u.idArea = a.idArea
+      LEFT JOIN ESTUDIANTE e ON u.idUsuario = e.idUsuario`
     );
     
     return {
       success: true,
       users: rows.map(user => ({
         ...user,
-        name: user.colaboradorName || user.email,
+        name: user.colaboradorName || user.estudianteName || user.email,
         active: user.active === 'Activo'
       }))
     };

@@ -81,6 +81,9 @@ interface Estudiante {
   areaName: string;
   usuarioId: number;
   usuarioCorreo: string;
+  nombreEstudiante: string;
+  apePaEstudiante: string;
+  apeMaEstudiante: string;
 }
 
 interface Usuario {

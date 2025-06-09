@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,6 +19,9 @@ interface Estudiante {
   areaName: string;
   usuarioId: number;
   usuarioCorreo: string;
+  nombreEstudiante: string;
+  apePaEstudiante: string;
+  apeMaEstudiante: string;
 }
 
 interface Area {
@@ -54,11 +56,15 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   const queryClient = useQueryClient();
 
   // Filtrar estudiantes basado en la búsqueda
-  const filteredEstudiantes = estudiantes.filter(est => 
-    est.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    est.usuarioCorreo.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    est.areaName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredEstudiantes = estudiantes.filter(est => {
+    const nombreCompleto = `${est.nombreEstudiante} ${est.apePaEstudiante} ${est.apeMaEstudiante}`.toLowerCase();
+    return (
+      est.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      nombreCompleto.includes(searchQuery.toLowerCase()) ||
+      est.usuarioCorreo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      est.areaName.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
 
   // Abrir diálogo para crear nuevo estudiante
   const handleCreateEstudiante = () => {
@@ -162,7 +168,6 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
             areaId: data.areaId,
             areaName: areas.find(a => a.id === data.areaId)?.name || ''
           });
-          setIsUserDialogOpen(true);
         }
         setIsDialogOpen(false);
         queryClient.invalidateQueries({ queryKey: ['estudiantes'] });
@@ -193,6 +198,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
           <TableHeader>
             <TableRow>
               <TableHead>Código</TableHead>
+              <TableHead>Nombre</TableHead>
               <TableHead>Correo Usuario</TableHead>
               <TableHead>Sexo</TableHead>
               <TableHead>Semestre</TableHead>
@@ -203,16 +209,17 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6}>Cargando...</TableCell>
+                <TableCell colSpan={7}>Cargando...</TableCell>
               </TableRow>
             ) : filteredEstudiantes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6}>No hay estudiantes</TableCell>
+                <TableCell colSpan={7}>No hay estudiantes</TableCell>
               </TableRow>
             ) : (
               filteredEstudiantes.map(est => (
                 <TableRow key={est.id}>
                   <TableCell>{est.codigo}</TableCell>
+                  <TableCell>{`${est.nombreEstudiante} ${est.apePaEstudiante} ${est.apeMaEstudiante}`}</TableCell>
                   <TableCell>{est.usuarioCorreo}</TableCell>
                   <TableCell>{est.sexo}</TableCell>
                   <TableCell>{est.semestre}</TableCell>
@@ -256,22 +263,6 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
         estudiante={selectedEstudiante}
         areas={areas}
         usuarios={usuarios}
-      />
-      <UserDialog
-        open={isUserDialogOpen}
-        onOpenChange={setIsUserDialogOpen}
-        areaId={createdEstudiante?.areaId}
-        colaboradorId={null}
-        estudianteId={createdEstudiante?.id}
-        defaultEmail={''}
-        onSave={() => {
-          setIsUserDialogOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['usuarios'] });
-          queryClient.invalidateQueries({ queryKey: ['estudiantes'] });
-        }}
-        roles={[]}
-        areas={areas}
-        tipoUsuarioId={4}
       />
     </Card>
   );

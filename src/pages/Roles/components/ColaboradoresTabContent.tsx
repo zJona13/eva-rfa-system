@@ -244,7 +244,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
           onClick={handleCreateColaborador}
         >
           <Plus className="h-3.5 w-3.5" />
-          <span>Nuevo</span>
+          <span>Nuevo Colaborador</span>
         </Button>
       </CardHeader>
       <CardContent>

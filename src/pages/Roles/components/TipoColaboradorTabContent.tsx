@@ -180,7 +180,7 @@ const TipoColaboradorTabContent: React.FC<TipoColaboradorTabContentProps> = ({
             setShowAddTipoColabDialog(true);
           }}
         >
-          <PlusCircle className="h-4 w-4 mr-1" /> Nuevo Tipo
+          <PlusCircle className="h-4 w-4 mr-1" /> Nuevo Rol de Colaborador
         </Button>
       </div>
       <Card>

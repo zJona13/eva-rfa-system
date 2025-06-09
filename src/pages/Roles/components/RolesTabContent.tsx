@@ -176,7 +176,7 @@ const RolesTabContent: React.FC<RolesTabContentProps> = ({ roles, isLoading, sea
             setShowAddRoleDialog(true);
           }}
         >
-          <PlusCircle className="h-4 w-4 mr-1" /> Nuevo Rol
+          <PlusCircle className="h-4 w-4 mr-1" /> Nuevo Rol de Usuario
         </Button>
       </div>
       <Card>

@@ -32,6 +32,7 @@ interface User {
   colaboradorName?: string;
   areaId?: number;
   areaName?: string;
+  estudianteName?: string;
 }
 
 interface Role {
@@ -182,7 +183,11 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                 ) : (
                   filteredUsers.map((user) => (
                     <TableRow key={user.id}>
-                      <TableCell className="font-medium">{user.name}</TableCell>
+                      <TableCell className="font-medium">{
+                        user.colaboradorName
+                          ? user.colaboradorName
+                          : (user.estudianteName ? user.estudianteName : user.name)
+                      }</TableCell>
                       <TableCell>{user.email}</TableCell>
                       <TableCell>
                         <Badge variant={user.role === 'Administrador' ? 'destructive' : 'default'}>
