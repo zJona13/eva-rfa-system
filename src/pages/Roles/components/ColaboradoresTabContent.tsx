@@ -107,6 +107,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   const updateColaborador = async ({ id, data }: { id: number; data: any }) => {
     const response = await fetch(`http://localhost:3309/api/colaboradores/${id}`, {
       method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
     
