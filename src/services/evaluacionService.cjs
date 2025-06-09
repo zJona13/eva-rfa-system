@@ -77,13 +77,16 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
   }
 };
 
-// Crear una nueva evaluación - SIMPLIFICADO (sin subcriterios en tablas separadas)
+// Crear una nueva evaluación con detalles de subcriterios
 const createEvaluacion = async (evaluacionData) => {
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+    
     console.log('Creating evaluacion with data:', evaluacionData);
     
-    // Crear la evaluación principal - solo en la tabla EVALUACION
-    const [evaluacionResult] = await pool.execute(
+    // Crear la evaluación principal
+    const [evaluacionResult] = await connection.execute(
       'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntaje, comentario, tipo, estado, idUsuario, idColaborador) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
       [
         evaluacionData.date,
@@ -100,26 +103,69 @@ const createEvaluacion = async (evaluacionData) => {
     const evaluacionId = evaluacionResult.insertId;
     console.log('Evaluacion created with ID:', evaluacionId);
     
+    // Guardar detalles de subcriterios si se proporcionan
+    if (evaluacionData.subcriteriosRatings && Object.keys(evaluacionData.subcriteriosRatings).length > 0) {
+      for (const [subcriterioId, puntaje] of Object.entries(evaluacionData.subcriteriosRatings)) {
+        // Obtener información del subcriterio
+        const [subcriterioInfo] = await connection.execute(
+          'SELECT texto, idCriterio FROM SUBCRITERIOS WHERE idSubCriterio = ?',
+          [subcriterioId]
+        );
+        
+        if (subcriterioInfo.length > 0) {
+          const subcriterio = subcriterioInfo[0];
+          
+          // Obtener nombre del criterio
+          const [criterioInfo] = await connection.execute(
+            'SELECT nombre FROM CRITERIOS WHERE idCriterio = ?',
+            [subcriterio.idCriterio]
+          );
+          
+          const criterioNombre = criterioInfo.length > 0 ? criterioInfo[0].nombre : 'Sin criterio';
+          
+          // Insertar en CRITERIO_EVALUACION
+          await connection.execute(
+            'INSERT INTO CRITERIO_EVALUACION (criterio, subcriterio, puntaje, idEvaluacion) VALUES (?, ?, ?, ?)',
+            [
+              criterioNombre,
+              subcriterio.texto,
+              puntaje,
+              evaluacionId
+            ]
+          );
+        }
+      }
+    }
+    
+    await connection.commit();
+    
     return {
       success: true,
       evaluacionId: evaluacionId,
       message: 'Evaluación creada exitosamente'
     };
   } catch (error) {
+    await connection.rollback();
     console.error('Error al crear evaluación:', error);
     return { success: false, message: 'Error al crear la evaluación' };
+  } finally {
+    connection.release();
   }
 };
 
-// Actualizar una evaluación - SIMPLIFICADO
+// Actualizar una evaluación con detalles de subcriterios
 const updateEvaluacion = async (evaluacionId, evaluacionData) => {
+  const connection = await pool.getConnection();
   try {
+    await connection.beginTransaction();
+    
     // Obtener la evaluación actual para validar la fecha
-    const [rows] = await pool.execute('SELECT fechaEvaluacion, estado FROM EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
+    const [rows] = await connection.execute('SELECT fechaEvaluacion, estado FROM EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
     if (rows.length === 0) {
       return { success: false, message: 'Evaluación no encontrada' };
     }
     const evaluacion = rows[0];
+    
     // Solo restringir si está pendiente
     if (evaluacion.estado === 'Pendiente') {
       const fechaEvaluacion = new Date(evaluacion.fechaEvaluacion);
@@ -130,8 +176,9 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
         return { success: false, message: 'No se puede editar la evaluación porque han pasado más de 2 días desde su creación.' };
       }
     }
-    // Actualizar solo la evaluación principal
-    await pool.execute(
+    
+    // Actualizar la evaluación principal
+    await connection.execute(
       'UPDATE EVALUACION SET fechaEvaluacion = ?, horaEvaluacion = ?, puntaje = ?, comentario = ?, tipo = ?, estado = ? WHERE idEvaluacion = ?',
       [
         evaluacionData.date,
@@ -143,15 +190,59 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
         evaluacionId
       ]
     );
+    
+    // Eliminar detalles de criterios existentes
+    await connection.execute('DELETE FROM CRITERIO_EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
+    
+    // Guardar nuevos detalles de subcriterios si se proporcionan
+    if (evaluacionData.subcriteriosRatings && Object.keys(evaluacionData.subcriteriosRatings).length > 0) {
+      for (const [subcriterioId, puntaje] of Object.entries(evaluacionData.subcriteriosRatings)) {
+        // Obtener información del subcriterio
+        const [subcriterioInfo] = await connection.execute(
+          'SELECT texto, idCriterio FROM SUBCRITERIOS WHERE idSubCriterio = ?',
+          [subcriterioId]
+        );
+        
+        if (subcriterioInfo.length > 0) {
+          const subcriterio = subcriterioInfo[0];
+          
+          // Obtener nombre del criterio
+          const [criterioInfo] = await connection.execute(
+            'SELECT nombre FROM CRITERIOS WHERE idCriterio = ?',
+            [subcriterio.idCriterio]
+          );
+          
+          const criterioNombre = criterioInfo.length > 0 ? criterioInfo[0].nombre : 'Sin criterio';
+          
+          // Insertar en CRITERIO_EVALUACION
+          await connection.execute(
+            'INSERT INTO CRITERIO_EVALUACION (criterio, subcriterio, puntaje, idEvaluacion) VALUES (?, ?, ?, ?)',
+            [
+              criterioNombre,
+              subcriterio.texto,
+              puntaje,
+              evaluacionId
+            ]
+          );
+        }
+      }
+    }
+    
+    await connection.commit();
+    
     // Llamar a la cancelación automática después de actualizar
     await cancelarBorradoresVencidos();
+    
     return {
       success: true,
       message: 'Evaluación actualizada exitosamente'
     };
   } catch (error) {
+    await connection.rollback();
     console.error('Error al actualizar evaluación:', error);
     return { success: false, message: 'Error al actualizar la evaluación' };
+  } finally {
+    connection.release();
   }
 };
 
