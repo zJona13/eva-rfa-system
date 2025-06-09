@@ -19,7 +19,10 @@ const ChecklistEvaluation = () => {
   // Fetch evaluaciones realizadas por este evaluador
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
     queryKey: ['evaluaciones-evaluador', user?.id],
-    queryFn: () => fetch(`/evaluaciones/evaluador/${user?.id}`),
+    queryFn: async () => {
+      const response = await fetch(`/evaluaciones/evaluador/${user?.id}`);
+      return response.json();
+    },
     enabled: !!user?.id,
   });
 
@@ -63,8 +66,8 @@ const ChecklistEvaluation = () => {
     }
   };
 
-  if (showForm || editingEvaluacion) {
-    return <EvaluacionSupervisionForm onCancel={() => { setShowForm(false); setEditingEvaluacion(null); }} evaluacionDraft={editingEvaluacion} />;
+  if (showForm) {
+    return <EvaluacionSupervisionForm />;
   }
 
   return (

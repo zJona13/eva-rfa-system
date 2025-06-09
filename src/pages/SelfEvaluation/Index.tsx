@@ -68,8 +68,8 @@ const SelfEvaluation = () => {
     }
   };
 
-  if (showForm || editingEvaluacion) {
-    return <AutoevaluacionForm onCancel={() => { setShowForm(false); setEditingEvaluacion(null); }} evaluacionDraft={editingEvaluacion} />;
+  if (showForm) {
+    return <AutoevaluacionForm />;
   }
 
   return (

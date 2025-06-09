@@ -67,8 +67,8 @@ const StudentEvaluation = () => {
     }
   };
 
-  if (showForm || editingEvaluacion) {
-    return <EvaluacionEstudianteForm onCancel={() => { setShowForm(false); setEditingEvaluacion(null); }} evaluacionDraft={editingEvaluacion} />;
+  if (showForm) {
+    return <EvaluacionEstudianteForm />;
   }
 
   return (
