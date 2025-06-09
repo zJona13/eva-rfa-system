@@ -96,7 +96,7 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{estudiante ? 'Editar Estudiante' : 'Nuevo Estudiante'}</DialogTitle>
+          <DialogTitle>{estudiante ? 'Editar Estudiante' : 'Crear Nuevo Estudiante'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

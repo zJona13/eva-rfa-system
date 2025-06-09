@@ -62,11 +62,7 @@ const TipoContratoDialog = ({ open, onOpenChange, tipoContrato, onSave }: TipoCo
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Tipo de Contrato' : 'Crear Nuevo Tipo de Contrato'}</DialogTitle>
-          <DialogDescription>
-            {isEditing 
-              ? 'Modifique la información del tipo de contrato seleccionado.' 
-              : 'Complete la información para crear un nuevo tipo de contrato en el sistema.'}
-          </DialogDescription>
+
         </DialogHeader>
         
         <Form {...form}>

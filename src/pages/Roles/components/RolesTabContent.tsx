@@ -314,11 +314,7 @@ const RolesTabContent: React.FC<RolesTabContentProps> = ({ roles, isLoading, sea
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{editRoleId ? 'Editar Rol' : 'Crear Nuevo Rol'}</DialogTitle>
-                <DialogDescription>
-                  {editRoleId 
-                    ? 'Modifique la información del rol seleccionado.' 
-                    : 'Complete la información para crear un nuevo rol en el sistema.'}
-                </DialogDescription>
+
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">

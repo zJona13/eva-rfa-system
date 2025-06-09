@@ -320,11 +320,7 @@ const TipoColaboradorTabContent: React.FC<TipoColaboradorTabContentProps> = ({
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{editTipoColabId ? 'Editar Tipo de Colaborador' : 'Crear Nuevo Tipo de Colaborador'}</DialogTitle>
-                <DialogDescription>
-                  {editTipoColabId 
-                    ? 'Modifique la información del tipo de colaborador seleccionado.' 
-                    : 'Complete la información para crear un nuevo tipo de colaborador en el sistema.'}
-                </DialogDescription>
+
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">

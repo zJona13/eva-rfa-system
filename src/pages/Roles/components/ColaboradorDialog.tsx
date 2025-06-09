@@ -179,11 +179,7 @@ const ColaboradorDialog = ({
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Colaborador' : 'Crear Nuevo Colaborador'}</DialogTitle>
-          <DialogDescription>
-            {isEditing 
-              ? 'Modifique la información del colaborador seleccionado.' 
-              : 'Complete la información para crear un nuevo colaborador en el sistema.'}
-          </DialogDescription>
+
         </DialogHeader>
         
         <Form {...form}>

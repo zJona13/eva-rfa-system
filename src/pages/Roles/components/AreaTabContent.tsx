@@ -296,11 +296,7 @@ const AreaTabContent: React.FC<AreaTabContentProps> = ({ areas, isLoading, searc
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>{selectedArea ? 'Editar Área' : 'Crear Nueva Área'}</DialogTitle>
-                <DialogDescription>
-                  {selectedArea 
-                    ? 'Modifique la información del área seleccionada.' 
-                    : 'Complete la información para crear una nueva área en el sistema.'}
-                </DialogDescription>
+
               </DialogHeader>
               <div className="space-y-4">
                 <div className="space-y-2">
