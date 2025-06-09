@@ -1,168 +1,138 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
-import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
-import { modulesData } from '@/config/navigation';
-import StatCard from '@/components/Dashboard/StatCard';
-import ModuleCard from '@/components/Dashboard/ModuleCard';
-import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
-import EvaluationsChart from '@/components/Dashboard/EvaluationsChart';
-import { Badge } from '@/components/ui/badge';
+import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
+
+interface DashboardData {
+  totalUsers: number;
+  activeUsers: number;
+  totalRoles: number;
+  totalColaboradores: number;
+}
 
 const Dashboard = () => {
-  const { user } = useAuth();
-  const { t } = useLanguage();
-  const navigate = useNavigate();
-  
-  // Filter modules based on user role
-  const userRole = user?.role || 'guest';
-  const filteredModules = modulesData.filter(module => 
-    !module.roles || module.roles.includes(userRole)
-  );
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // Fetch dashboard statistics using authenticated API
-  const { data: statsData, isLoading: statsLoading } = useQuery({
-    queryKey: ['dashboard-stats'],
-    queryFn: () => fetch('/api/dashboard/stats'),
-    refetchInterval: 30000, // Refetch every 30 seconds
-  });
+  useEffect(() => {
+    fetchDashboardData();
+  }, []);
 
-  const stats = statsData?.data?.stats || {};
-
-  // Get greeting based on time of day
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return t('dashboard.goodMorning');
-    if (hour < 18) return t('dashboard.goodAfternoon');
-    return t('dashboard.goodEvening');
+  const fetchDashboardData = async () => {
+    try {
+      const response = await fetch('http://localhost:3309/api/dashboard');
+      const data = await response.json();
+      setDashboardData(data);
+    } catch (error) {
+      toast.error('Error al cargar datos del dashboard');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  // Use full collaborator name if available, otherwise use user name
-  const displayName = user?.colaboradorName || user?.name;
+  const options = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+      },
+      title: {
+        display: true,
+        text: 'Resumen de Datos',
+      },
+    },
+  };
 
-  // Determine if user is evaluated (docente) - using English role values
-  const isEvaluated = userRole === 'evaluated';
-  const isAdminOrEvaluator = userRole === 'admin' || userRole === 'evaluator';
+  const labels = ['Usuarios', 'Roles', 'Colaboradores'];
+
+  const data = {
+    labels,
+    datasets: [
+      {
+        label: 'Cantidad',
+        data: [dashboardData?.totalUsers || 0, dashboardData?.totalRoles || 0, dashboardData?.totalColaboradores || 0],
+        backgroundColor: 'rgba(255, 99, 132, 0.5)',
+      },
+    ],
+  };
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{getGreeting()}, {displayName}</h1>
-        <p className="text-muted-foreground mt-4">
-          {t('dashboard.welcome')}
-        </p>
-      </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Dashboard</h1>
 
-      {/* Stats overview */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        {isEvaluated ? (
-          // Estadísticas para docentes evaluados
-          <>
-            <StatCard
-              title={t('dashboard.receivedEvaluations')}
-              value={statsLoading ? '-' : stats.evaluacionesRecibidas || '0'}
-              icon={<ClipboardList className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.approvedEvaluations')}
-              value={statsLoading ? '-' : stats.evaluacionesAprobadas || '0'}
-              icon={<CheckSquare className="h-6 w-6" />}
-              valueClassName="text-green-600"
-            />
-            <StatCard
-              title={t('dashboard.averageScore')}
-              value={statsLoading ? '-' : `${stats.promedioCalificacion || '0'}/20`}
-              icon={<BarChart4 className="h-6 w-6" />}
-              valueClassName="text-blue-600"
-            />
-            <StatCard
-              title={t('dashboard.personalIncidents')}
-              value={statsLoading ? '-' : stats.incidenciasPersonales || '0'}
-              icon={<AlertCircle className="h-6 w-6" />}
-              valueClassName="text-orange-600"
-            />
-          </>
-        ) : isAdminOrEvaluator ? (
-          // Estadísticas para administradores y evaluadores
-          <>
-            <StatCard
-              title={t('dashboard.totalEvaluations')}
-              value={statsLoading ? '-' : stats.totalEvaluaciones || '0'}
-              icon={<ClipboardList className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.pendingEvaluations')}
-              value={statsLoading ? '-' : stats.evaluacionesPendientes || '0'}
-              icon={<AlertCircle className="h-6 w-6" />}
-              valueClassName="text-yellow-600"
-            />
-            <StatCard
-              title={t('dashboard.pendingValidations')}
-              value={statsLoading ? '-' : stats.validacionesPendientes || '0'}
-              icon={<ShieldCheck className="h-6 w-6" />}
-              valueClassName="text-blue-600"
-            />
-            <StatCard
-              title={t('dashboard.generalAverage')}
-              value={statsLoading ? '-' : `${stats.promedioGeneral || '0'}/20`}
-              icon={<BarChart4 className="h-6 w-6" />}
-              valueClassName="text-green-600"
-            />
-          </>
-        ) : (
-          // Estadísticas por defecto para otros roles
-          <>
-            <StatCard
-              title={t('dashboard.pendingEvaluations')}
-              value="0"
-              icon={<ClipboardList className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.activeIncidents')}
-              value="0"
-              icon={<AlertCircle className="h-6 w-6" />}
-              valueClassName="text-orange-600"
-            />
-            <StatCard
-              title={t('dashboard.pendingValidations')}
-              value="0"
-              icon={<ShieldCheck className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.totalResults')}
-              value="0"
-              icon={<BarChart4 className="h-6 w-6" />}
-            />
-          </>
-        )}
-      </div>
+      {loading ? (
+        <p>Cargando datos...</p>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Usuarios Totales</CardTitle>
+              <CardDescription>Número total de usuarios registrados</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dashboardData?.totalUsers}</div>
+            </CardContent>
+          </Card>
 
-      {/* Recent evaluations, chart and modules */}
-      <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
-        <div className="space-y-6">
-          {/* Recent Evaluations */}
-          <RecentEvaluations />
-          {/* Evaluations Chart */}
-          <EvaluationsChart />
+          <Card>
+            <CardHeader>
+              <CardTitle>Usuarios Activos</CardTitle>
+              <CardDescription>Número de usuarios actualmente activos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dashboardData?.activeUsers}</div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Roles Totales</CardTitle>
+              <CardDescription>Número total de roles definidos</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dashboardData?.totalRoles}</div>
+            </CardContent>
+          </Card>
+
+           <Card>
+            <CardHeader>
+              <CardTitle>Colaboradores Totales</CardTitle>
+              <CardDescription>Número total de colaboradores registrados</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{dashboardData?.totalColaboradores}</div>
+            </CardContent>
+          </Card>
+
+          <Card className="col-span-2">
+            <CardHeader>
+              <CardTitle>Gráfico de Datos</CardTitle>
+              <CardDescription>Representación gráfica de los datos del sistema</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Bar options={options} data={data} />
+            </CardContent>
+          </Card>
         </div>
-        {/* Module access */}
-        <div className="space-y-4">
-          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-            {filteredModules.slice(0, 6).map((module) => (
-              <ModuleCard
-                key={module.id}
-                title={module.title}
-                description={module.description}
-                href={module.href}
-                icon={<module.icon className="h-5 w-5" />}
-                color={module.color}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
+      )}
     </div>
   );
 };

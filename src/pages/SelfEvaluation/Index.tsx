@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -17,6 +16,7 @@ const SelfEvaluation = () => {
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
   const [editingEvaluacion, setEditingEvaluacion] = useState<any>(null);
+  const [colaboradores, setColaboradores] = useState([]);
 
   // Fetch autoevaluaciones del usuario actual
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -56,6 +56,16 @@ const SelfEvaluation = () => {
   // Para autoevaluaciones, un supervisor puede generar incidencias si la nota es menor a 11
   const canGenerateIncidencia = (evaluacion: any) => {
     return evaluacion.score < 11;
+  };
+
+  const fetchColaboradores = async () => {
+    try {
+      const response = await fetch('http://localhost:3309/api/colaboradores');
+      const data = await response.json();
+      setColaboradores(data.colaboradores || []);
+    } catch (error) {
+      toast.error('Error al cargar colaboradores');
+    }
   };
 
   if (showForm || editingEvaluacion) {

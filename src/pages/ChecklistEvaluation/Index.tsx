@@ -14,6 +14,7 @@ const ChecklistEvaluation = () => {
   const [showIncidenciaDialog, setShowIncidenciaDialog] = useState(false);
   const [selectedEvaluacion, setSelectedEvaluacion] = useState<any>(null);
   const [editingEvaluacion, setEditingEvaluacion] = useState<any>(null);
+  const [colaboradores, setColaboradores] = useState<any[]>([]);
 
   // Fetch evaluaciones realizadas por este evaluador
   const { data: evaluacionesData, isLoading: isLoadingEvaluaciones } = useQuery({
@@ -50,6 +51,16 @@ const ChecklistEvaluation = () => {
   // Para supervisiones, el supervisor puede generar incidencias si la nota es menor a 11
   const canGenerateIncidencia = (evaluacion: any) => {
     return evaluacion.score < 11;
+  };
+
+  const fetchColaboradores = async () => {
+    try {
+      const response = await fetch('http://localhost:3309/api/colaboradores');
+      const data = await response.json();
+      setColaboradores(data.colaboradores || []);
+    } catch (error) {
+      toast.error('Error al cargar colaboradores');
+    }
   };
 
   if (showForm || editingEvaluacion) {
