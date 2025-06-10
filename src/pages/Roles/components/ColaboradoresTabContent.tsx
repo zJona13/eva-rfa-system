@@ -116,7 +116,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
             ...payload, 
             id: result.colaboradorId, 
             fullName: `${payload.nombres} ${payload.apePat} ${payload.apeMat}`,
-            areaId: Number(payload.areaId),
+            areaId: payload.areaId ? Number(payload.areaId) : 0,
             areaName: areas.find(a => a.id === Number(payload.areaId))?.name || ''
           });
           setIsUserDialogOpen(true);
