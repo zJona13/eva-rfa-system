@@ -40,7 +40,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
 
       <aside
         className={cn(
-          "fixed top-0 bottom-0 left-0 z-50 w-56 border-r bg-gradient-to-b from-sidebar via-sidebar/95 to-sidebar shadow-lg pt-16 transition-all duration-300 ease-in-out md:translate-x-0 md:z-0",
+          "fixed top-0 bottom-0 left-0 z-50 w-60 border-r bg-gradient-to-b from-sidebar via-sidebar/95 to-sidebar shadow-lg pt-16 transition-all duration-300 ease-in-out md:translate-x-0 md:z-0",
           isOpen ? "translate-x-0" : "-translate-x-full"
         )}
       >
@@ -52,7 +52,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                 <span className="text-white font-bold text-xs">IES</span>
               </div>
               <div className="flex-1">
-                <h2 className="text-sm font-bold text-sidebar-foreground leading-tight">
+                <h2 className="text-xs font-bold text-sidebar-foreground leading-tight">
                   Sistema de Evaluación
                 </h2>
                 <p className="text-xs text-sidebar-foreground/60 font-medium">
@@ -65,7 +65,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             <div className="flex items-center justify-between p-2 bg-sidebar-accent/10 rounded-lg border border-sidebar-border/30">
               <div className="flex items-center gap-2 flex-1 min-w-0">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse flex-shrink-0"></div>
-                <span className="text-xs font-semibold text-sidebar-foreground truncate">
+                <span className="text-xs font-medium text-sidebar-foreground truncate">
                   {userRole === 'admin' ? 'Administrador' : 
                    userRole === 'evaluator' ? 'Evaluador' : 
                    userRole === 'evaluated' ? 'Evaluado' : 
