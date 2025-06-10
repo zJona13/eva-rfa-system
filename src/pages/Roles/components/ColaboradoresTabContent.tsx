@@ -457,7 +457,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
             email: '',
             roleId: '',
             colaboradorId: createdColaborador?.id,
-            areaId: createdColaborador?.areaId ? String(createdColaborador.areaId) : '',
+            areaId: createdColaborador?.areaId,
             active: true
           }}
           roles={roles}
@@ -471,3 +471,5 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
 };
 
 export default ColaboradoresTabContent;
+
+```
