@@ -2,60 +2,12 @@ const { pool } = require('../utils/dbConnection.cjs');
 
 // Reporte de evaluaciones aprobadas (≥ 11)
 const getEvaluacionesAprobadas = async () => {
-  try {
-    console.log('Ejecutando consulta para evaluaciones aprobadas...');
-    const [rows] = await pool.execute(
-      `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
-      e.horaEvaluacion as hora, e.puntaje as puntaje, e.comentario as comentarios,
-      e.tipo as tipo, e.estado as estado,
-      u.nombre as evaluadorNombre,
-      CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluadoNombre,
-      tc.nombre as rolEvaluado
-      FROM EVALUACION e
-      JOIN USUARIO u ON e.idUsuario = u.idUsuario
-      JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
-      JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-      WHERE e.puntaje >= 11
-      ORDER BY e.fechaEvaluacion DESC, e.puntaje DESC`
-    );
-    
-    console.log(`Evaluaciones aprobadas encontradas: ${rows.length}`);
-    return {
-      success: true,
-      evaluaciones: rows
-    };
-  } catch (error) {
-    console.error('Error al obtener evaluaciones aprobadas:', error);
-    return { success: false, message: 'Error al obtener las evaluaciones aprobadas' };
-  }
+  // Función vacía temporalmente
 };
 
 // Reporte de evaluaciones desaprobadas (< 11)
 const getEvaluacionesDesaprobadas = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
-      e.horaEvaluacion as hora, e.puntaje as puntaje, e.comentario as comentarios,
-      e.tipo as tipo, e.estado as estado,
-      u.nombre as evaluadorNombre,
-      CONCAT(c.nombres, ' ', c.apePat, ' ', c.apeMat) as evaluadoNombre,
-      tc.nombre as rolEvaluado
-      FROM EVALUACION e
-      JOIN USUARIO u ON e.idUsuario = u.idUsuario
-      JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
-      JOIN TIPO_COLABORADOR tc ON c.idTipoColab = tc.idTipoColab
-      WHERE e.puntaje < 11
-      ORDER BY e.fechaEvaluacion DESC, e.puntaje ASC`
-    );
-    
-    return {
-      success: true,
-      evaluaciones: rows
-    };
-  } catch (error) {
-    console.error('Error al obtener evaluaciones desaprobadas:', error);
-    return { success: false, message: 'Error al obtener las evaluaciones desaprobadas' };
-  }
+  // Función vacía temporalmente
 };
 
 // Reporte de evaluados con incidencias
@@ -148,67 +100,12 @@ const getPersonalAltaCalificacion = async () => {
 
 // Reporte de evaluaciones por semestre
 const getEvaluacionesPorSemestre = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT 
-      YEAR(e.fechaEvaluacion) as año,
-      CASE 
-        WHEN MONTH(e.fechaEvaluacion) BETWEEN 1 AND 6 THEN 'I'
-        ELSE 'II'
-      END as semestre,
-      COUNT(e.idEvaluacion) as totalEvaluaciones,
-      AVG(e.puntaje) as promedioGeneral,
-      COUNT(CASE WHEN e.puntaje >= 11 THEN 1 END) as aprobadas,
-      COUNT(CASE WHEN e.puntaje < 11 THEN 1 END) as desaprobadas,
-      e.tipo as tipoEvaluacion
-      FROM EVALUACION e
-      GROUP BY YEAR(e.fechaEvaluacion), 
-               CASE WHEN MONTH(e.fechaEvaluacion) BETWEEN 1 AND 6 THEN 'I' ELSE 'II' END,
-               e.tipo
-      ORDER BY año DESC, semestre DESC, tipoEvaluacion`
-    );
-    
-    return {
-      success: true,
-      evaluaciones: rows
-    };
-  } catch (error) {
-    console.error('Error al obtener evaluaciones por semestre:', error);
-    return { success: false, message: 'Error al obtener las evaluaciones por semestre' };
-  }
+  // Función vacía temporalmente
 };
 
 // Reporte de evaluaciones por área (área real, no tipo de colaborador)
 const getEvaluacionesPorArea = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT 
-      a.idArea as areaId,
-      a.nombre as area,
-      COUNT(e.idEvaluacion) as totalEvaluaciones,
-      AVG(e.puntaje) as promedioArea,
-      COUNT(CASE WHEN e.puntaje >= 11 THEN 1 END) as aprobadas,
-      COUNT(CASE WHEN e.puntaje < 11 THEN 1 END) as desaprobadas,
-      MAX(e.puntaje) as mejorCalificacion,
-      MIN(e.puntaje) as peorCalificacion,
-      COUNT(DISTINCT c.idColaborador) as totalColaboradores
-      FROM EVALUACION e
-      JOIN USUARIO u ON e.idUsuario = u.idUsuario
-      LEFT JOIN AREA a ON u.idArea = a.idArea
-      JOIN COLABORADOR c ON e.idColaborador = c.idColaborador
-      WHERE a.idArea IS NOT NULL
-      GROUP BY a.idArea, a.nombre
-      ORDER BY promedioArea DESC, totalEvaluaciones DESC`
-    );
-    
-    return {
-      success: true,
-      evaluaciones: rows
-    };
-  } catch (error) {
-    console.error('Error al obtener evaluaciones por área:', error);
-    return { success: false, message: 'Error al obtener las evaluaciones por área' };
-  }
+  // Función vacía temporalmente
 };
 
 module.exports = {

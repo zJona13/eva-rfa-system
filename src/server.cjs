@@ -601,113 +601,7 @@ app.delete('/api/users/:id', async (req, res) => {
 });
 
 // Rutas para gestión de evaluaciones
-app.get('/api/evaluaciones', async (req, res) => {
-  try {
-    const result = await evaluacionService.getAllEvaluaciones();
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error en /api/evaluaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.get('/api/evaluaciones/evaluador/:userId', async (req, res) => {
-  try {
-    const { userId } = req.params;
-    const result = await evaluacionService.getEvaluacionesByEvaluador(userId);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error en /api/evaluaciones/evaluador:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.get('/api/evaluaciones/colaborador/:colaboradorId', async (req, res) => {
-  try {
-    const { colaboradorId } = req.params;
-    const result = await evaluacionService.getEvaluacionesByColaborador(colaboradorId);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error en /api/evaluaciones/colaborador:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.post('/api/evaluaciones', async (req, res) => {
-  try {
-    const evaluacionData = req.body;
-    console.log('Received evaluation data:', evaluacionData);
-    
-    const result = await evaluacionService.createEvaluacion(evaluacionData);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error in POST /api/evaluaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.put('/api/evaluaciones/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const evaluacionData = req.body;
-    
-    const result = await evaluacionService.updateEvaluacion(id, evaluacionData);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error in PUT /api/evaluaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.delete('/api/evaluaciones/:id', async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    const result = await evaluacionService.deleteEvaluacion(id);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error in DELETE /api/evaluaciones:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
-
-app.get('/api/colaboradores-para-evaluar', async (req, res) => {
-  try {
-    const result = await evaluacionService.getColaboradoresParaEvaluar();
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json({ message: result.message });
-    }
-  } catch (error) {
-    console.error('Error in /api/colaboradores-para-evaluar:', error);
-    res.status(500).json({ message: 'Error interno del servidor' });
-  }
-});
+// Eliminados los endpoints de evaluaciones por solicitud
 
 // ========================
 // CRITERIOS ROUTES
@@ -1193,21 +1087,6 @@ setInterval(() => {
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
   console.log(`🔓 Sistema sin autenticación JWT`);
-});
-
-app.put('/api/evaluaciones/:id/finalizar', async (req, res) => {
-  try {
-    const { id } = req.params;
-    const result = await evaluacionService.finalizarEvaluacion(id);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(400).json(result);
-    }
-  } catch (error) {
-    console.error('Error al finalizar evaluación:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
 });
 
 // ========================
