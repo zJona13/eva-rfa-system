@@ -77,37 +77,48 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
   }
 };
 
-// Crear una nueva evaluación - SIMPLIFICADO (sin subcriterios en tablas separadas)
+// Crear una nueva evaluación con detalles de subcriterios
 const createEvaluacion = async (evaluacionData) => {
+  const conn = await pool.getConnection();
   try {
-    console.log('Creating evaluacion with data:', evaluacionData);
-    
-    // Crear la evaluación principal - solo en la tabla EVALUACION
-    const [evaluacionResult] = await pool.execute(
-      'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntaje, comentario, tipo, estado, idUsuario, idColaborador) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+    await conn.beginTransaction();
+    // Crear la evaluación principal
+    const [evaluacionResult] = await conn.execute(
+      'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntajeTotal, comentario, estado, idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
       [
         evaluacionData.date,
         evaluacionData.time,
         evaluacionData.score || 0,
         evaluacionData.comments || null,
-        evaluacionData.type,
-        evaluacionData.status || 'Completada',
-        evaluacionData.evaluatorId,
-        evaluacionData.evaluatedId
+        evaluacionData.status || 'Activo',
+        evaluacionData.idAsignacion,
+        evaluacionData.idEvaluador,
+        evaluacionData.idEvaluado,
+        evaluacionData.idTipoEvaluacion
       ]
     );
-    
     const evaluacionId = evaluacionResult.insertId;
-    console.log('Evaluacion created with ID:', evaluacionId);
-    
+    // Insertar detalles de subcriterios
+    if (Array.isArray(evaluacionData.detalles)) {
+      for (const detalle of evaluacionData.detalles) {
+        await conn.execute(
+          'INSERT INTO DETALLE_EVALUACION (puntaje, idEvaluacion, idSubCriterio) VALUES (?, ?, ?)',
+          [detalle.puntaje, evaluacionId, detalle.idSubCriterio]
+        );
+      }
+    }
+    await conn.commit();
     return {
       success: true,
       evaluacionId: evaluacionId,
       message: 'Evaluación creada exitosamente'
     };
   } catch (error) {
+    await conn.rollback();
     console.error('Error al crear evaluación:', error);
     return { success: false, message: 'Error al crear la evaluación' };
+  } finally {
+    conn.release();
   }
 };
 
@@ -284,6 +295,58 @@ const cancelarBorradoresVencidos = async () => {
   }
 };
 
+// Obtener criterios y subcriterios por tipo de evaluación
+const getCriteriosYSubcriteriosPorTipoEvaluacion = async (idTipoEvaluacion) => {
+  try {
+    // Obtener criterios asociados al tipo de evaluación
+    const [criterios] = await pool.execute(
+      `SELECT c.idCriterio, c.nombre
+       FROM TIPO_EVALUACION_CRITERIO tec
+       JOIN CRITERIO c ON tec.idCriterio = c.idCriterio
+       WHERE tec.idTipoEvaluacion = ?
+       ORDER BY c.idCriterio`,
+      [idTipoEvaluacion]
+    );
+    // Para cada criterio, obtener sus subcriterios
+    for (const criterio of criterios) {
+      const [subcriterios] = await pool.execute(
+        `SELECT idSubCriterio, nombre
+         FROM SUB_CRITERIO
+         WHERE idCriterio = ?
+         ORDER BY idSubCriterio`,
+        [criterio.idCriterio]
+      );
+      criterio.subcriterios = subcriterios;
+    }
+    return { success: true, criterios };
+  } catch (error) {
+    console.error('Error al obtener criterios y subcriterios por tipo de evaluación:', error);
+    return { success: false, message: 'Error al obtener criterios y subcriterios' };
+  }
+};
+
+/**
+ * Ejemplo de payload para crear una evaluación:
+ * {
+ *   date: '2024-06-01',
+ *   time: '10:00',
+ *   score: 18.5,
+ *   comments: 'Buen desempeño',
+ *   status: 'Activo',
+ *   idAsignacion: 1,
+ *   idEvaluador: 2,
+ *   idEvaluado: 3,
+ *   idTipoEvaluacion: 1, // 1=Estudiante, 2=Evaluador, 3=Autoevaluación
+ *   detalles: [
+ *     { idSubCriterio: 5, puntaje: 4 },
+ *     { idSubCriterio: 6, puntaje: 5 }
+ *   ]
+ * }
+ *
+ * Para obtener criterios y subcriterios de un tipo de evaluación:
+ * GET /api/evaluaciones/criterios/:idTipoEvaluacion
+ */
+
 module.exports = {
   getAllEvaluaciones,
   getEvaluacionesByEvaluador,
@@ -294,5 +357,6 @@ module.exports = {
   getColaboradoresParaEvaluar,
   getColaboradorByUserId,
   finalizarEvaluacion,
-  cancelarBorradoresVencidos
+  cancelarBorradoresVencidos,
+  getCriteriosYSubcriteriosPorTipoEvaluacion
 };
