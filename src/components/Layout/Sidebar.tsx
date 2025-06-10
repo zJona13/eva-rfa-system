@@ -125,13 +125,10 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
           </nav>
 
           {/* Footer Section */}
-          <div className="p-6 border-t border-sidebar-border/20 bg-sidebar-accent/5">
+          <div className="p-3 border-t border-sidebar-border/20 bg-sidebar-accent/5">
             <div className="text-center">
               <p className="text-xs text-sidebar-foreground/50 font-medium mb-1">
                 &copy; {new Date().getFullYear()} IES RFA
-              </p>
-              <p className="text-xs text-sidebar-foreground/40">
-                Sistema de Evaluación para Desempeño del Personal
               </p>
             </div>
           </div>
