@@ -13,7 +13,6 @@ import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { ArrowLeft } from 'lucide-react';
-import { subcriteriosAutoevaluacion, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
 interface AutoevaluacionFormProps {
   onCancel: () => void;
@@ -28,7 +27,6 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(
     evaluacionDraft?.subcriteriosRatings || {}
   );
-  const [isDraft, setIsDraft] = useState(false);
 
   // Fetch colaborador info by user ID
   const { data: colaboradorData, isLoading: isLoadingColaborador } = useQuery({
@@ -38,6 +36,15 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
       return response.json();
     },
     enabled: !!user?.id,
+  });
+
+  // Fetch criterios y subcriterios desde la base de datos
+  const { data: criteriosData, isLoading: isLoadingCriterios } = useQuery({
+    queryKey: ['subcriterios-agrupados'],
+    queryFn: async () => {
+      const response = await fetch('/subcriterios-agrupados');
+      return response.json();
+    },
   });
 
   const createEvaluacionMutation = useMutation({
@@ -58,8 +65,8 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     },
   });
 
-  // Agrupar subcriterios por criterio
-  const criteriosAgrupados = getCriteriosAgrupados(subcriteriosAutoevaluacion);
+  const criteriosAgrupados = criteriosData?.data?.criteriosAgrupados || {};
+  const allSubcriterios = Object.values(criteriosAgrupados).flat();
 
   const handleSubcriterioRating = (subcriterioId: string, rating: number) => {
     setSubcriteriosRatings(prev => ({
@@ -79,12 +86,14 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
       toast.error(t('selfEval.noColaborador'));
       return;
     }
+    
     // Guardar en localStorage
     const borradorId = evaluacionDraft?.id || `temp-${user?.id}-autoeval`;
     localStorage.setItem(`autoevaluacion-borrador-${borradorId}`, JSON.stringify({
       subcriteriosRatings,
       comments: data.comentarios || '',
     }));
+    
     // Si es un borrador real, guardar en BD
     if (evaluacionDraft?.id) {
       const now = new Date();
@@ -96,8 +105,10 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
         time: now.toTimeString().split(' ')[0],
         score: calculateTotalScore(),
         comments: data.comentarios || null,
-        status: 'Pendiente'
+        status: 'Pendiente',
+        subcriteriosRatings
       };
+      
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
         body: JSON.stringify(evaluacionData)
@@ -119,14 +130,15 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
         time: now.toTimeString().split(' ')[0],
         score: calculateTotalScore(),
         comments: data.comentarios || null,
-        status: 'Pendiente'
+        status: 'Pendiente',
+        subcriteriosRatings
       };
       createEvaluacionMutation.mutate(evaluacionData);
     }
   };
 
   const handleFinish = (data: any) => {
-    if (Object.keys(subcriteriosRatings).length !== subcriteriosAutoevaluacion.length) {
+    if (Object.keys(subcriteriosRatings).length !== allSubcriterios.length) {
       toast.error(t('selfEval.rateAll'));
       return;
     }
@@ -144,8 +156,10 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
       time: now.toTimeString().split(' ')[0],
       score: calculateTotalScore(),
       comments: data.comentarios || null,
-      status: 'Completada'
+      status: 'Completada',
+      subcriteriosRatings
     };
+    
     if (evaluacionDraft?.id) {
       // Actualizar evaluación existente
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
@@ -191,7 +205,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     }
   }, [evaluacionDraft]);
 
-  if (isLoadingColaborador) {
+  if (isLoadingColaborador || isLoadingCriterios) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -335,7 +349,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
             </CardHeader>
             <CardContent className="p-6">
               <div className="text-4xl font-bold text-center text-primary">
-                {calculateTotalScore()}<span className="text-2xl text-muted-foreground">/20</span>
+                {calculateTotalScore()}<span className="text-2xl text-muted-foreground">/{allSubcriterios.length}</span>
               </div>
             </CardContent>
           </Card>
