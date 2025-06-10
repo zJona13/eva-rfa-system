@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -17,6 +16,16 @@ import { ArrowLeft } from 'lucide-react';
 interface AutoevaluacionFormProps {
   onCancel: () => void;
   evaluacionDraft?: any;
+}
+
+interface Subcriterio {
+  id: string;
+  texto: string;
+  puntaje: number;
+}
+
+interface CriteriosAgrupados {
+  [criterioNombre: string]: Subcriterio[];
 }
 
 const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evaluacionDraft }) => {
@@ -65,7 +74,7 @@ const AutoevaluacionForm: React.FC<AutoevaluacionFormProps> = ({ onCancel, evalu
     },
   });
 
-  const criteriosAgrupados = criteriosData?.data?.criteriosAgrupados || {};
+  const criteriosAgrupados: CriteriosAgrupados = criteriosData?.data?.criteriosAgrupados || {};
   const allSubcriterios = Object.values(criteriosAgrupados).flat();
 
   const handleSubcriterioRating = (subcriterioId: string, rating: number) => {

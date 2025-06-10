@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -23,6 +22,16 @@ interface Colaborador {
 interface EvaluacionSupervisionFormProps {
   onCancel: () => void;
   evaluacionDraft?: any;
+}
+
+interface Subcriterio {
+  id: string;
+  texto: string;
+  puntaje: number;
+}
+
+interface CriteriosAgrupados {
+  [criterioNombre: string]: Subcriterio[];
 }
 
 const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ onCancel, evaluacionDraft }) => {
@@ -73,7 +82,7 @@ const EvaluacionSupervisionForm: React.FC<EvaluacionSupervisionFormProps> = ({ o
   const colaboradores: Colaborador[] = colaboradoresData?.data?.colaboradores || [];
   const colaboradoresDocentes = colaboradores.filter(c => c.roleName === 'Docente');
   
-  const criteriosAgrupados = criteriosData?.data?.criteriosAgrupados || {};
+  const criteriosAgrupados: CriteriosAgrupados = criteriosData?.data?.criteriosAgrupados || {};
   const allSubcriterios = Object.values(criteriosAgrupados).flat();
 
   const handleSubcriterioRating = (subcriterioId: string, rating: number) => {
