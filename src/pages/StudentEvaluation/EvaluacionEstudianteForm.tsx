@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
@@ -12,6 +13,7 @@ import { Form, FormControl, FormField, FormItem, FormMessage } from '@/component
 import { toast } from 'sonner';
 import { useAuth } from '@/contexts/AuthContext';
 import { ArrowLeft } from 'lucide-react';
+import { subcriteriosEstudiante, getCriteriosAgrupados } from '@/data/evaluationCriteria';
 
 interface Colaborador {
   id: number;
@@ -24,16 +26,6 @@ interface EvaluacionEstudianteFormProps {
   evaluacionDraft?: any;
 }
 
-interface Subcriterio {
-  id: string;
-  texto: string;
-  puntaje: number;
-}
-
-interface CriteriosAgrupados {
-  [criterioNombre: string]: Subcriterio[];
-}
-
 const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onCancel, evaluacionDraft }) => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
@@ -42,21 +34,14 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
   const [subcriteriosRatings, setSubcriteriosRatings] = useState<Record<string, number>>(
     evaluacionDraft?.subcriteriosRatings || {}
   );
+  const [isDraft, setIsDraft] = useState(false);
+  const borradorKey = evaluacionDraft?.id ? `evaluacion-borrador-${evaluacionDraft.id}` : null;
 
   // Fetch colaboradores
   const { data: colaboradoresData, isLoading: isLoadingColaboradores } = useQuery({
     queryKey: ['colaboradores-para-evaluar'],
     queryFn: async () => {
       const response = await fetch('/colaboradores-para-evaluar');
-      return response.json();
-    },
-  });
-
-  // Fetch criterios y subcriterios desde la base de datos
-  const { data: criteriosData, isLoading: isLoadingCriterios } = useQuery({
-    queryKey: ['subcriterios-agrupados'],
-    queryFn: async () => {
-      const response = await fetch('/subcriterios-agrupados');
       return response.json();
     },
   });
@@ -80,10 +65,12 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
   });
 
   const colaboradores: Colaborador[] = colaboradoresData?.data?.colaboradores || [];
+
+  // Filtrar solo docentes
   const colaboradoresDocentes = colaboradores.filter(c => c.roleName === 'Docente');
-  
-  const criteriosAgrupados: CriteriosAgrupados = criteriosData?.data?.criteriosAgrupados || {};
-  const allSubcriterios = Object.values(criteriosAgrupados).flat();
+
+  // Agrupar subcriterios por criterio
+  const criteriosAgrupados = getCriteriosAgrupados(subcriteriosEstudiante);
 
   const handleSubcriterioRating = (subcriterioId: string, rating: number) => {
     setSubcriteriosRatings(prev => ({
@@ -101,8 +88,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       toast.error('Debe seleccionar un colaborador para evaluar');
       return;
     }
-    
-    // Guardar en localStorage SIEMPRE
+    // Guardar en localStorage SIEMPRE, usando el id del borrador o generando uno temporal si no existe
     const borradorId = evaluacionDraft?.id || `temp-${user?.id}-${selectedColaborador}`;
     localStorage.setItem(`evaluacion-borrador-${borradorId}`, JSON.stringify({
       subcriteriosRatings,
@@ -110,7 +96,6 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       comments: data.comentarios || '',
       asignatura: data.asignatura || ''
     }));
-    
     // Si es un borrador real, guardar en BD
     if (evaluacionDraft?.id) {
       const now = new Date();
@@ -122,10 +107,8 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
         time: now.toTimeString().split(' ')[0],
         score: calculateTotalScore(),
         comments: data.comentarios || null,
-        status: 'Pendiente',
-        subcriteriosRatings
+        status: 'Pendiente'
       };
-      
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
         method: 'PUT',
         body: JSON.stringify(evaluacionData)
@@ -147,8 +130,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
         time: now.toTimeString().split(' ')[0],
         score: calculateTotalScore(),
         comments: data.comentarios || null,
-        status: 'Pendiente',
-        subcriteriosRatings
+        status: 'Pendiente'
       };
       createEvaluacionMutation.mutate(evaluacionData);
     }
@@ -159,16 +141,14 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       toast.error('Debe seleccionar un colaborador para evaluar');
       return;
     }
-    if (Object.keys(subcriteriosRatings).length !== allSubcriterios.length) {
+    if (Object.keys(subcriteriosRatings).length !== subcriteriosEstudiante.length) {
       toast.error('Debe calificar todos los subcriterios');
       return;
     }
-    
     // Eliminar borrador de localStorage
     if (evaluacionDraft?.id) {
       localStorage.removeItem(`evaluacion-borrador-${evaluacionDraft.id}`);
     }
-    
     const now = new Date();
     const evaluacionData = {
       type: 'Evaluacion estudiante-docente',
@@ -178,10 +158,8 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
       time: now.toTimeString().split(' ')[0],
       score: calculateTotalScore(),
       comments: data.comentarios || null,
-      status: 'Completada',
-      subcriteriosRatings
+      status: 'Completada'
     };
-    
     if (evaluacionDraft?.id) {
       // Actualizar evaluación existente
       fetch(`/evaluaciones/${evaluacionDraft.id}`, {
@@ -227,9 +205,10 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
 
   // Lógica de fecha límite para edición/finalización (1 día)
   let fueraDeRango = false;
+  let fechaEvaluacionDraft = null;
   let cancelada = evaluacionDraft?.status === 'Cancelada';
   if (evaluacionDraft?.date && evaluacionDraft?.status === 'Pendiente') {
-    const fechaEvaluacionDraft = new Date(evaluacionDraft.date);
+    fechaEvaluacionDraft = new Date(evaluacionDraft.date);
     const ahora = new Date();
     if (!isNaN(fechaEvaluacionDraft.getTime())) {
       const diffMs = ahora.getTime() - fechaEvaluacionDraft.getTime();
@@ -240,7 +219,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
     }
   }
 
-  if (isLoadingColaboradores || isLoadingCriterios) {
+  if (isLoadingColaboradores) {
     return (
       <div className="flex items-center justify-center p-8">
         <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
@@ -398,7 +377,7 @@ const EvaluacionEstudianteForm: React.FC<EvaluacionEstudianteFormProps> = ({ onC
             </CardHeader>
             <CardContent className="p-6">
               <div className="text-4xl font-bold text-center text-secondary">
-                {calculateTotalScore()}<span className="text-2xl text-muted-foreground">/{allSubcriterios.length}</span>
+                {calculateTotalScore()}<span className="text-2xl text-muted-foreground">/20</span>
               </div>
             </CardContent>
           </Card>

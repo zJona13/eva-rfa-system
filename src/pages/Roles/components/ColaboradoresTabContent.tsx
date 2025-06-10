@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -458,7 +457,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
             email: '',
             roleId: '',
             colaboradorId: createdColaborador?.id,
-            areaId: createdColaborador?.areaId ? Number(createdColaborador.areaId) : 0,
+            areaId: createdColaborador?.areaId ? String(createdColaborador.areaId) : '',
             active: true
           }}
           roles={roles}
