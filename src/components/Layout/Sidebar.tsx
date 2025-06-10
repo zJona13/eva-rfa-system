@@ -56,7 +56,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
                   Sistema de Evaluación
                 </h2>
                 <p className="text-xs text-sidebar-foreground/60 font-medium">
-                  Desempeño del Personal
+                  Desempeño del Personal - IES RFA
                 </p>
               </div>
             </div>
