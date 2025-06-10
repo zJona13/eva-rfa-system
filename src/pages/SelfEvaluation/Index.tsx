@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from 'react';
 import { getCriteriosPorTipoEvaluacion, crearEvaluacion } from '../../services/evaluacionApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,17 +15,42 @@ export default function SelfEvaluationPage() {
   const [loading, setLoading] = useState(true);
   const [puntajes, setPuntajes] = useState({});
   const [comentario, setComentario] = useState('');
-  const [idAsignacion, setIdAsignacion] = useState('');
-  const [idEvaluador, setIdEvaluador] = useState('');
-  const [idEvaluado, setIdEvaluado] = useState('');
   const [enviando, setEnviando] = useState(false);
+  const [docenteInfo, setDocenteInfo] = useState({
+    nombre: '',
+    area: '',
+    fecha: new Date().toLocaleDateString()
+  });
 
   useEffect(() => {
-    // 3 = Autoevaluación
-    getCriteriosPorTipoEvaluacion(3).then(data => {
-      setCriterios(data.criterios);
-      setLoading(false);
-    });
+    const fetchData = async () => {
+      try {
+        // Obtener criterios de autoevaluación
+        const criteriosData = await getCriteriosPorTipoEvaluacion(3);
+        setCriterios(criteriosData.criterios);
+
+        // Obtener información del usuario actual
+        const response = await fetch('http://localhost:3309/api/users/current');
+        if (!response.ok) {
+          throw new Error('Error al obtener información del usuario');
+        }
+        const userData = await response.json();
+        
+        // Actualizar información del docente
+        setDocenteInfo({
+          nombre: userData.colaboradorName || userData.name || '',
+          area: userData.areaName || '',
+          fecha: new Date().toLocaleDateString()
+        });
+        
+        setLoading(false);
+      } catch (error) {
+        console.error('Error al cargar datos:', error);
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handlePuntaje = (idSubCriterio, valor) => {
@@ -86,9 +110,6 @@ export default function SelfEvaluationPage() {
       score,
       comments: comentario,
       status: 'Activo',
-      idAsignacion: Number(idAsignacion),
-      idEvaluador: Number(idEvaluador),
-      idEvaluado: Number(idEvaluado),
       idTipoEvaluacion: 3,
       detalles
     };
@@ -114,7 +135,7 @@ export default function SelfEvaluationPage() {
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {/* Header Card */}
-      <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/20 dark:to-pink-950/20">
+      <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="p-3 bg-purple-500 rounded-xl">
@@ -122,10 +143,10 @@ export default function SelfEvaluationPage() {
             </div>
             <div>
               <CardTitle className="text-2xl text-purple-900 dark:text-purple-100">
-                Autoevaluación
+                Autoevaluación Docente
               </CardTitle>
               <CardDescription className="text-purple-700 dark:text-purple-300">
-                Reflexiona sobre tu propio desempeño y desarrollo profesional
+                Evalúa tu desempeño y metodología docente
               </CardDescription>
             </div>
           </div>
@@ -150,44 +171,35 @@ export default function SelfEvaluationPage() {
       <Card className="shadow-lg">
         <CardContent className="p-6">
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* IDs Input Section */}
+            {/* Información del Docente Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ID Asignación
+                  Nombre del Docente
                 </label>
                 <Input
-                  type="number"
-                  placeholder="123"
-                  value={idAsignacion}
-                  onChange={e => setIdAsignacion(e.target.value)}
-                  required
+                  value={docenteInfo.nombre}
+                  disabled
                   className="bg-white dark:bg-gray-700"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ID Evaluador
+                  Área
                 </label>
                 <Input
-                  type="number"
-                  placeholder="456"
-                  value={idEvaluador}
-                  onChange={e => setIdEvaluador(e.target.value)}
-                  required
+                  value={docenteInfo.area}
+                  disabled
                   className="bg-white dark:bg-gray-700"
                 />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  ID Evaluado
+                  Fecha
                 </label>
                 <Input
-                  type="number"
-                  placeholder="789"
-                  value={idEvaluado}
-                  onChange={e => setIdEvaluado(e.target.value)}
-                  required
+                  value={docenteInfo.fecha}
+                  disabled
                   className="bg-white dark:bg-gray-700"
                 />
               </div>
@@ -195,29 +207,31 @@ export default function SelfEvaluationPage() {
 
             {/* Criterios Section */}
             {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-6 w-6 animate-spin text-purple-500" />
-                  <span className="text-lg font-medium text-gray-600 dark:text-gray-400">
-                    Cargando criterios...
-                  </span>
-                </div>
+              <div className="flex justify-center items-center py-8">
+                <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
               </div>
             ) : (
               <div className="space-y-6">
                 {criterios.map((criterio, index) => (
-                  <Card key={criterio.idCriterio} className="border-l-4 border-l-purple-500">
+                  <Card key={criterio.idCriterio} className="border border-gray-200 dark:border-gray-700">
                     <CardHeader className="pb-4">
                       <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="text-xs">
-                          Criterio {index + 1}
-                        </Badge>
-                        <Target className="h-5 w-5 text-purple-500" />
+                        <div className="p-2 bg-purple-100 dark:bg-purple-900/30 rounded-lg">
+                          <Target className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                        </div>
+                        <div>
+                          <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
+                            {criterio.nombre}
+                          </CardTitle>
+                          {criterio.descripcion && (
+                            <CardDescription className="text-gray-600 dark:text-gray-400">
+                              {criterio.descripcion}
+                            </CardDescription>
+                          )}
+                        </div>
                       </div>
-                      <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
-                        {criterio.nombre}
-                      </CardTitle>
                     </CardHeader>
+
                     <CardContent>
                       <div className="space-y-6">
                         {criterio.subcriterios.map((sub, subIndex) => (
