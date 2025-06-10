@@ -2,19 +2,85 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Plus, Edit, Trash2, Search, Shield } from 'lucide-react';
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableHead, 
+  TableHeader, 
+  TableRow 
+} from '@/components/ui/table';
+import { 
+  PlusCircle, 
+  Pencil, 
+  Trash2,
+  ShieldCheck
+} from 'lucide-react';
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 
 // Tipos
 interface Role {
   id: number;
   name: string;
 }
+
+// Servicios API - Updated port from 5000 to 3309
+const createRole = async (name: string): Promise<{ success: boolean, message: string }> => {
+  const response = await fetch('http://localhost:3309/api/roles', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Error al crear rol');
+  }
+  
+  return data;
+};
+
+const updateRole = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
+  const response = await fetch(`http://localhost:3309/api/roles/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name })
+  });
+  
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Error al actualizar rol');
+  }
+  
+  return data;
+};
+
+const deleteRole = async (id: number): Promise<{ success: boolean, message: string }> => {
+  const response = await fetch(`http://localhost:3309/api/roles/${id}`, {
+    method: 'DELETE'
+  });
+  
+  const data = await response.json();
+  
+  if (!response.ok) {
+    throw new Error(data.message || 'Error al eliminar rol');
+  }
+  
+  return data;
+};
 
 interface RolesTabContentProps {
   roles: Role[];
@@ -23,291 +89,257 @@ interface RolesTabContentProps {
 }
 
 const RolesTabContent: React.FC<RolesTabContentProps> = ({ roles, isLoading, searchQuery }) => {
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingRole, setEditingRole] = useState<Role | null>(null);
+  // State for Dialog
+  const [showAddRoleDialog, setShowAddRoleDialog] = useState(false);
+  const [editRoleId, setEditRoleId] = useState<number | null>(null);
   const [roleName, setRoleName] = useState('');
-  const [localSearchQuery, setLocalSearchQuery] = useState('');
-  
+
+  // Query client
   const queryClient = useQueryClient();
 
-  const createMutation = useMutation(
-    async (newRoleName: string) => {
-      const response = await fetch('http://localhost:3309/api/roles', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: newRoleName }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al crear el rol');
-      }
-      
-      const data = await response.json();
-      return data;
+  // Mutations
+  const createRoleMutation = useMutation({
+    mutationFn: createRole,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast.success('Rol creado exitosamente');
+      setShowAddRoleDialog(false);
+      setRoleName('');
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['roles'] });
-        toast.success('Rol creado exitosamente');
-        setDialogOpen(false);
-        setRoleName('');
-      },
-      onError: (error: any) => {
-        toast.error(error?.message || 'Error al crear el rol');
-      },
+    onError: (error: Error) => {
+      toast.error(`Error: ${error.message}`);
     }
-  );
-
-  const updateMutation = useMutation(
-    async (updatedRole: Role) => {
-      const response = await fetch(`http://localhost:3309/api/roles/${updatedRole.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: updatedRole.name }),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al actualizar el rol');
-      }
-      
-      const data = await response.json();
-      return data;
+  });
+  
+  const updateRoleMutation = useMutation({
+    mutationFn: updateRole,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast.success('Rol actualizado exitosamente');
+      setShowAddRoleDialog(false);
+      setEditRoleId(null);
+      setRoleName('');
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['roles'] });
-        toast.success('Rol actualizado exitosamente');
-        setDialogOpen(false);
-        setEditingRole(null);
-        setRoleName('');
-      },
-      onError: (error: any) => {
-        toast.error(error?.message || 'Error al actualizar el rol');
-      },
+    onError: (error: Error) => {
+      toast.error(`Error: ${error.message}`);
     }
-  );
-
-  const deleteMutation = useMutation(
-    async (roleId: number) => {
-      const response = await fetch(`http://localhost:3309/api/roles/${roleId}`, {
-        method: 'DELETE',
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al eliminar el rol');
-      }
-      
-      const data = await response.json();
-      return data;
+  });
+  
+  const deleteRoleMutation = useMutation({
+    mutationFn: deleteRole,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
+      toast.success('Rol eliminado exitosamente');
     },
-    {
-      onSuccess: () => {
-        queryClient.invalidateQueries({ queryKey: ['roles'] });
-        toast.success('Rol eliminado exitosamente');
-      },
-      onError: (error: any) => {
-        toast.error(error?.message || 'Error al eliminar el rol');
-      },
+    onError: (error: Error) => {
+      toast.error(`Error: ${error.message}`);
     }
-  );
+  });
 
-  const handleSave = async () => {
+  // Event handlers
+  const handleAddRole = () => {
     if (!roleName.trim()) {
       toast.error('El nombre del rol no puede estar vacío');
       return;
     }
-
-    if (editingRole) {
-      updateMutation.mutate({ id: editingRole.id, name: roleName });
+    
+    if (editRoleId) {
+      updateRoleMutation.mutate({ id: editRoleId, name: roleName });
     } else {
-      createMutation.mutate(roleName);
+      createRoleMutation.mutate(roleName);
+    }
+  };
+  
+  const handleEditRole = (roleId: number, currentName: string) => {
+    setEditRoleId(roleId);
+    setRoleName(currentName);
+    setShowAddRoleDialog(true);
+  };
+  
+  const handleDeleteRole = async (roleId: number) => {
+    if (window.confirm('¿Está seguro que desea eliminar este rol?')) {
+      deleteRoleMutation.mutate(roleId);
     }
   };
 
-  const handleDelete = async (roleId: number) => {
-    deleteMutation.mutate(roleId);
-  };
-
-  const filteredRoles = roles.filter(role =>
-    role.name.toLowerCase().includes(localSearchQuery.toLowerCase()) &&
-    role.name.toLowerCase().includes(searchQuery.toLowerCase())
+  // Filtrado
+  const filteredRoles = roles.filter(
+    (role) => role.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  if (isLoading) {
-    return (
-      <Card className="bg-background/80 backdrop-blur-sm border-2 shadow-lg">
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center h-32">
-            <div className="flex flex-col items-center gap-2">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-              <p className="text-sm text-muted-foreground">Cargando roles...</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="bg-background/80 backdrop-blur-sm border-2 shadow-lg">
-      <CardHeader className="border-b bg-gradient-to-r from-primary/5 to-secondary/5">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-primary/10 rounded-lg">
-              <Shield className="h-5 w-5 text-primary" />
-            </div>
-            <div>
-              <CardTitle className="text-lg font-bold text-foreground">Gestión de Roles de Usuario</CardTitle>
-              <CardDescription className="text-muted-foreground">
-                Administra los roles existentes para los usuarios del sistema
-              </CardDescription>
-            </div>
-          </div>
-          
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button 
-                className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-primary-foreground shadow-md"
-                onClick={() => {
-                  setEditingRole(null);
-                  setRoleName('');
-                }}
-              >
-                <Plus className="h-4 w-4 mr-2" />
-                Nuevo Rol de Usuario
-              </Button>
-            </DialogTrigger>
-            
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingRole ? 'Editar Rol de Usuario' : 'Nuevo Rol de Usuario'}
-                </DialogTitle>
-              </DialogHeader>
-              
-              <div className="space-y-4 py-4">
-                <div className="space-y-2">
-                  <Label htmlFor="role-name">Nombre del Rol</Label>
-                  <Input
-                    id="role-name"
-                    placeholder="Ingrese el nombre del rol"
-                    value={roleName}
-                    onChange={(e) => setRoleName(e.target.value)}
-                    className="w-full"
-                  />
-                </div>
-                
-                <div className="flex justify-end space-x-2 pt-4">
-                  <Button variant="outline" onClick={() => setDialogOpen(false)}>
-                    Cancelar
-                  </Button>
-                  <Button 
-                    onClick={handleSave}
-                    disabled={!roleName.trim() || createMutation.isPending || updateMutation.isPending}
-                    className="bg-gradient-to-r from-primary to-secondary"
-                  >
-                    {createMutation.isPending || updateMutation.isPending ? 'Guardando...' : 'Guardar'}
-                  </Button>
-                </div>
+    <>
+      <Card className="border-2 border-primary/20 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-background to-muted/20">
+        <CardHeader className="bg-gradient-to-r from-primary/5 to-secondary/5 rounded-t-lg border-b-2 border-primary/10">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <ShieldCheck className="h-6 w-6 text-primary" />
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-        
-        <div className="flex items-center gap-2 mt-4">
-          <div className="relative flex-1 max-w-sm">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Buscar roles..." 
-              className="pl-10 bg-background/50 border-2 focus:border-primary"
-              value={localSearchQuery}
-              onChange={(e) => setLocalSearchQuery(e.target.value)}
-            />
-          </div>
-          <Badge variant="secondary" className="px-3 py-1 font-medium">
-            {filteredRoles.length} roles encontrados
-          </Badge>
-        </div>
-      </CardHeader>
-      
-      <CardContent className="p-0">
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow className="bg-muted/30 hover:bg-muted/50">
-                <TableHead className="font-semibold text-foreground">ID</TableHead>
-                <TableHead className="font-semibold text-foreground">Nombre</TableHead>
-                <TableHead className="font-semibold text-foreground text-right">Acciones</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredRoles.map((role, index) => (
-                <TableRow key={role.id} className="hover:bg-muted/20 transition-colors">
-                  <TableCell className="font-medium">{role.id}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-start">
-                      <Badge 
-                        variant={
-                          role.name === 'Administrador' ? 'destructive' :
-                          role.name === 'Evaluador' ? 'default' :
-                          role.name === 'Evaluado' ? 'secondary' :
-                          'outline'
-                        }
-                        className="font-medium"
-                      >
-                        {role.name}
-                      </Badge>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center justify-end gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => {
-                          setEditingRole(role);
-                          setRoleName(role.name);
-                          setDialogOpen(true);
-                        }}
-                        className="h-8 w-8 p-0 hover:bg-primary/10"
-                      >
-                        <Edit className="h-4 w-4" />
-                        <span className="sr-only">Editar rol</span>
-                      </Button>
-                      
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDelete(role.id)}
-                        disabled={deleteMutation.isPending}
-                        className="h-8 w-8 p-0 hover:bg-destructive/10 text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        <span className="sr-only">Eliminar rol</span>
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-        
-        {filteredRoles.length === 0 && (
-          <div className="p-8 text-center">
-            <div className="flex flex-col items-center gap-2">
-              <Shield className="h-8 w-8 text-muted-foreground" />
-              <p className="text-muted-foreground">No se encontraron roles</p>
-              {searchQuery && (
-                <p className="text-sm text-muted-foreground">
-                  Intenta ajustar los filtros de búsqueda
+              <div>
+                <CardTitle className="text-xl font-bold text-primary">
+                  Gestión de Roles de Usuario
+                </CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Administra los roles existentes para los usuarios del sistema
                 </p>
+              </div>
+            </div>
+            <Button 
+              onClick={() => {
+                setEditRoleId(null);
+                setRoleName('');
+                setShowAddRoleDialog(true);
+              }}
+              size="sm"
+              className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+            >
+              <PlusCircle className="h-4 w-4 mr-2" /> 
+              Nuevo Rol de Usuario
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent className="p-6">
+          {isLoading ? (
+            <div className="flex justify-center items-center py-12">
+              <div className="relative">
+                <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
+                <div className="absolute inset-0 animate-ping h-8 w-8 border-4 border-primary/20 rounded-full"></div>
+              </div>
+              <span className="ml-3 text-muted-foreground">Cargando roles...</span>
+            </div>
+          ) : filteredRoles.length === 0 ? (
+            <div className="text-center py-12 space-y-4">
+              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-primary/20 to-secondary/20 rounded-full flex items-center justify-center">
+                <ShieldCheck className="h-8 w-8 text-primary" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">
+                  {searchQuery ? 'No se encontraron roles' : 'No hay roles registrados'}
+                </h3>
+                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                  {searchQuery 
+                    ? 'Intenta ajustar los términos de búsqueda para encontrar roles.'
+                    : 'Comienza agregando el primer rol al sistema.'
+                  }
+                </p>
+              </div>
+              {!searchQuery && (
+                <Button 
+                  onClick={() => {
+                    setEditRoleId(null);
+                    setRoleName('');
+                    setShowAddRoleDialog(true);
+                  }}
+                  className="bg-gradient-to-r from-primary to-secondary hover:from-primary/90 hover:to-secondary/90"
+                >
+                  <PlusCircle className="h-4 w-4 mr-2" />
+                  Agregar Primer Rol
+                </Button>
               )}
             </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-primary/5 to-secondary/5 rounded-lg border">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-primary">
+                    {filteredRoles.length} rol{filteredRoles.length !== 1 ? 'es' : ''} encontrado{filteredRoles.length !== 1 ? 's' : ''}
+                  </span>
+                  {searchQuery && (
+                    <Badge variant="secondary" className="text-xs">
+                      Filtrado por: "{searchQuery}"
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto bg-background rounded-lg border-2 border-primary/10">
+                <Table className="min-w-full">
+                  <TableHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
+                    <TableRow className="hover:bg-muted/50">
+                      <TableHead className="font-semibold text-primary">ID</TableHead>
+                      <TableHead className="font-semibold text-primary">Nombre</TableHead>
+                      <TableHead className="text-right font-semibold text-primary">Acciones</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredRoles.map((role, index) => (
+                      <TableRow 
+                        key={role.id}
+                        className={`hover:bg-gradient-to-r hover:from-primary/5 hover:to-secondary/5 transition-all duration-200 ${
+                          index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
+                        }`}
+                      >
+                        <TableCell>
+                          <Badge variant="outline" className="font-mono">
+                            {role.id}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="font-medium">
+                          <Badge variant={role.name === "Administrador" ? "destructive" : "default"}>
+                            {role.name}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-2">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleEditRole(role.id, role.name)}
+                              className="hover:bg-primary/10 hover:text-primary transition-colors"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDeleteRole(role.id)}
+                              className="hover:bg-destructive/10 hover:text-destructive transition-colors"
+                              disabled={role.name === 'Administrador'}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          )}
+
+          {/* Dialog para agregar/editar Rol */}
+          <Dialog open={showAddRoleDialog} onOpenChange={setShowAddRoleDialog}>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>{editRoleId ? 'Editar Rol' : 'Crear Nuevo Rol'}</DialogTitle>
+
+              </DialogHeader>
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="roleName">Nombre del Rol</Label>
+                  <Input 
+                    id="roleName" 
+                    placeholder="Ej: Coordinador" 
+                    value={roleName}
+                    onChange={(e) => setRoleName(e.target.value)}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowAddRoleDialog(false)}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleAddRole}>
+                  {editRoleId ? 'Actualizar' : 'Crear Rol'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </CardContent>
+      </Card>
+    </>
   );
 };
 
