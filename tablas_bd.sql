@@ -1,3 +1,5 @@
+-- CREAR BASE DE DATOS
+
 CREATE DATABASE IF NOT EXISTS EvaluacionDesempeno;
 USE EvaluacionDesempeno;
 
