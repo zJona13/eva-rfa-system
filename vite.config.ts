@@ -8,9 +8,6 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    proxy: {
-      '/api': 'http://localhost:3309', // Proxy para redirigir API al backend
-    },
   },
   plugins: [
     react(),

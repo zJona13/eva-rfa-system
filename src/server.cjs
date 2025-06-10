@@ -1137,44 +1137,4 @@ app.delete('/api/estudiantes/:id', async (req, res) => {
   }
 });
 
-// ========================
-// RUTA PARA CREAR EVALUACIÓN (CUALQUIER TIPO)
-// ========================
-app.post('/api/evaluaciones', async (req, res) => {
-  try {
-    const evaluacionData = req.body;
-    // Validar campos mínimos
-    if (!evaluacionData.idAsignacion || !evaluacionData.idEvaluador || !evaluacionData.idEvaluado || !evaluacionData.idTipoEvaluacion || !Array.isArray(evaluacionData.detalles)) {
-      return res.status(400).json({ success: false, message: 'Faltan datos requeridos para la evaluación' });
-    }
-    const result = await evaluacionService.createEvaluacion(evaluacionData);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(500).json(result);
-    }
-  } catch (error) {
-    console.error('Error en POST /api/evaluaciones:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
-});
-
-// ========================
-// RUTA PARA OBTENER CRITERIOS Y SUBCRITERIOS POR TIPO DE EVALUACIÓN
-// ========================
-app.get('/api/evaluaciones/criterios/:idTipoEvaluacion', async (req, res) => {
-  try {
-    const { idTipoEvaluacion } = req.params;
-    const result = await evaluacionService.getCriteriosYSubcriteriosPorTipoEvaluacion(idTipoEvaluacion);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json(result);
-    }
-  } catch (error) {
-    console.error('Error en GET /api/evaluaciones/criterios/:idTipoEvaluacion:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
-});
-
 module.exports = app;
