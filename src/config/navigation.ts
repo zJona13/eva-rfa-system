@@ -1,4 +1,3 @@
-
 import { 
   ClipboardList, 
   UserSquare2, 
@@ -51,7 +50,7 @@ export const navItems: NavItem[] = [
   },
   {
     title: 'Supervisión',
-    href: '/checklist-evaluation',
+    href: '/supervisor-evaluation',
     icon: CheckSquare,
     roles: ['admin', 'evaluator'],
   },
@@ -111,7 +110,7 @@ export const modulesData = [
     id: 4,
     title: 'Supervisión Docente',
     description: 'Evaluación mediante criterios predefinidos',
-    href: '/checklist-evaluation',
+    href: '/supervisor-evaluation',
     icon: CheckSquare,
     color: 'bg-ies-success-50 text-ies-success-500',
     roles: ['admin', 'evaluator'],

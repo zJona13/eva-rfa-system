@@ -16,7 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import SelfEvaluation from "./pages/SelfEvaluation/Index";
 import StudentEvaluation from "./pages/StudentEvaluation/Index";
 import Incidents from "./pages/Incidents/Index";
-import ChecklistEvaluation from "./pages/ChecklistEvaluation/Index";
+import SupervisorEvaluation from "./pages/SupervisorEvaluation/Index";
 import Roles from "./pages/Roles/Index";
 import Reports from "./pages/Reports/Index";
 import AssignmentEvaluations from "./pages/AssignmentEvaluations/Index";
@@ -83,10 +83,10 @@ const App = () => (
                   
                   {/* Supervisión - Solo admin y evaluadores */}
                   <Route 
-                    path="/checklist-evaluation" 
+                    path="/supervisor-evaluation" 
                     element={
                       <ProtectedRoute allowedRoles={['admin', 'evaluator']}>
-                        <ChecklistEvaluation />
+                        <SupervisorEvaluation />
                       </ProtectedRoute>
                     } 
                   />

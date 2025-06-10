@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 type Language = 'es' | 'en';
@@ -44,7 +43,7 @@ const translations = {
     'nav.dashboard': 'Dashboard',
     'nav.selfEvaluation': 'Autoevaluación',
     'nav.studentEvaluation': 'Evaluación Estudiante',
-    'nav.checklistEvaluation': 'Supervisión',
+    'nav.supervisorEvaluation': 'Supervisión',
     'nav.incidents': 'Incidencias',
     'nav.reports': 'Reportes',
     'nav.roles': 'Mantenimientos',
@@ -176,7 +175,7 @@ const translations = {
     'nav.dashboard': 'Dashboard',
     'nav.selfEvaluation': 'Self Evaluation',
     'nav.studentEvaluation': 'Student Evaluation',
-    'nav.checklistEvaluation': 'Supervision',
+    'nav.supervisorEvaluation': 'Supervision',
     'nav.incidents': 'Incidents',
     'nav.reports': 'Reports',
     'nav.roles': 'Maintenance',
