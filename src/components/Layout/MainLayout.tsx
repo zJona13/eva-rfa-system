@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import Header from './Header';
@@ -29,7 +30,7 @@ const MainLayout: React.FC = () => {
     <div className="min-h-screen">
       <Header setSidebarOpen={setSidebarOpen} />
       <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-      <main className="pt-14 md:pl-72 min-h-screen">
+      <main className="pt-14 md:pl-64 min-h-screen">
         <div className="container mx-auto p-4 md:p-6 lg:p-8">
           <Outlet />
         </div>
