@@ -77,46 +77,120 @@ const getEvaluacionesByColaborador = async (colaboradorId) => {
   }
 };
 
-// Crear una nueva evaluación con detalles de subcriterios
-const createEvaluacion = async (evaluacionData) => {
+// Crear o actualizar una evaluación (permitir borradores y rehacer)
+const createOrUpdateEvaluacion = async (evaluacionData) => {
   const conn = await pool.getConnection();
   try {
     await conn.beginTransaction();
-    // Crear la evaluación principal
-    const [evaluacionResult] = await conn.execute(
-      'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntajeTotal, comentario, estado, idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-      [
-        evaluacionData.date,
-        evaluacionData.time,
-        evaluacionData.score || 0,
-        evaluacionData.comments || null,
-        evaluacionData.status || 'Activo',
-        evaluacionData.idAsignacion,
-        evaluacionData.idEvaluador,
-        evaluacionData.idEvaluado,
-        evaluacionData.idTipoEvaluacion
-      ]
+    
+    const { 
+      idEvaluacion, 
+      idAsignacion, 
+      idEvaluador, 
+      idEvaluado, 
+      idTipoEvaluacion,
+      puntajeTotal,
+      comentario,
+      estado, // 'Borrador', 'Completada', 'Activa'
+      detalles 
+    } = evaluacionData;
+    
+    // Verificar que la asignación esté activa y dentro del período
+    const [asignacion] = await conn.execute(
+      `SELECT fechaInicio, fechaFin, horaLimite, activa 
+       FROM ASIGNACION 
+       WHERE idAsignacion = ?`,
+      [idAsignacion]
     );
-    const evaluacionId = evaluacionResult.insertId;
-    // Insertar detalles de subcriterios
-    if (Array.isArray(evaluacionData.detalles)) {
-      for (const detalle of evaluacionData.detalles) {
+    
+    if (asignacion.length === 0) {
+      throw new Error('Asignación no encontrada');
+    }
+    
+    const { fechaInicio, fechaFin, horaLimite, activa } = asignacion[0];
+    
+    if (!activa) {
+      throw new Error('La asignación no está activa');
+    }
+    
+    // Verificar que estemos dentro del período permitido
+    const fechaActual = new Date();
+    const fechaInicioDate = new Date(fechaInicio);
+    const fechaFinDate = new Date(fechaFin + ' ' + horaLimite);
+    
+    if (fechaActual < fechaInicioDate || fechaActual > fechaFinDate) {
+      throw new Error('La evaluación no está disponible en este momento');
+    }
+    
+    let evaluacionId = idEvaluacion;
+    
+    if (idEvaluacion) {
+      // Actualizar evaluación existente
+      await conn.execute(
+        'UPDATE EVALUACION SET puntajeTotal = ?, comentario = ?, estado = ?, fechaEvaluacion = NOW() WHERE idEvaluacion = ?',
+        [puntajeTotal || 0, comentario || null, estado, idEvaluacion]
+      );
+      
+      // Eliminar detalles existentes para reemplazarlos
+      await conn.execute(
+        'DELETE FROM DETALLE_EVALUACION WHERE idEvaluacion = ?',
+        [idEvaluacion]
+      );
+    } else {
+      // Buscar evaluación existente para este usuario, asignación y tipo
+      const [existingEval] = await conn.execute(
+        'SELECT idEvaluacion FROM EVALUACION WHERE idAsignacion = ? AND idEvaluador = ? AND idEvaluado = ? AND idTipoEvaluacion = ?',
+        [idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion]
+      );
+      
+      if (existingEval.length > 0) {
+        // Actualizar la evaluación existente
+        evaluacionId = existingEval[0].idEvaluacion;
+        await conn.execute(
+          'UPDATE EVALUACION SET puntajeTotal = ?, comentario = ?, estado = ?, fechaEvaluacion = NOW() WHERE idEvaluacion = ?',
+          [puntajeTotal || 0, comentario || null, estado, evaluacionId]
+        );
+        
+        // Eliminar detalles existentes
+        await conn.execute(
+          'DELETE FROM DETALLE_EVALUACION WHERE idEvaluacion = ?',
+          [evaluacionId]
+        );
+      } else {
+        // Crear nueva evaluación
+        const [evaluacionResult] = await conn.execute(
+          'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntajeTotal, comentario, estado, idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion) VALUES (NOW(), TIME(NOW()), ?, ?, ?, ?, ?, ?, ?)',
+          [puntajeTotal || 0, comentario || null, estado, idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion]
+        );
+        evaluacionId = evaluacionResult.insertId;
+      }
+    }
+    
+    // Insertar nuevos detalles de subcriterios
+    if (Array.isArray(detalles) && detalles.length > 0) {
+      for (const detalle of detalles) {
         await conn.execute(
           'INSERT INTO DETALLE_EVALUACION (puntaje, idEvaluacion, idSubCriterio) VALUES (?, ?, ?)',
           [detalle.puntaje, evaluacionId, detalle.idSubCriterio]
         );
       }
     }
+    
     await conn.commit();
+    
     return {
       success: true,
       evaluacionId: evaluacionId,
-      message: 'Evaluación creada exitosamente'
+      message: `Evaluación ${idEvaluacion ? 'actualizada' : 'creada'} exitosamente como ${estado}`
     };
+    
   } catch (error) {
     await conn.rollback();
-    console.error('Error al crear evaluación:', error);
-    return { success: false, message: 'Error al crear la evaluación' };
+    console.error('Error al crear/actualizar evaluación:', error);
+    return { 
+      success: false, 
+      message: error.message || 'Error al procesar la evaluación' 
+    };
   } finally {
     conn.release();
   }
@@ -325,6 +399,92 @@ const getCriteriosYSubcriteriosPorTipoEvaluacion = async (idTipoEvaluacion) => {
   }
 };
 
+// Obtener evaluaciones disponibles para un colaborador (incluyendo borradores)
+const getEvaluacionesDisponiblesByColaborador = async (colaboradorId) => {
+  try {
+    const fechaActual = new Date().toISOString().slice(0, 10);
+    const horaActual = new Date().toTimeString().slice(0, 8);
+    
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion, e.puntajeTotal, e.comentario, e.estado,
+              a.idAsignacion, a.fechaInicio, a.fechaFin, a.horaLimite, a.descripcion as asignacionDescripcion,
+              te.idTipoEvaluacion, te.nombre as tipoEvaluacion,
+              ar.nombre as areaNombre
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       JOIN TIPO_EVALUACION te ON e.idTipoEvaluacion = te.idTipoEvaluacion
+       JOIN AREA ar ON a.idArea = ar.idArea
+       WHERE e.idEvaluado = ?
+         AND a.activa = 1
+         AND a.fechaInicio <= ?
+         AND a.fechaFin >= ?
+         AND (a.fechaFin > ? OR (a.fechaFin = ? AND a.horaLimite >= ?))
+       ORDER BY a.fechaFin ASC, te.idTipoEvaluacion`,
+      [colaboradorId, fechaActual, fechaActual, fechaActual, fechaActual, horaActual]
+    );
+    
+    return {
+      success: true,
+      evaluaciones: rows
+    };
+  } catch (error) {
+    console.error('Error al obtener evaluaciones disponibles:', error);
+    return { 
+      success: false, 
+      message: 'Error al obtener las evaluaciones disponibles' 
+    };
+  }
+};
+
+// Obtener detalles de una evaluación específica con sus subcriterios
+const getEvaluacionDetalle = async (evaluacionId) => {
+  try {
+    // Obtener información principal de la evaluación
+    const [evaluacion] = await pool.execute(
+      `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, 
+              e.puntajeTotal, e.comentario, e.estado,
+              a.idAsignacion, a.fechaInicio, a.fechaFin, a.horaLimite, a.descripcion as asignacionDescripcion,
+              te.idTipoEvaluacion, te.nombre as tipoEvaluacion,
+              ar.nombre as areaNombre
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       JOIN TIPO_EVALUACION te ON e.idTipoEvaluacion = te.idTipoEvaluacion
+       JOIN AREA ar ON a.idArea = ar.idArea
+       WHERE e.idEvaluacion = ?`,
+      [evaluacionId]
+    );
+    
+    if (evaluacion.length === 0) {
+      return { success: false, message: 'Evaluación no encontrada' };
+    }
+    
+    // Obtener detalles de subcriterios
+    const [detalles] = await pool.execute(
+      `SELECT de.idDetalleEvaluacion, de.puntaje, 
+              sc.idSubCriterio, sc.nombre as subcriterioNombre,
+              c.idCriterio, c.nombre as criterioNombre
+       FROM DETALLE_EVALUACION de
+       JOIN SUB_CRITERIO sc ON de.idSubCriterio = sc.idSubCriterio
+       JOIN CRITERIO c ON sc.idCriterio = c.idCriterio
+       WHERE de.idEvaluacion = ?
+       ORDER BY c.idCriterio, sc.idSubCriterio`,
+      [evaluacionId]
+    );
+    
+    return {
+      success: true,
+      evaluacion: evaluacion[0],
+      detalles: detalles
+    };
+  } catch (error) {
+    console.error('Error al obtener detalle de evaluación:', error);
+    return { 
+      success: false, 
+      message: 'Error al obtener el detalle de la evaluación' 
+    };
+  }
+};
+
 /**
  * Ejemplo de payload para crear una evaluación:
  * {
@@ -358,5 +518,8 @@ module.exports = {
   getColaboradorByUserId,
   finalizarEvaluacion,
   cancelarBorradoresVencidos,
-  getCriteriosYSubcriteriosPorTipoEvaluacion
+  getCriteriosYSubcriteriosPorTipoEvaluacion,
+  createOrUpdateEvaluacion,
+  getEvaluacionesDisponiblesByColaborador,
+  getEvaluacionDetalle
 };

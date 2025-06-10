@@ -14,6 +14,7 @@ const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
 const estudianteService = require('./services/estudianteService.cjs');
+const asignacionService = require('./services/asignacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3309;
@@ -1083,10 +1084,212 @@ setInterval(() => {
   await evaluacionService.cancelarBorradoresVencidos();
 })();
 
-// Iniciar el servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
-  console.log(`🔓 Sistema sin autenticación JWT`);
+// ========================
+// RUTAS DE ASIGNACIONES
+// ========================
+
+// Crear nueva asignación
+app.post('/api/asignaciones', async (req, res) => {
+  try {
+    const asignacionData = req.body;
+    console.log('Creating asignación:', asignacionData);
+    
+    // Validar campos requeridos
+    if (!asignacionData.fechaInicio || !asignacionData.fechaFin || !asignacionData.horaLimite || !asignacionData.areaId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Faltan campos requeridos: fechaInicio, fechaFin, horaLimite, areaId' 
+      });
+    }
+    
+    const result = await asignacionService.createAsignacion(asignacionData);
+    
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error in POST /api/asignaciones:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Obtener todas las asignaciones
+app.get('/api/asignaciones', async (req, res) => {
+  try {
+    const result = await asignacionService.getAllAsignaciones();
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error in GET /api/asignaciones:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Obtener asignaciones activas por colaborador
+app.get('/api/asignaciones/colaborador/:colaboradorId', async (req, res) => {
+  try {
+    const { colaboradorId } = req.params;
+    const result = await asignacionService.getAsignacionesActivasByColaborador(colaboradorId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error in GET /api/asignaciones/colaborador:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Obtener evaluaciones de una asignación específica
+app.get('/api/asignaciones/:id/evaluaciones', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await asignacionService.getEvaluacionesByAsignacion(id);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error in GET /api/asignaciones/:id/evaluaciones:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Actualizar estado de asignación (activar/desactivar)
+app.put('/api/asignaciones/:id/estado', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { activa } = req.body;
+    
+    if (typeof activa !== 'boolean') {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'El campo activa debe ser un booleano' 
+      });
+    }
+    
+    const result = await asignacionService.updateAsignacionEstado(id, activa);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error in PUT /api/asignaciones/:id/estado:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Eliminar asignación
+app.delete('/api/asignaciones/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await asignacionService.deleteAsignacion(id);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error in DELETE /api/asignaciones/:id:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// ========================
+// RUTAS DE EVALUACIONES ACTUALIZADAS
+// ========================
+
+// Crear o actualizar evaluación (permite borradores y rehacer)
+app.post('/api/evaluaciones/save', async (req, res) => {
+  try {
+    const evaluacionData = req.body;
+    console.log('Saving evaluación:', evaluacionData);
+    
+    const result = await evaluacionService.createOrUpdateEvaluacion(evaluacionData);
+    
+    if (result.success) {
+      res.status(200).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error in POST /api/evaluaciones/save:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Obtener evaluaciones disponibles para un colaborador
+app.get('/api/evaluaciones/disponibles/:colaboradorId', async (req, res) => {
+  try {
+    const { colaboradorId } = req.params;
+    const result = await evaluacionService.getEvaluacionesDisponiblesByColaborador(colaboradorId);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error in GET /api/evaluaciones/disponibles:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
+});
+
+// Obtener detalle completo de una evaluación
+app.get('/api/evaluaciones/:id/detalle', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await evaluacionService.getEvaluacionDetalle(id);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(404).json(result);
+    }
+  } catch (error) {
+    console.error('Error in GET /api/evaluaciones/:id/detalle:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
+  }
 });
 
 // ========================
@@ -1137,44 +1340,8 @@ app.delete('/api/estudiantes/:id', async (req, res) => {
   }
 });
 
-// ========================
-// RUTA PARA CREAR EVALUACIÓN (CUALQUIER TIPO)
-// ========================
-app.post('/api/evaluaciones', async (req, res) => {
-  try {
-    const evaluacionData = req.body;
-    // Validar campos mínimos
-    if (!evaluacionData.idAsignacion || !evaluacionData.idEvaluador || !evaluacionData.idEvaluado || !evaluacionData.idTipoEvaluacion || !Array.isArray(evaluacionData.detalles)) {
-      return res.status(400).json({ success: false, message: 'Faltan datos requeridos para la evaluación' });
-    }
-    const result = await evaluacionService.createEvaluacion(evaluacionData);
-    if (result.success) {
-      res.status(201).json(result);
-    } else {
-      res.status(500).json(result);
-    }
-  } catch (error) {
-    console.error('Error en POST /api/evaluaciones:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
+// Iniciar el servidor
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
+  console.log(`🔓 Sistema sin autenticación JWT`);
 });
-
-// ========================
-// RUTA PARA OBTENER CRITERIOS Y SUBCRITERIOS POR TIPO DE EVALUACIÓN
-// ========================
-app.get('/api/evaluaciones/criterios/:idTipoEvaluacion', async (req, res) => {
-  try {
-    const { idTipoEvaluacion } = req.params;
-    const result = await evaluacionService.getCriteriosYSubcriteriosPorTipoEvaluacion(idTipoEvaluacion);
-    if (result.success) {
-      res.json(result);
-    } else {
-      res.status(500).json(result);
-    }
-  } catch (error) {
-    console.error('Error en GET /api/evaluaciones/criterios/:idTipoEvaluacion:', error);
-    res.status(500).json({ success: false, message: 'Error interno del servidor' });
-  }
-});
-
-module.exports = app;
