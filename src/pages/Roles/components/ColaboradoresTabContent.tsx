@@ -471,5 +471,3 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
 };
 
 export default ColaboradoresTabContent;
-
-```
