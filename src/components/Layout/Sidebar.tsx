@@ -62,15 +62,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
             </div>
             
             {/* User Role Badge */}
-            <div className="flex items-center gap-2 p-2.5 bg-sidebar-accent/10 rounded-lg border border-sidebar-border/30">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-xs font-semibold text-sidebar-foreground">
-                {userRole === 'admin' ? 'Administrador' : 
-                 userRole === 'evaluator' ? 'Evaluador' : 
-                 userRole === 'evaluated' ? 'Evaluado' : 
-                 userRole === 'student' ? 'Estudiante' : 
-                 userRole === 'validator' ? 'Validador' : 'Invitado'}
-              </span>
+            <div className="flex items-center justify-between p-2.5 bg-sidebar-accent/10 rounded-lg border border-sidebar-border/30">
+              <div className="flex items-center gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-xs font-semibold text-sidebar-foreground">
+                  {userRole === 'admin' ? 'Administrador' : 
+                   userRole === 'evaluator' ? 'Evaluador' : 
+                   userRole === 'evaluated' ? 'Evaluado' : 
+                   userRole === 'student' ? 'Estudiante' : 
+                   userRole === 'validator' ? 'Validador' : 'Invitado'}
+                </span>
+              </div>
+              {userRole === 'admin' && (
+                <Badge variant="destructive" className="text-xs px-2 py-0.5">
+                  Admin
+                </Badge>
+              )}
             </div>
           </div>
 
