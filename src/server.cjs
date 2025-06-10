@@ -14,6 +14,7 @@ const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
 const estudianteService = require('./services/estudianteService.cjs');
+const asignacionService = require('./services/asignacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3309;
@@ -1073,20 +1074,113 @@ app.delete('/api/areas/:id', async (req, res) => {
   }
 });
 
-// Ejecutar la cancelación automática de borradores vencidos cada hora
-setInterval(() => {
-  evaluacionService.cancelarBorradoresVencidos();
-}, 60 * 60 * 1000); // cada 1 hora
+// Crear nueva asignación
+app.post('/api/asignaciones', async (req, res) => {
+  try {
+    const asignacionData = req.body;
+    console.log('Creating asignacion:', asignacionData);
+    
+    // Validar campos requeridos
+    if (!asignacionData.idUsuario || !asignacionData.periodo || !asignacionData.fechaInicio || 
+        !asignacionData.fechaFin || !asignacionData.horaInicio || !asignacionData.horaFin || 
+        !asignacionData.idArea) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Faltan campos requeridos para crear la asignación' 
+      });
+    }
+    
+    const result = await asignacionService.createAsignacion(asignacionData);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in POST /api/asignaciones:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
 
-// Ejecutar también al iniciar el servidor
-(async () => {
-  await evaluacionService.cancelarBorradoresVencidos();
-})();
+// Obtener todas las asignaciones
+app.get('/api/asignaciones', async (req, res) => {
+  try {
+    const result = await asignacionService.getAllAsignaciones();
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/asignaciones:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
 
-// Iniciar el servidor
-app.listen(PORT, () => {
-  console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
-  console.log(`🔓 Sistema sin autenticación JWT`);
+// Obtener asignaciones activas por usuario
+app.get('/api/asignaciones/user/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const result = await asignacionService.getAsignacionesActivasByUsuario(userId);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/asignaciones/user:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Obtener evaluaciones de una asignación
+app.get('/api/asignaciones/:id/evaluaciones', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await asignacionService.getEvaluacionesByAsignacion(id);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/asignaciones/:id/evaluaciones:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Verificar si evaluación está en período activo
+app.get('/api/evaluaciones/:id/periodo-activo', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await asignacionService.isEvaluacionEnPeriodoActivo(id);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in GET /api/evaluaciones/:id/periodo-activo:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
+// Actualizar estado de asignación
+app.put('/api/asignaciones/:id/estado', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { estado } = req.body;
+    
+    const result = await asignacionService.updateAsignacionEstado(id, estado);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error in PUT /api/asignaciones/:id/estado:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
 });
 
 // ========================
@@ -1175,6 +1269,22 @@ app.get('/api/evaluaciones/criterios/:idTipoEvaluacion', async (req, res) => {
     console.error('Error en GET /api/evaluaciones/criterios/:idTipoEvaluacion:', error);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
+});
+
+// Ejecutar la cancelación automática de borradores vencidos cada hora
+setInterval(() => {
+  evaluacionService.cancelarBorradoresVencidos();
+}, 60 * 60 * 1000); // cada 1 hora
+
+// Ejecutar también al iniciar el servidor
+(async () => {
+  await evaluacionService.cancelarBorradoresVencidos();
+})();
+
+// Iniciar el servidor
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
+  console.log(`🔓 Sistema sin autenticación JWT`);
 });
 
 module.exports = app;
