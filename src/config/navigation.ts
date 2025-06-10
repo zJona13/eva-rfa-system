@@ -9,7 +9,8 @@ import {
   BarChart4, 
   Home,
   Settings,
-  FileText
+  FileText,
+  UserCheck
 } from 'lucide-react';
 
 export interface NavItem {
@@ -29,6 +30,12 @@ export const navItems: NavItem[] = [
     href: '/dashboard',
     icon: Home,
     roles: ['admin', 'evaluator', 'evaluated', 'student', 'validator'],
+  },
+  {
+    title: 'Asignación de Evaluaciones',
+    href: '/assignment-evaluations',
+    icon: UserCheck,
+    roles: ['admin'],
   },
   {
     title: 'Autoevaluación',
