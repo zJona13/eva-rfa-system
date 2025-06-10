@@ -7,7 +7,9 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Star, User, Target, MessageSquare, Send, Loader2 } from 'lucide-react';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { User, Target, MessageSquare, Send, Loader2 } from 'lucide-react';
 
 export default function SelfEvaluationPage() {
   const [criterios, setCriterios] = useState([]);
@@ -31,26 +33,32 @@ export default function SelfEvaluationPage() {
     setPuntajes(prev => ({ ...prev, [idSubCriterio]: valor }));
   };
 
-  const renderStarRating = (idSubCriterio, currentValue) => {
+  const renderRatingOptions = (idSubCriterio, currentValue) => {
+    const options = [
+      { value: '1', label: 'Cumple Totalmente / Observado Satisfactoriamente', color: 'text-green-600' },
+      { value: '0.5', label: 'Cumple Parcialmente / Observado con Áreas de Mejora', color: 'text-yellow-600' },
+      { value: '0', label: 'No Cumple / No Observado', color: 'text-red-600' }
+    ];
+
     return (
-      <div className="flex items-center gap-1">
-        {[1, 2, 3, 4, 5].map((star) => (
-          <button
-            key={star}
-            type="button"
-            onClick={() => handlePuntaje(idSubCriterio, star)}
-            className={`p-1 rounded-full transition-all duration-200 hover:scale-110 ${
-              star <= (currentValue || 0) 
-                ? 'text-purple-500 hover:text-purple-600' 
-                : 'text-gray-300 hover:text-purple-400'
-            }`}
-          >
-            <Star className="h-5 w-5 fill-current" />
-          </button>
-        ))}
-        <span className="ml-2 text-sm font-medium text-muted-foreground">
-          {currentValue || 0}/5
-        </span>
+      <div className="space-y-3">
+        <RadioGroup
+          value={currentValue || ''}
+          onValueChange={(value) => handlePuntaje(idSubCriterio, value)}
+          className="space-y-2"
+        >
+          {options.map((option) => (
+            <div key={option.value} className="flex items-center space-x-2">
+              <RadioGroupItem value={option.value} id={`${idSubCriterio}-${option.value}`} />
+              <Label 
+                htmlFor={`${idSubCriterio}-${option.value}`} 
+                className={`text-sm cursor-pointer ${option.color} font-medium`}
+              >
+                {option.label}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
       </div>
     );
   };
@@ -211,10 +219,10 @@ export default function SelfEvaluationPage() {
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="space-y-4">
+                      <div className="space-y-6">
                         {criterio.subcriterios.map((sub, subIndex) => (
                           <div key={sub.idSubCriterio} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex flex-col space-y-3">
+                            <div className="flex flex-col space-y-4">
                               <div className="flex items-start justify-between">
                                 <div className="flex-1">
                                   <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
@@ -231,11 +239,11 @@ export default function SelfEvaluationPage() {
                                 </Badge>
                               </div>
                               
-                              <div className="flex items-center justify-between">
+                              <div className="space-y-3">
                                 <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                                   Autoevaluación:
                                 </span>
-                                {renderStarRating(sub.idSubCriterio, puntajes[sub.idSubCriterio])}
+                                {renderRatingOptions(sub.idSubCriterio, puntajes[sub.idSubCriterio])}
                               </div>
                             </div>
                           </div>
