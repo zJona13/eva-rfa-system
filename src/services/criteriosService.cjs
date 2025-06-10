@@ -42,7 +42,7 @@ const getSubcriteriosByCriterio = async (idCriterio) => {
   }
 };
 
-// Obtener todos los subcriterios con información del criterio
+// Obtener todos los subcriterios
 const getAllSubcriterios = async () => {
   try {
     const [rows] = await pool.execute(
@@ -63,61 +63,8 @@ const getAllSubcriterios = async () => {
   }
 };
 
-// Obtener criterios agrupados con sus subcriterios para autoevaluación
-const getCriteriosConSubcriterios = async () => {
-  try {
-    const [rows] = await pool.execute(
-      `SELECT 
-        c.idCriterio,
-        c.nombre as criterioNombre,
-        c.descripcion as criterioDescripcion,
-        s.idSubCriterio,
-        s.texto as subcriterioTexto,
-        s.puntaje as subcriterio Puntaje
-       FROM CRITERIOS c
-       LEFT JOIN SUBCRITERIOS s ON c.idCriterio = s.idCriterio
-       WHERE c.vigencia = 1 AND (s.vigencia = 1 OR s.vigencia IS NULL)
-       ORDER BY c.idCriterio, s.idSubCriterio`
-    );
-    
-    // Agrupar por criterio
-    const criteriosAgrupados = {};
-    
-    rows.forEach(row => {
-      const criterioId = row.idCriterio;
-      
-      if (!criteriosAgrupados[criterioId]) {
-        criteriosAgrupados[criterioId] = {
-          id: criterioId,
-          nombre: row.criterioNombre,
-          descripcion: row.criterioDescripcion,
-          subcriterios: []
-        };
-      }
-      
-      if (row.idSubCriterio) {
-        criteriosAgrupados[criterioId].subcriterios.push({
-          id: row.idSubCriterio.toString(),
-          texto: row.subcriterioTexto,
-          puntaje: row.subcriterioPuntaje,
-          criterioId: criterioId
-        });
-      }
-    });
-    
-    return {
-      success: true,
-      criterios: Object.values(criteriosAgrupados)
-    };
-  } catch (error) {
-    console.error('Error al obtener criterios con subcriterios:', error);
-    return { success: false, message: 'Error al obtener los criterios y subcriterios' };
-  }
-};
-
 module.exports = {
   getAllCriterios,
   getSubcriteriosByCriterio,
-  getAllSubcriterios,
-  getCriteriosConSubcriterios
+  getAllSubcriterios
 };
