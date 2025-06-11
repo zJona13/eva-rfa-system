@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getToken } from '@/contexts/AuthContext';
 
 // Tipos
 interface Role {
@@ -53,9 +54,10 @@ const createRole = async (name: string): Promise<{ success: boolean, message: st
 };
 
 const updateRole = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch(`http://localhost:3309/api/roles/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
   });
   
@@ -69,8 +71,10 @@ const updateRole = async ({ id, name }: { id: number, name: string }): Promise<{
 };
 
 const deleteRole = async (id: number): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch(`http://localhost:3309/api/roles/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
   const data = await response.json();

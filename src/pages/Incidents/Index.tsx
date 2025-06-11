@@ -5,12 +5,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getToken } from '@/contexts/AuthContext';
 
 const API_BASE_URL = 'http://localhost:3309/api';
 
 const fetchIncidencias = async (userId: number) => {
-  const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`);
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
 
   if (!response.ok) {
     throw new Error(`Error ${response.status}: ${response.statusText}`);
@@ -20,8 +23,10 @@ const fetchIncidencias = async (userId: number) => {
 };
 
 const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: string }) => {
+  const token = getToken();
   const response = await fetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
     method: 'PUT',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
     body: JSON.stringify({ estado }),
   });
 

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,6 +14,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getToken } from '@/contexts/AuthContext';
 
 // Tipos
 interface Area {
@@ -55,8 +55,10 @@ const updateArea = async ({ id, name, descripcion }: { id: number; name: string;
 };
 
 const deleteArea = async (id: number): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch(`http://localhost:3309/api/areas/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   const data = await response.json();
   if (!response.ok) {

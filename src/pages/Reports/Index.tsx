@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getToken } from '@/contexts/AuthContext';
 import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calendar, Building2 } from 'lucide-react';
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
@@ -81,9 +81,11 @@ const reportTypes: ReportType[] = [
 ];
 
 const fetchReportData = async (endpoint: string) => {
+  const token = getToken();
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
   });
 

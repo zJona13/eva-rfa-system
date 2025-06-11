@@ -1,10 +1,14 @@
 // Servicio para consumir los endpoints de evaluaciones y criterios/subcriterios
 
 const API_URL = '/api/evaluaciones';
+import { getToken } from '../contexts/AuthContext';
 
 // Obtener criterios y subcriterios por tipo de evaluación
 export async function getCriteriosPorTipoEvaluacion(idTipoEvaluacion) {
-  const res = await fetch(`${API_URL}/criterios/${idTipoEvaluacion}`);
+  const token = getToken();
+  const res = await fetch(`${API_URL}/criterios/${idTipoEvaluacion}`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   if (!res.ok) throw new Error('Error al obtener criterios');
   return res.json();
 }

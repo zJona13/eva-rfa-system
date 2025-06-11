@@ -1,5 +1,7 @@
 const { pool } = require('../utils/dbConnection.cjs');
 const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const SECRET_KEY = process.env.JWT_SECRET || 'supersecreto123'; // Usa variable de entorno en producción
 
 // Crear tabla de códigos de recuperación si no existe
 const createPasswordResetTable = async () => {
@@ -276,17 +278,20 @@ const login = async (correo, contrasena) => {
       return { success: false, message: 'Contraseña incorrecta' };
     }
 
-    // Login exitoso, retornar solo el usuario
+    // Login exitoso, generar token
+    const payload = {
+      id: user.idUsuario,
+      email: user.correo,
+      role: user.role,
+      colaboradorId: user.idColaborador,
+      colaboradorName: user.colaboradorName
+    };
+    const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '8h' });
+
     return {
       success: true,
-      user: {
-        id: user.idUsuario,
-        email: user.correo,
-        role: user.role,
-        roleId: user.roleId,
-        colaboradorId: user.idColaborador,
-        colaboradorName: user.colaboradorName
-      }
+      user: payload,
+      token
     };
   } catch (error) {
     console.error('❌ Error en login:', error);
@@ -337,5 +342,6 @@ module.exports = {
   register,
   generatePasswordResetCode,
   verifyPasswordResetCode,
-  resetPassword
+  resetPassword,
+  SECRET_KEY
 };

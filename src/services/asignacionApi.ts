@@ -1,4 +1,5 @@
 const API_URL = '/api/asignaciones';
+import { getToken } from '../contexts/AuthContext';
 
 export async function crearAsignacion(asignacionData) {
   const res = await fetch(`${API_URL}`, {
@@ -11,7 +12,10 @@ export async function crearAsignacion(asignacionData) {
 }
 
 export async function listarAsignaciones() {
-  const res = await fetch(`${API_URL}`);
+  const token = getToken();
+  const res = await fetch(`${API_URL}`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   if (!res.ok) throw new Error('Error al obtener asignaciones');
   return res.json();
 } 

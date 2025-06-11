@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -29,6 +28,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { getToken } from '@/contexts/AuthContext';
 
 // Tipos
 interface TipoColaborador {
@@ -54,32 +54,29 @@ const createTipoColaborador = async (name: string): Promise<{ success: boolean, 
 };
 
 const updateTipoColaborador = async ({ id, name }: { id: number; name: string }): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch(`http://localhost:3309/api/tiposcolaborador/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
   });
-  
   const data = await response.json();
-  
   if (!response.ok) {
     throw new Error(data.message || 'Error al actualizar tipo de colaborador');
   }
-  
   return data;
 };
 
 const deleteTipoColaborador = async (id: number): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch(`http://localhost:3309/api/tiposcolaborador/${id}`, {
-    method: 'DELETE'
+    method: 'DELETE',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  
   const data = await response.json();
-  
   if (!response.ok) {
     throw new Error(data.message || 'Error al eliminar tipo de colaborador');
   }
-  
   return data;
 };
 

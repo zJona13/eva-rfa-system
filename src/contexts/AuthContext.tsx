@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
@@ -86,8 +85,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(data.message || 'Credenciales incorrectas');
       }
       
-      if (data.success && data.user) {
-        // Solo guardar el usuario en el estado
+      if (data.success && data.user && data.token) {
+        localStorage.setItem('token', data.token);
         const mappedUser = {
           id: data.user.id.toString(),
           name: data.user.name,
@@ -131,7 +130,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
-    // Limpiar usuario del estado y redirigir
+    localStorage.removeItem('token');
     setUser(null);
     toast.info('Sesión cerrada');
     navigate('/login');
@@ -148,3 +147,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 };
+
+export const getToken = () => localStorage.getItem('token');

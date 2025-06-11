@@ -4,6 +4,7 @@ import { Search, Users, UserCog, UserSquare2, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useQuery } from '@tanstack/react-query';
+import { getToken } from '@/contexts/AuthContext';
 
 // Import our separate tab content components
 import RolesTabContent from './components/RolesTabContent';
@@ -93,7 +94,10 @@ interface Usuario {
 
 // Servicios API - Updated port from 5000 to 3309
 const fetchRoles = async (): Promise<Role[]> => {
-  const response = await fetch('http://localhost:3309/api/roles');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/roles', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   
   if (!response.ok) {
     throw new Error('Error al cargar roles');
@@ -104,7 +108,10 @@ const fetchRoles = async (): Promise<Role[]> => {
 };
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
-  const response = await fetch('http://localhost:3309/api/tiposcolaborador');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/tiposcolaborador', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   
   if (!response.ok) {
     throw new Error('Error al cargar tipos de colaborador');
@@ -115,7 +122,10 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
 };
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
-  const response = await fetch('http://localhost:3309/api/tiposcontrato');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/tiposcontrato', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   
   if (!response.ok) {
     throw new Error('Error al cargar tipos de contrato');
@@ -126,7 +136,10 @@ const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
 };
 
 const fetchUsers = async (): Promise<User[]> => {
-  const response = await fetch('http://localhost:3309/api/users');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/users', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   
   if (!response.ok) {
     throw new Error('Error al cargar usuarios');
@@ -141,7 +154,10 @@ const fetchUsers = async (): Promise<User[]> => {
 };
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
-  const response = await fetch('http://localhost:3309/api/colaboradores');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/colaboradores', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   
   if (!response.ok) {
     throw new Error('Error al cargar colaboradores');
@@ -152,7 +168,10 @@ const fetchColaboradores = async (): Promise<Colaborador[]> => {
 };
 
 const fetchAreas = async (): Promise<Area[]> => {
-  const response = await fetch('http://localhost:3309/api/areas');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/areas', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   if (!response.ok) {
     throw new Error('Error al cargar áreas');
   }
@@ -161,7 +180,10 @@ const fetchAreas = async (): Promise<Area[]> => {
 };
 
 const fetchEstudiantes = async (): Promise<Estudiante[]> => {
-  const response = await fetch('http://localhost:3309/api/estudiantes');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/estudiantes', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   if (!response.ok) {
     throw new Error('Error al cargar estudiantes');
   }
@@ -170,7 +192,10 @@ const fetchEstudiantes = async (): Promise<Estudiante[]> => {
 };
 
 const fetchUsuarios = async (): Promise<Usuario[]> => {
-  const response = await fetch('http://localhost:3309/api/users');
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/users', {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
   if (!response.ok) {
     throw new Error('Error al cargar usuarios');
   }
