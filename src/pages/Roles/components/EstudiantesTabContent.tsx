@@ -9,6 +9,7 @@ import { Edit, Trash, Plus, GraduationCap } from 'lucide-react';
 import EstudianteDialog from './EstudianteDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog from './UserDialog';
+import { getToken } from '@/contexts/AuthContext';
 
 interface Estudiante {
   id: number;
@@ -79,43 +80,47 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   };
 
   // Crear estudiante
-  const createEstudiante = async (data: any) => {
+  const createEstudiante = async (estudianteData: any): Promise<{ success: boolean, message: string }> => {
+    const token = getToken();
     const response = await fetch('http://localhost:3309/api/estudiantes', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify(estudianteData)
     });
-    const result = await response.json();
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error(result.message || 'Error al crear estudiante');
+      throw new Error(data.message || 'Error al crear estudiante');
     }
-    return result;
+    return data;
   };
 
   // Actualizar estudiante
-  const updateEstudiante = async ({ id, data }: { id: number; data: any }) => {
-    const response = await fetch(`http://localhost:3309/api/estudiantes/${id}`, {
+  const updateEstudiante = async (estudianteData: any): Promise<{ success: boolean, message: string }> => {
+    const token = getToken();
+    const response = await fetch(`http://localhost:3309/api/estudiantes/${estudianteData.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify(estudianteData)
     });
-    const result = await response.json();
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error(result.message || 'Error al actualizar estudiante');
+      throw new Error(data.message || 'Error al actualizar estudiante');
     }
-    return result;
+    return data;
   };
 
   // Eliminar estudiante
-  const deleteEstudiante = async (id: number) => {
+  const deleteEstudiante = async (id: number): Promise<{ success: boolean, message: string }> => {
+    const token = getToken();
     const response = await fetch(`http://localhost:3309/api/estudiantes/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
-    const result = await response.json();
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error(result.message || 'Error al eliminar estudiante');
+      throw new Error(data.message || 'Error al eliminar estudiante');
     }
-    return result;
+    return data;
   };
 
   // Mutaciones
@@ -157,7 +162,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   // Guardar estudiante
   const handleSaveEstudiante = async (data: any) => {
     if (selectedEstudiante) {
-      updateMutation.mutate({ id: selectedEstudiante.id, data });
+      updateMutation.mutate(data);
     } else {
       try {
         const result = await createEstudiante(data);

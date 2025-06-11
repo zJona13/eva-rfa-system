@@ -13,6 +13,7 @@ import { User, Target, MessageSquare, Send, Loader2, AlertCircle, ArrowLeft } fr
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EvaluationCard from '../../components/EvaluationCard';
+import { getToken } from '@/contexts/AuthContext';
 
 export default function SelfEvaluationPage() {
   const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
@@ -37,18 +38,18 @@ export default function SelfEvaluationPage() {
     const fetchEvaluacionesPendientes = async () => {
       try {
         setError(null);
-        
+        const token = getToken();
         // Obtener información del usuario actual
-        const response = await fetch('http://localhost:3309/api/users/current');
+        const response = await fetch('http://localhost:3309/api/users/current', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         if (!response.ok) {
           throw new Error('Error al obtener información del usuario');
         }
         const userData = await response.json();
-        
         // Obtener evaluaciones pendientes de autoevaluación (tipo 3)
         const evaluacionesData = await obtenerEvaluacionesPendientes(userData.id, 3);
         setEvaluacionesPendientes(evaluacionesData.evaluaciones || []);
-        
         setLoading(false);
       } catch (error) {
         console.error('Error al cargar evaluaciones pendientes:', error);
@@ -56,7 +57,6 @@ export default function SelfEvaluationPage() {
         setLoading(false);
       }
     };
-
     fetchEvaluacionesPendientes();
   }, []);
 

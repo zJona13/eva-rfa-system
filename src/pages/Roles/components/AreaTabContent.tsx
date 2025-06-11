@@ -25,11 +25,10 @@ interface Area {
 
 // Servicios API
 const createArea = async ({ name, descripcion }: { name: string; descripcion: string }): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch('http://localhost:3309/api/areas', {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name: name.trim(), descripcion })
   });
   const data = await response.json();
@@ -40,11 +39,10 @@ const createArea = async ({ name, descripcion }: { name: string; descripcion: st
 };
 
 const updateArea = async ({ id, name, descripcion }: { id: number; name: string; descripcion: string }): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch(`http://localhost:3309/api/areas/${id}`, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name: name.trim(), descripcion })
   });
   const data = await response.json();

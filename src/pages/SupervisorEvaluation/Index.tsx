@@ -16,6 +16,7 @@ import EvaluationCard from '../../components/EvaluationCard';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
+import { getToken } from '@/contexts/AuthContext';
 
 export default function SupervisorEvaluationPage() {
   const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
@@ -51,18 +52,18 @@ export default function SupervisorEvaluationPage() {
     const fetchEvaluacionesPendientes = async () => {
       try {
         setError(null);
-        
+        const token = getToken();
         // Obtener información del usuario actual
-        const response = await fetch('http://localhost:3309/api/users/current');
+        const response = await fetch('http://localhost:3309/api/users/current', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+        });
         if (!response.ok) {
           throw new Error('Error al obtener información del usuario');
         }
         const userData = await response.json();
-        
         // Obtener evaluaciones pendientes de supervisor (tipo 2)
         const evaluacionesData = await obtenerEvaluacionesPendientes(userData.id, 2);
         setEvaluacionesPendientes(evaluacionesData.evaluaciones || []);
-        
         setLoading(false);
       } catch (error) {
         console.error('Error al cargar evaluaciones pendientes:', error);

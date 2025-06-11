@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog, { UserFormValues } from './UserDialog';
+import { getToken } from '@/contexts/AuthContext';
 
 // Tipos
 interface User {
@@ -57,10 +57,12 @@ interface UsersTabContentProps {
 }
 
 const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch(`http://localhost:3309/api/users/${userData.id}`, {
     method: 'PUT',
     headers: {
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {})
     },
     body: JSON.stringify({ 
       name: userData.name,
@@ -83,6 +85,33 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
     throw new Error(data.message || 'Error al actualizar usuario');
   }
   
+  return data;
+};
+
+const deleteUser = async (userId: number): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
+  const response = await fetch(`http://localhost:3309/api/users/${userId}`, {
+    method: 'DELETE',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Error al eliminar usuario');
+  }
+  return data;
+};
+
+const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/users', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify(userData)
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Error al crear usuario');
+  }
   return data;
 };
 

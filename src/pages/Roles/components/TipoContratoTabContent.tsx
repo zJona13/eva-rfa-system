@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,6 +19,7 @@ import {
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import TipoContratoDialog from './TipoContratoDialog';
+import { getToken } from '@/contexts/AuthContext';
 
 // Tipos
 interface TipoContrato {
@@ -29,76 +29,47 @@ interface TipoContrato {
 
 // Servicios API
 const createTipoContrato = async (name: string): Promise<{ success: boolean, message: string }> => {
-  try {
-    const response = await fetch('http://localhost:3309/api/tiposcontrato', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ name })
-    });
-    
-    console.log('Create response status:', response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: `Error ${response.status}: ${response.statusText}`
-      }));
-      throw new Error(errorData.message || 'Error al crear tipo de contrato');
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error creating tipo contrato:', error);
-    throw error;
+  const token = getToken();
+  const response = await fetch('http://localhost:3309/api/tiposcontrato', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ name })
+  });
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({
+      message: `Error ${response.status}: ${response.statusText}`
+    }));
+    throw new Error(errorData.message || 'Error al crear tipo de contrato');
   }
+  const data = await response.json();
+  return data;
 };
 
 const updateTipoContrato = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
-  try {
-    const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
-      method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ name })
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: `Error ${response.status}: ${response.statusText}`
-      }));
-      throw new Error(errorData.message || 'Error al actualizar tipo de contrato');
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error updating tipo contrato:', error);
-    throw error;
+  const token = getToken();
+  const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify({ name })
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Error al actualizar tipo de contrato');
   }
+  return data;
 };
 
 const deleteTipoContrato = async (id: number): Promise<{ success: boolean, message: string }> => {
-  try {
-    const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
-      method: 'DELETE'
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({
-        message: `Error ${response.status}: ${response.statusText}`
-      }));
-      throw new Error(errorData.message || 'Error al eliminar tipo de contrato');
-    }
-    
-    const data = await response.json();
-    return data;
-  } catch (error) {
-    console.error('Error deleting tipo contrato:', error);
-    throw error;
+  const token = getToken();
+  const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
+    method: 'DELETE',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.message || 'Error al eliminar tipo de contrato');
   }
+  return data;
 };
 
 interface TipoContratoTabContentProps {

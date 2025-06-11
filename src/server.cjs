@@ -541,11 +541,10 @@ app.get('/api/users', authenticateToken, async (req, res) => {
   }
 });
 
-// Endpoint para obtener el usuario actual (simulado)
-app.get('/api/users/current', async (req, res) => {
+// Endpoint para obtener el usuario actual (AUTENTICADO)
+app.get('/api/users/current', authenticateToken, async (req, res) => {
   try {
-    // Simulación: usuario con id 1
-    const userId = 1;
+    const userId = req.user.id; // del token JWT
     const [rows] = await pool.execute(
       `SELECT u.idUsuario as id, u.correo as email, 
       u.estado as active, t.nombre as role, t.idTipoUsuario as roleId,
@@ -573,7 +572,6 @@ app.get('/api/users/current', async (req, res) => {
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Usuario no encontrado' });
     }
-    // Unifica el nombre para el frontend
     const user = rows[0];
     user.name = user.colaboradorName || user.estudianteName || user.email;
     user.active = user.active === 'Activo';
@@ -1270,9 +1268,9 @@ app.get('/api/evaluaciones/pendientes/:idUsuario/:idTipoEvaluacion', async (req,
               a.periodo, a.fechaInicio, a.fechaFin, a.horaInicio, a.horaFin,
               ar.nombre as areaNombre,
               CASE 
-                WHEN e.idTipoEvaluacion = 1 THEN CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat)
-                WHEN e.idTipoEvaluacion = 2 THEN CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat)
-                WHEN e.idTipoEvaluacion = 3 THEN CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat)
+                WHEN e.idTipoEvaluacion = 1 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+                WHEN e.idTipoEvaluacion = 2 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+                WHEN e.idTipoEvaluacion = 3 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
               END as nombreEvaluado,
               CASE 
                 WHEN e.idTipoEvaluacion = 1 THEN 'Estudiante al Docente'
@@ -1283,7 +1281,7 @@ app.get('/api/evaluaciones/pendientes/:idUsuario/:idTipoEvaluacion', async (req,
        JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
        JOIN AREA ar ON a.idArea = ar.idArea
        JOIN USUARIO ue ON e.idEvaluado = ue.idUsuario
-       JOIN COLABORADOR ce ON ue.idColaborador = ce.idColaborador
+       LEFT JOIN COLABORADOR ce ON ue.idColaborador = ce.idColaborador
        WHERE e.idEvaluador = ? AND e.idTipoEvaluacion = ? AND e.estado = 'Pendiente'
        ORDER BY a.periodo DESC, e.fechaEvaluacion DESC`,
       [idUsuario, idTipoEvaluacion]

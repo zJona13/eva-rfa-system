@@ -38,18 +38,16 @@ interface TipoColaborador {
 
 // Servicios API
 const createTipoColaborador = async (name: string): Promise<{ success: boolean, message: string }> => {
+  const token = getToken();
   const response = await fetch('http://localhost:3309/api/tiposcolaborador', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
   });
-  
   const data = await response.json();
-  
   if (!response.ok) {
     throw new Error(data.message || 'Error al crear tipo de colaborador');
   }
-  
   return data;
 };
 

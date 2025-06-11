@@ -23,6 +23,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { getToken } from '@/contexts/AuthContext';
 
 // Types for the form
 // Actualizar el esquema para permitir valores especiales
@@ -108,8 +109,10 @@ const UserDialog: React.FC<UserDialogProps> = ({
     try {
       setLoadingColaboradores(true);
       const excludeUserId = userData?.id ? `?excludeUserId=${userData.id}` : '';
-      
-      const response = await fetch(`http://localhost:3309/api/users/available-colaboradores${excludeUserId}`);
+      const token = getToken();
+      const response = await fetch(`http://localhost:3309/api/users/available-colaboradores${excludeUserId}`, {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       
       if (response.ok) {
         const data = await response.json();

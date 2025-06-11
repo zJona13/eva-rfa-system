@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import ColaboradorDialog from './ColaboradorDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog from './UserDialog';
+import { getToken } from '@/contexts/AuthContext';
 
 interface TipoColaborador {
   id: number;
@@ -90,49 +91,47 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   };
   
   // Crear colaborador
-  const createColaborador = async (data: any) => {
+  const createColaborador = async (colaboradorData: any): Promise<{ success: boolean, message: string }> => {
+    const token = getToken();
     const response = await fetch('http://localhost:3309/api/colaboradores', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify(colaboradorData)
     });
-    const result = await response.json();
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error(result.message || 'Error al crear colaborador');
+      throw new Error(data.message || 'Error al crear colaborador');
     }
-    return result;
+    return data;
   };
   
   // Actualizar colaborador
-  const updateColaborador = async ({ id, data }: { id: number; data: any }) => {
-    const response = await fetch(`http://localhost:3309/api/colaboradores/${id}`, {
+  const updateColaborador = async (colaboradorData: any): Promise<{ success: boolean, message: string }> => {
+    const token = getToken();
+    const response = await fetch(`http://localhost:3309/api/colaboradores/${colaboradorData.id}`, {
       method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
+      headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+      body: JSON.stringify(colaboradorData)
     });
-    
-    const result = await response.json();
-    
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error(result.message || 'Error al actualizar colaborador');
+      throw new Error(data.message || 'Error al actualizar colaborador');
     }
-    
-    return result;
+    return data;
   };
   
   // Eliminar colaborador
-  const deleteColaborador = async (id: number) => {
+  const deleteColaborador = async (id: number): Promise<{ success: boolean, message: string }> => {
+    const token = getToken();
     const response = await fetch(`http://localhost:3309/api/colaboradores/${id}`, {
-      method: 'DELETE'
+      method: 'DELETE',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
-    
-    const result = await response.json();
-    
+    const data = await response.json();
     if (!response.ok) {
-      throw new Error(result.message || 'Error al eliminar colaborador');
+      throw new Error(data.message || 'Error al eliminar colaborador');
     }
-    
-    return result;
+    return data;
   };
   
   // Mutaciones
@@ -179,10 +178,11 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
       areaId: data.areaId ? Number(data.areaId) : undefined,
       roleId: data.roleId ? Number(data.roleId) : undefined,
       contractTypeId: data.contractTypeId ? Number(data.contractTypeId) : undefined,
+      ...(selectedColaborador ? { id: selectedColaborador.id } : {}) // Asegura el id al editar
     };
     console.log('Payload enviado:', payload);
     if (selectedColaborador) {
-      updateMutation.mutate({ id: selectedColaborador.id, data: payload });
+      updateMutation.mutate(payload);
     } else {
       try {
         const result = await createColaborador(payload);
@@ -208,9 +208,10 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   // Guardar usuario asociado
   const handleSaveUser = async (userData: any) => {
     try {
+      const token = getToken();
       const response = await fetch('http://localhost:3309/api/users', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify({ 
           ...userData, 
           colaboradorId: createdColaborador?.id,
