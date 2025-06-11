@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCriteriosPorTipoEvaluacion, crearEvaluacion } from '../../services/evaluacionApi';
+import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion } from '../../services/evaluacionPendienteApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,24 +9,21 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { User, Target, MessageSquare, Send, Loader2, AlertCircle } from 'lucide-react';
+import { User, Target, MessageSquare, Send, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import EvaluationCard from '../../components/EvaluationCard';
 
 export default function SelfEvaluationPage() {
+  const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [evaluacionActual, setEvaluacionActual] = useState(null);
   const [criterios, setCriterios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [puntajes, setPuntajes] = useState({});
   const [comentario, setComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
-  const [evaluacionInfo, setEvaluacionInfo] = useState({
-    nombre: '',
-    area: '',
-    fecha: new Date().toLocaleDateString(),
-    periodo: '',
-    idDocente: ''
-  });
 
   // Lista de periodos académicos
   const periodosAcademicos = [
@@ -36,13 +34,10 @@ export default function SelfEvaluationPage() {
   ];
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchEvaluacionesPendientes = async () => {
       try {
         setError(null);
-        // Obtener criterios de autoevaluación
-        const criteriosData = await getCriteriosPorTipoEvaluacion(3);
-        setCriterios(criteriosData.criterios);
-
+        
         // Obtener información del usuario actual
         const response = await fetch('http://localhost:3309/api/users/current');
         if (!response.ok) {
@@ -50,37 +45,58 @@ export default function SelfEvaluationPage() {
         }
         const userData = await response.json();
         
-        // Validar datos requeridos
-        if (!userData.colaboradorName || !userData.areaName) {
-          throw new Error('No se pudo obtener la información completa del docente');
-        }
-
-        // Actualizar información de la evaluación
-        setEvaluacionInfo({
-          nombre: userData.colaboradorName || userData.name,
-          area: userData.areaName,
-          fecha: new Date().toLocaleDateString(),
-          periodo: userData.currentPeriod || periodosAcademicos[0].value,
-          idDocente: userData.colaboradorId || ''
-        });
+        // Obtener evaluaciones pendientes de autoevaluación (tipo 3)
+        const evaluacionesData = await obtenerEvaluacionesPendientes(userData.id, 3);
+        setEvaluacionesPendientes(evaluacionesData.evaluaciones || []);
         
         setLoading(false);
       } catch (error) {
-        console.error('Error al cargar datos:', error);
+        console.error('Error al cargar evaluaciones pendientes:', error);
         setError(error.message);
         setLoading(false);
       }
     };
 
-    fetchData();
+    fetchEvaluacionesPendientes();
   }, []);
+
+  const iniciarEvaluacion = async (idEvaluacion) => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Obtener información de la evaluación
+      const infoData = await obtenerInfoEvaluacion(idEvaluacion);
+      setEvaluacionActual(infoData.evaluacion);
+      
+      // Obtener criterios de autoevaluación
+      const criteriosData = await getCriteriosPorTipoEvaluacion(3);
+      setCriterios(criteriosData.criterios);
+      
+      setMostrarFormulario(true);
+      setLoading(false);
+    } catch (error) {
+      console.error('Error al iniciar evaluación:', error);
+      setError(error.message);
+      setLoading(false);
+    }
+  };
+
+  const volverALista = () => {
+    setMostrarFormulario(false);
+    setEvaluacionActual(null);
+    setCriterios([]);
+    setPuntajes({});
+    setComentario('');
+    setError(null);
+  };
 
   const handlePuntaje = (idSubCriterio, valor) => {
     setPuntajes(prev => ({ ...prev, [idSubCriterio]: valor }));
   };
 
   const handlePeriodoChange = (value) => {
-    setEvaluacionInfo(prev => ({ ...prev, periodo: value }));
+    //setEvaluacionInfo(prev => ({ ...prev, periodo: value }));
   };
 
   const renderRatingOptions = (idSubCriterio, currentValue) => {
@@ -145,9 +161,9 @@ export default function SelfEvaluationPage() {
         comments: comentario,
         status: 'Activo',
         idTipoEvaluacion: 3,
-        idEvaluador: Number(evaluacionInfo.idDocente),
-        idEvaluado: Number(evaluacionInfo.idDocente),
-        periodo: evaluacionInfo.periodo,
+        idEvaluador: Number(evaluacionActual?.idEvaluador),
+        idEvaluado: Number(evaluacionActual?.idEvaluado),
+        periodo: evaluacionActual?.periodo,
         detalles
       };
       
@@ -174,13 +190,68 @@ export default function SelfEvaluationPage() {
         <div className="flex flex-col items-center gap-4">
           <Loader2 className="h-8 w-8 animate-spin text-purple-500" />
           <span className="text-lg font-medium text-gray-600 dark:text-gray-400">
-            Cargando información de la autoevaluación...
+            Cargando información...
           </span>
         </div>
       </div>
     );
   }
 
+  // Vista de lista de evaluaciones pendientes
+  if (!mostrarFormulario) {
+    return (
+      <div className="max-w-6xl mx-auto space-y-6">
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+
+        {/* Header */}
+        <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-purple-500 rounded-xl">
+                <User className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl text-purple-900 dark:text-purple-100">
+                  Autoevaluaciones Pendientes
+                </CardTitle>
+                <CardDescription className="text-purple-700 dark:text-purple-300">
+                  Selecciona una autoevaluación para completar
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Lista de evaluaciones */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {evaluacionesPendientes.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-500 dark:text-gray-400">
+                No tienes autoevaluaciones pendientes
+              </div>
+            </div>
+          ) : (
+            evaluacionesPendientes.map((evaluacion) => (
+              <EvaluationCard
+                key={evaluacion.idEvaluacion}
+                evaluacion={evaluacion}
+                onStartEvaluation={iniciarEvaluacion}
+                colorScheme="purple"
+              />
+            ))
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Vista del formulario de evaluación
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {error && (
@@ -191,19 +262,28 @@ export default function SelfEvaluationPage() {
         </Alert>
       )}
 
-      {/* Header Card */}
+      {/* Header con botón de regreso */}
       <Card className="border-none shadow-lg bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={volverALista}
+              className="mr-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Button>
             <div className="p-3 bg-purple-500 rounded-xl">
               <User className="h-6 w-6 text-white" />
             </div>
             <div>
               <CardTitle className="text-2xl text-purple-900 dark:text-purple-100">
-                Autoevaluación Docente
+                Autoevaluación - Periodo {evaluacionActual?.periodo}
               </CardTitle>
               <CardDescription className="text-purple-700 dark:text-purple-300">
-                Evalúa tu desempeño y metodología docente
+                {evaluacionActual?.areaNombre}
               </CardDescription>
             </div>
           </div>
@@ -235,7 +315,7 @@ export default function SelfEvaluationPage() {
                   Nombre del Docente
                 </label>
                 <Input
-                  value={evaluacionInfo.nombre}
+                  value={evaluacionActual?.nombreEvaluado || ''}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -245,43 +325,20 @@ export default function SelfEvaluationPage() {
                   Área
                 </label>
                 <Input
-                  value={evaluacionInfo.area}
+                  value={evaluacionActual?.areaNombre || ''}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
               </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Fecha
-                </label>
-                <Input
-                  value={evaluacionInfo.fecha}
-                  disabled
-                  className="bg-white dark:bg-gray-700"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Periodo
                 </label>
-                <Select
-                  value={evaluacionInfo.periodo}
-                  onValueChange={handlePeriodoChange}
-                >
-                  <SelectTrigger className="bg-white dark:bg-gray-700">
-                    <SelectValue placeholder="Seleccionar periodo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periodosAcademicos.map((periodo) => (
-                      <SelectItem key={periodo.value} value={periodo.value}>
-                        {periodo.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={evaluacionActual?.periodo || ''}
+                  disabled
+                  className="bg-white dark:bg-gray-700"
+                />
               </div>
             </div>
 

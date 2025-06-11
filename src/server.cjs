@@ -1213,4 +1213,76 @@ app.get('/api/asignaciones', async (req, res) => {
   }
 });
 
+// Obtener evaluaciones pendientes por usuario y tipo
+app.get('/api/evaluaciones/pendientes/:idUsuario/:idTipoEvaluacion', async (req, res) => {
+  const { idUsuario, idTipoEvaluacion } = req.params;
+  
+  try {
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, 
+              e.puntajeTotal, e.comentario, e.estado,
+              a.periodo, a.fechaInicio, a.fechaFin, a.horaInicio, a.horaFin,
+              ar.nombre as areaNombre,
+              CASE 
+                WHEN e.idTipoEvaluacion = 1 THEN CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat)
+                WHEN e.idTipoEvaluacion = 2 THEN CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat)
+                WHEN e.idTipoEvaluacion = 3 THEN CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat)
+              END as nombreEvaluado,
+              CASE 
+                WHEN e.idTipoEvaluacion = 1 THEN 'Estudiante al Docente'
+                WHEN e.idTipoEvaluacion = 2 THEN 'Supervisor al Docente'
+                WHEN e.idTipoEvaluacion = 3 THEN 'Autoevaluación'
+              END as tipoEvaluacionNombre
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       JOIN AREA ar ON a.idArea = ar.idArea
+       JOIN USUARIO ue ON e.idEvaluado = ue.idUsuario
+       JOIN COLABORADOR ce ON ue.idColaborador = ce.idColaborador
+       WHERE e.idEvaluador = ? AND e.idTipoEvaluacion = ? AND e.estado = 'Pendiente'
+       ORDER BY a.periodo DESC, e.fechaEvaluacion DESC`,
+      [idUsuario, idTipoEvaluacion]
+    );
+    
+    res.json({ success: true, evaluaciones: rows });
+  } catch (error) {
+    console.error('Error al obtener evaluaciones pendientes:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener evaluaciones pendientes' });
+  }
+});
+
+// Obtener información de una evaluación específica para iniciarla
+app.get('/api/evaluaciones/:idEvaluacion/info', async (req, res) => {
+  const { idEvaluacion } = req.params;
+  
+  try {
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, 
+              e.puntajeTotal, e.comentario, e.estado, e.idTipoEvaluacion,
+              e.idEvaluador, e.idEvaluado,
+              a.periodo, a.fechaInicio, a.fechaFin, a.horaInicio, a.horaFin,
+              ar.nombre as areaNombre,
+              CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat) as nombreEvaluado,
+              CONCAT(cr.nombres, ' ', cr.apePat, ' ', cr.apeMat) as nombreEvaluador
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       JOIN AREA ar ON a.idArea = ar.idArea
+       JOIN USUARIO ue ON e.idEvaluado = ue.idUsuario
+       JOIN COLABORADOR ce ON ue.idColaborador = ce.idColaborador
+       JOIN USUARIO ur ON e.idEvaluador = ur.idUsuario
+       JOIN COLABORADOR cr ON ur.idColaborador = cr.idColaborador
+       WHERE e.idEvaluacion = ?`,
+      [idEvaluacion]
+    );
+    
+    if (rows.length === 0) {
+      return res.status(404).json({ success: false, message: 'Evaluación no encontrada' });
+    }
+    
+    res.json({ success: true, evaluacion: rows[0] });
+  } catch (error) {
+    console.error('Error al obtener información de evaluación:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener información de evaluación' });
+  }
+});
+
 module.exports = app;
