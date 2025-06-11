@@ -14,6 +14,7 @@ const notificacionService = require('./services/notificacionService.cjs');
 const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
 const estudianteService = require('./services/estudianteService.cjs');
+const asignacionService = require('./services/asignacionService.cjs');
 
 const app = express();
 const PORT = process.env.PORT || 3309;
@@ -1173,6 +1174,41 @@ app.get('/api/evaluaciones/criterios/:idTipoEvaluacion', async (req, res) => {
     }
   } catch (error) {
     console.error('Error en GET /api/evaluaciones/criterios/:idTipoEvaluacion:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+// ========================
+// RUTAS DE ASIGNACIONES
+// ========================
+app.post('/api/asignaciones', async (req, res) => {
+  try {
+    const data = req.body;
+    if (!data.idUsuario || !data.idArea || !data.periodo || !data.fechaInicio || !data.fechaFin || !data.horaInicio || !data.horaFin) {
+      return res.status(400).json({ success: false, message: 'Faltan datos requeridos para la asignación' });
+    }
+    const result = await asignacionService.createAsignacion(data);
+    if (result.success) {
+      res.status(201).json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error en POST /api/asignaciones:', error);
+    res.status(500).json({ success: false, message: 'Error interno del servidor' });
+  }
+});
+
+app.get('/api/asignaciones', async (req, res) => {
+  try {
+    const result = await asignacionService.getAllAsignaciones();
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error en GET /api/asignaciones:', error);
     res.status(500).json({ success: false, message: 'Error interno del servidor' });
   }
 });
