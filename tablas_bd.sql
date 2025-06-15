@@ -206,7 +206,7 @@ INSERT INTO TIPO_USUARIO (nombre) VALUES
 ('Administrador'), ('Evaluador'), ('Evaluado'), ('Estudiante');
 
 INSERT INTO TIPO_COLABORADOR (nombre) VALUES
-('Jefe de TI'), ('Docente'), ('Jefe de Carrera de Mecanica de Produccion'), ('Director');
+('Jefe de TI'), ('Docente'), ('Jefe'), ('Director');
 
 INSERT INTO TIPO_CONTRATO (nombre) 
 VALUES ('Tiempo Parcial'), ('Tiempo Completo'), ('Nombrado');
