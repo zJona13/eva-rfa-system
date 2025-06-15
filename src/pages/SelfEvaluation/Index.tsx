@@ -1,5 +1,4 @@
-
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getCriteriosPorTipoEvaluacion, crearEvaluacion, actualizarEvaluacion } from '../../services/evaluacionApi';
 import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion, obtenerTodasLasEvaluacionesPorUsuarioYTipo } from '../../services/evaluacionPendienteApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -502,7 +501,7 @@ export default function SelfEvaluationPage() {
             ) : (
               <div className="space-y-8">
                 {criterios.map((criterio, index) => (
-                  <Card key={criterio.idCriterio} className="border-l-4 border-l-purple-500 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-white to-purple-50/30 dark:from-gray-800 dark:to-purple-950/20">
+                  <Card key={criterio.idCriterio} className="border-l-4 border-l-purple-500 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-white to-purple-50/30 dark:from-purple-950/20">
                     <CardHeader className="pb-4 bg-gradient-to-r from-purple-50/50 to-indigo-50/50 dark:from-purple-950/20 dark:to-indigo-950/20">
                       <div className="flex items-center gap-3">
                         <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
@@ -611,9 +610,10 @@ export default function SelfEvaluationPage() {
                         / 20
                       </div>
                       <div className="absolute -top-2 -right-2">
-                        {React.createElement(getScoreIcon(puntaje20), { 
-                          className: `h-8 w-8 ${getScoreColor(puntaje20)}` 
-                        })}
+                        {(() => {
+                          const IconComponent = getScoreIcon(puntaje20);
+                          return <IconComponent className={`h-8 w-8 ${getScoreColor(puntaje20)}`} />;
+                        })()}
                       </div>
                     </div>
                     
