@@ -1306,14 +1306,22 @@ app.get('/api/evaluaciones/:idEvaluacion/info', async (req, res) => {
               a.periodo, a.fechaInicio, a.fechaFin, a.horaInicio, a.horaFin,
               ar.nombre as areaNombre,
               CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador) as nombreEvaluado,
-              CONCAT(cr.nombreColaborador, ' ', cr.apePaColaborador, ' ', cr.apeMaColaborador) as nombreEvaluador
+              COALESCE(
+                CONCAT(cr.nombreColaborador, ' ', cr.apePaColaborador, ' ', cr.apeMaColaborador),
+                CONCAT(es.nombreEstudiante, ' ', es.apePaEstudiante, ' ', es.apeMaEstudiante)
+              ) as nombreEvaluador,
+              COALESCE(
+                CONCAT(es.nombreEstudiante, ' ', es.apePaEstudiante, ' ', es.apeMaEstudiante),
+                ur.correo
+              ) as nombreEstudiante
        FROM EVALUACION e
        JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
        JOIN AREA ar ON a.idArea = ar.idArea
        JOIN USUARIO ue ON e.idEvaluado = ue.idUsuario
        JOIN COLABORADOR ce ON ue.idColaborador = ce.idColaborador
        JOIN USUARIO ur ON e.idEvaluador = ur.idUsuario
-       JOIN COLABORADOR cr ON ur.idColaborador = cr.idColaborador
+       LEFT JOIN COLABORADOR cr ON ur.idColaborador = cr.idColaborador
+       LEFT JOIN ESTUDIANTE es ON ur.idUsuario = es.idUsuario
        WHERE e.idEvaluacion = ?`,
       [idEvaluacion]
     );

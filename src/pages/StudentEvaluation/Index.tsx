@@ -12,24 +12,19 @@ import { Users, BookOpen, MessageSquare, Send, Loader2, AlertCircle } from 'luci
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EvaluationCard from '../../components/EvaluationCard';
+import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion } from '../../services/evaluacionPendienteApi';
+import { getToken } from '@/contexts/AuthContext';
 
 export default function StudentEvaluationPage() {
+  const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
+  const [selectedEvaluacion, setSelectedEvaluacion] = useState(null);
   const [criterios, setCriterios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [puntajes, setPuntajes] = useState({});
   const [comentario, setComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
-  const [evaluacionInfo, setEvaluacionInfo] = useState({
-    nombreDocente: '',
-    area: '',
-    fecha: new Date().toLocaleDateString(),
-    periodo: '',
-    nombreEstudiante: '',
-    idAsignacion: '',
-    idEvaluador: '',
-    idEvaluado: ''
-  });
+  const [evaluacionInfo, setEvaluacionInfo] = useState(null);
 
   // Lista de periodos académicos
   const periodosAcademicos = [
@@ -40,47 +35,46 @@ export default function StudentEvaluationPage() {
   ];
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetchPendientes = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setError(null);
-        // Obtener criterios de evaluación
-        const criteriosData = await getCriteriosPorTipoEvaluacion(1);
-        setCriterios(criteriosData.criterios);
-
-        // Obtener información del estudiante actual
-        const response = await fetch('http://localhost:3309/api/users/current');
-        if (!response.ok) {
-          throw new Error('Error al obtener información del usuario');
-        }
-        const userData = await response.json();
-        
-        // Validar datos requeridos
-        if (!userData.teacherName || !userData.areaName) {
-          throw new Error('No se pudo obtener la información completa del docente');
-        }
-
-        // Actualizar información de la evaluación
-        setEvaluacionInfo({
-          nombreDocente: userData.teacherName,
-          area: userData.areaName,
-          fecha: new Date().toLocaleDateString(),
-          periodo: userData.currentPeriod || periodosAcademicos[0].value,
-          nombreEstudiante: userData.studentName || userData.name,
-          idAsignacion: userData.assignmentId || '',
-          idEvaluador: userData.studentId || '',
-          idEvaluado: userData.teacherId || ''
+        const token = getToken();
+        // Obtener usuario actual para su id
+        const resUser = await fetch('http://localhost:3309/api/users/current', {
+          headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
-        
-        setLoading(false);
-      } catch (error) {
-        console.error('Error al cargar datos:', error);
-        setError(error.message);
+        const userData = await resUser.json();
+        // Obtener evaluaciones pendientes tipo 1 (estudiante al docente)
+        const pendientes = await obtenerEvaluacionesPendientes(userData.id, 1);
+        setEvaluacionesPendientes(pendientes.evaluaciones || []);
+      } catch (e) {
+        setError('Error al cargar evaluaciones pendientes');
+      } finally {
         setLoading(false);
       }
     };
-
-    fetchData();
+    fetchPendientes();
   }, []);
+
+  const handleSeleccionarEvaluacion = async (evaluacion) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const info = await obtenerInfoEvaluacion(evaluacion.idEvaluacion);
+      setEvaluacionInfo(info.evaluacion);
+      // Obtener criterios de evaluación tipo 1
+      const criteriosData = await getCriteriosPorTipoEvaluacion(1);
+      setCriterios(criteriosData.criterios);
+      setSelectedEvaluacion(evaluacion);
+      setPuntajes({});
+      setComentario('');
+    } catch (e) {
+      setError('Error al cargar información de la evaluación');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handlePuntaje = (idSubCriterio, valor) => {
     setPuntajes(prev => ({ ...prev, [idSubCriterio]: valor }));
@@ -124,14 +118,11 @@ export default function StudentEvaluationPage() {
     e.preventDefault();
     setEnviando(true);
     setError(null);
-    
     try {
-      // Validar que todos los criterios estén calificados
       const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
       if (Object.keys(puntajes).length !== totalSubcriterios) {
         throw new Error('Debe calificar todos los criterios antes de enviar la evaluación');
       }
-
       const detalles = [];
       criterios.forEach(criterio => {
         criterio.subcriterios.forEach(sub => {
@@ -143,7 +134,6 @@ export default function StudentEvaluationPage() {
           }
         });
       });
-      
       const score = detalles.length > 0 ? detalles.reduce((a, b) => a + b.puntaje, 0) / detalles.length : 0;
       const evaluacionData = {
         date: new Date().toISOString().slice(0, 10),
@@ -151,18 +141,27 @@ export default function StudentEvaluationPage() {
         score,
         comments: comentario,
         status: 'Activo',
-        idAsignacion: Number(evaluacionInfo.idAsignacion),
-        idEvaluador: Number(evaluacionInfo.idEvaluador),
-        idEvaluado: Number(evaluacionInfo.idEvaluado),
+        idAsignacion: evaluacionInfo.idAsignacion,
+        idEvaluador: evaluacionInfo.idEvaluador,
+        idEvaluado: evaluacionInfo.idEvaluado,
         idTipoEvaluacion: 1,
         periodo: evaluacionInfo.periodo,
         detalles
       };
-      
-      const res = await crearEvaluacion(evaluacionData);
+      await crearEvaluacion(evaluacionData);
       alert('Evaluación enviada exitosamente');
+      setSelectedEvaluacion(null);
+      setEvaluacionInfo(null);
       setPuntajes({});
       setComentario('');
+      // Refrescar lista de pendientes
+      const token = getToken();
+      const resUser = await fetch('http://localhost:3309/api/users/current', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      const userData = await resUser.json();
+      const pendientes = await obtenerEvaluacionesPendientes(userData.id, 1);
+      setEvaluacionesPendientes(pendientes.evaluaciones || []);
     } catch (e) {
       setError(e.message || 'Error al enviar evaluación');
     } finally {
@@ -185,6 +184,35 @@ export default function StudentEvaluationPage() {
             Cargando información de la evaluación...
           </span>
         </div>
+      </div>
+    );
+  }
+
+  if (!selectedEvaluacion) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6">
+        <h2 className="text-2xl font-bold mb-4">Evaluaciones pendientes (Estudiante al Docente)</h2>
+        {error && (
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        {evaluacionesPendientes.length === 0 ? (
+          <div className="text-center text-muted-foreground">No tienes evaluaciones pendientes.</div>
+        ) : (
+          <div className="grid gap-4">
+            {evaluacionesPendientes.map(ev => (
+              <EvaluationCard
+                key={ev.idEvaluacion}
+                evaluacion={ev}
+                colorScheme="blue"
+                onStartEvaluation={() => handleSeleccionarEvaluacion(ev)}
+              />
+            ))}
+          </div>
+        )}
       </div>
     );
   }
@@ -243,7 +271,7 @@ export default function StudentEvaluationPage() {
                   Nombre del Docente
                 </label>
                 <Input
-                  value={evaluacionInfo.nombreDocente}
+                  value={evaluacionInfo.nombreEvaluado}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -253,7 +281,7 @@ export default function StudentEvaluationPage() {
                   Área
                 </label>
                 <Input
-                  value={evaluacionInfo.area}
+                  value={evaluacionInfo.areaNombre}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -263,7 +291,7 @@ export default function StudentEvaluationPage() {
                   Fecha
                 </label>
                 <Input
-                  value={evaluacionInfo.fecha}
+                  value={evaluacionInfo.fechaEvaluacion || new Date().toLocaleDateString()}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -403,6 +431,7 @@ export default function StudentEvaluationPage() {
                 )}
               </Button>
             </div>
+            <Button type="button" variant="outline" className="w-full" onClick={() => setSelectedEvaluacion(null)} disabled={enviando}>Volver a la lista</Button>
           </form>
         </CardContent>
       </Card>
