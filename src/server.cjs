@@ -1344,47 +1344,4 @@ app.get('/api/protegido', authenticateToken, (req, res) => {
   res.json({ message: 'Acceso permitido', user: req.user });
 });
 
-app.put('/api/evaluaciones/:idEvaluacion', authenticateToken, async (req, res) => {
-  const { idEvaluacion } = req.params;
-  const { detalles, puntajeTotal, comentario, status } = req.body;
-  try {
-    // Obtener la evaluación actual
-    const [rows] = await pool.execute('SELECT * FROM EVALUACION WHERE idEvaluacion = ?', [idEvaluacion]);
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Evaluación no encontrada' });
-    }
-    const evaluacion = rows[0];
-    // Verificar si ya está completada o cancelada
-    if (evaluacion.estado === 'Completada' || evaluacion.estado === 'Cancelada') {
-      return res.status(400).json({ success: false, message: 'La evaluación ya está finalizada o cancelada y no puede ser editada.' });
-    }
-    // Verificar si la fecha/hora límite ya pasó
-    const fechaLimite = new Date(evaluacion.fechaFin || evaluacion.fechaEvaluacion);
-    const horaLimite = evaluacion.horaFin || evaluacion.horaEvaluacion;
-    let limite = fechaLimite;
-    if (horaLimite) {
-      const [h, m, s] = horaLimite.split(':');
-      limite.setHours(Number(h), Number(m), Number(s || 0));
-    }
-    if (new Date() > limite) {
-      await pool.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', ['Cancelada', idEvaluacion]);
-      return res.status(400).json({ success: false, message: 'La evaluación ha sido cancelada por pasar la fecha/hora límite.' });
-    }
-    // Actualizar evaluación
-    await pool.execute('UPDATE EVALUACION SET puntajeTotal = ?, comentario = ?, estado = ? WHERE idEvaluacion = ?', [puntajeTotal, comentario, status, idEvaluacion]);
-    // Eliminar detalles anteriores
-    await pool.execute('DELETE FROM DETALLE_EVALUACION WHERE idEvaluacion = ?', [idEvaluacion]);
-    // Insertar nuevos detalles
-    if (Array.isArray(detalles)) {
-      for (const detalle of detalles) {
-        await pool.execute('INSERT INTO DETALLE_EVALUACION (puntaje, idEvaluacion, idSubCriterio) VALUES (?, ?, ?)', [detalle.puntaje, idEvaluacion, detalle.idSubCriterio]);
-      }
-    }
-    res.json({ success: true, message: 'Evaluación actualizada correctamente' });
-  } catch (error) {
-    console.error('Error al actualizar evaluación:', error);
-    res.status(500).json({ success: false, message: 'Error al actualizar evaluación' });
-  }
-});
-
 module.exports = app;
