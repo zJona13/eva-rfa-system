@@ -303,28 +303,18 @@ export default function StudentEvaluationPage() {
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Periodo
                 </label>
-                <Select
-                  value={evaluacionInfo.periodo}
-                  onValueChange={handlePeriodoChange}
-                >
-                  <SelectTrigger className="bg-white dark:bg-gray-700">
-                    <SelectValue placeholder="Seleccionar periodo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {periodosAcademicos.map((periodo) => (
-                      <SelectItem key={periodo.value} value={periodo.value}>
-                        {periodo.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input
+                  value={evaluacionInfo.periodo || ''}
+                  disabled
+                  className="bg-white dark:bg-gray-700"
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Nombre del Estudiante
                 </label>
                 <Input
-                  value={evaluacionInfo.nombreEstudiante}
+                  value={evaluacionInfo.nombreEstudiante || ''}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
