@@ -22,4 +22,16 @@ export async function crearEvaluacion(evaluacionData) {
   });
   if (!res.ok) throw new Error('Error al crear evaluación');
   return res.json();
+}
+
+// Actualizar una evaluación
+export async function actualizarEvaluacion(idEvaluacion, evaluacionData) {
+  const token = getToken();
+  const res = await fetch(`${API_URL}/${idEvaluacion}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify(evaluacionData)
+  });
+  if (!res.ok) throw new Error('Error al actualizar evaluación');
+  return res.json();
 } 
