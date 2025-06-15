@@ -115,10 +115,10 @@ const AssignmentEvaluations = () => {
 
   const getStatusColor = (estado: string) => {
     switch (estado) {
-      case 'Activo': return 'bg-green-500';
-      case 'Inactivo': return 'bg-red-500';
-      case 'Pendiente': return 'bg-yellow-500';
-      default: return 'bg-gray-500';
+      case 'Activo': return 'bg-green-500 hover:bg-green-600';
+      case 'Inactivo': return 'bg-red-500 hover:bg-red-600';
+      case 'Pendiente': return 'bg-yellow-500 hover:bg-yellow-600';
+      default: return 'bg-gray-500 hover:bg-gray-600';
     }
   };
 
@@ -132,30 +132,30 @@ const AssignmentEvaluations = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 p-6">
+    <div className="min-h-screen bg-background p-6">
       <div className="max-w-7xl mx-auto space-y-8">
         {/* Header con diseño mejorado */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-600 p-8 text-white">
-          <div className="relative z-10 flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold mb-2">Asignación de Evaluaciones</h1>
-              <p className="text-blue-100 text-lg">
-                Administra y asigna evaluaciones a los colaboradores del instituto
-              </p>
+        <Card className="relative overflow-hidden border-0 shadow-lg">
+          <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-secondary"></div>
+          <div className="relative z-10 p-8 text-primary-foreground">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-4xl font-bold mb-2">Asignación de Evaluaciones</h1>
+                <p className="text-primary-foreground/80 text-lg">
+                  Administra y asigna evaluaciones a los colaboradores del instituto
+                </p>
+              </div>
+              <Button 
+                className="bg-background text-foreground hover:bg-accent shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105" 
+                size="lg"
+                onClick={() => setModalOpen(true)}
+              >
+                <Plus className="h-5 w-5 mr-2" />
+                Nueva Asignación
+              </Button>
             </div>
-            <Button 
-              className="bg-white text-blue-600 hover:bg-blue-50 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105" 
-              size="lg"
-              onClick={() => setModalOpen(true)}
-            >
-              <Plus className="h-5 w-5 mr-2" />
-              Nueva Asignación
-            </Button>
           </div>
-          <div className="absolute inset-0 bg-black bg-opacity-10"></div>
-          <div className="absolute -top-4 -right-4 w-24 h-24 bg-white bg-opacity-10 rounded-full"></div>
-          <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-white bg-opacity-5 rounded-full"></div>
-        </div>
+        </Card>
 
         {/* Stats Cards mejoradas */}
         <div className="grid gap-6 md:grid-cols-4">
@@ -204,13 +204,13 @@ const AssignmentEvaluations = () => {
           </Card>
         </div>
 
-        {/* Filtros y búsqueda mejorados */}
-        <Card className="shadow-lg border-0">
+        {/* Filtros y búsqueda */}
+        <Card className="shadow-lg">
           <CardHeader>
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
-                  <Filter className="h-5 w-5 text-blue-600" />
+                  <Filter className="h-5 w-5 text-primary" />
                   Filtros y Búsqueda
                 </CardTitle>
                 <CardDescription>Encuentra asignaciones rápidamente</CardDescription>
@@ -220,17 +220,17 @@ const AssignmentEvaluations = () => {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por área o periodo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 border-gray-200 focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-10"
                 />
               </div>
               
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                <SelectTrigger>
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -242,7 +242,7 @@ const AssignmentEvaluations = () => {
               </Select>
 
               <Select value={areaFilter} onValueChange={setAreaFilter}>
-                <SelectTrigger className="border-gray-200 focus:border-blue-500 focus:ring-blue-500">
+                <SelectTrigger>
                   <SelectValue placeholder="Área" />
                 </SelectTrigger>
                 <SelectContent>
@@ -260,7 +260,6 @@ const AssignmentEvaluations = () => {
                   setStatusFilter('all');
                   setAreaFilter('all');
                 }}
-                className="border-gray-200 hover:bg-gray-50"
               >
                 Limpiar filtros
               </Button>
@@ -268,8 +267,8 @@ const AssignmentEvaluations = () => {
           </CardContent>
         </Card>
 
-        {/* Lista de asignaciones mejorada */}
-        <Card className="shadow-lg border-0">
+        {/* Lista de asignaciones */}
+        <Card className="shadow-lg">
           <CardHeader>
             <CardTitle className="text-2xl">Asignaciones Recientes</CardTitle>
             <CardDescription>
@@ -280,16 +279,16 @@ const AssignmentEvaluations = () => {
             <div className="space-y-4">
               {filteredAsignaciones.length === 0 && (
                 <div className="text-center py-12">
-                  <UserCheck className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-gray-600 mb-2">No hay asignaciones</h3>
-                  <p className="text-gray-500 mb-4">
+                  <UserCheck className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-lg font-medium text-foreground mb-2">No hay asignaciones</h3>
+                  <p className="text-muted-foreground mb-4">
                     {asignaciones.length === 0 
                       ? 'No hay asignaciones registradas.' 
                       : 'No se encontraron asignaciones con los filtros aplicados.'
                     }
                   </p>
                   {asignaciones.length === 0 && (
-                    <Button onClick={() => setModalOpen(true)} className="bg-blue-600 hover:bg-blue-700">
+                    <Button onClick={() => setModalOpen(true)}>
                       <Plus className="h-4 w-4 mr-2" />
                       Crear primera asignación
                     </Button>
@@ -298,83 +297,85 @@ const AssignmentEvaluations = () => {
               )}
               
               {filteredAsignaciones.map(asignacion => (
-                <div key={asignacion.idAsignacion} className="bg-gradient-to-r from-white to-gray-50 p-6 border border-gray-100 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 transform hover:scale-[1.02]">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1 space-y-3">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-blue-100 rounded-lg">
-                          {getEvaluationIcon('general')}
+                <Card key={asignacion.idAsignacion} className="transition-all duration-300 hover:shadow-md hover:scale-[1.02]">
+                  <CardContent className="p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1 space-y-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-primary/10 rounded-lg">
+                            {getEvaluationIcon('general')}
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-lg">{asignacion.areaNombre}</h4>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge variant="outline" className="bg-primary/10 text-primary">
+                                Periodo: {asignacion.periodo}
+                              </Badge>
+                              <Badge 
+                                className={`text-white ${getStatusColor(asignacion.estado)}`}
+                              >
+                                {asignacion.estado}
+                              </Badge>
+                            </div>
+                          </div>
                         </div>
-                        <div>
-                          <h4 className="font-semibold text-lg text-gray-800">{asignacion.areaNombre}</h4>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                              Periodo: {asignacion.periodo}
-                            </Badge>
-                            <Badge 
-                              className={`text-white ${getStatusColor(asignacion.estado)}`}
-                            >
-                              {asignacion.estado}
-                            </Badge>
+                        
+                        <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4" />
+                            <span>
+                              <strong>Fechas:</strong> {formatDate(asignacion.fechaInicio)} - {formatDate(asignacion.fechaFin)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Clock className="h-4 w-4" />
+                            <span>
+                              <strong>Horario:</strong> {formatTime(asignacion.horaInicio)} - {formatTime(asignacion.horaFin)}
+                            </span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="grid md:grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Calendar className="h-4 w-4" />
-                          <span>
-                            <strong>Fechas:</strong> {formatDate(asignacion.fechaInicio)} - {formatDate(asignacion.fechaFin)}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-2 text-gray-600">
-                          <Clock className="h-4 w-4" />
-                          <span>
-                            <strong>Horario:</strong> {formatTime(asignacion.horaInicio)} - {formatTime(asignacion.horaFin)}
-                          </span>
-                        </div>
+                      <div className="flex items-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-primary hover:text-primary hover:bg-primary/10"
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                        >
+                          <Edit className="h-4 w-4" />
+                        </Button>
+                        <Button 
+                          variant="ghost" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center gap-2">
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
-                      >
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-green-600 hover:text-green-700 hover:bg-green-50"
-                      >
-                        <Edit className="h-4 w-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="sm"
-                        className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                </div>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </CardContent>
         </Card>
 
-        {/* Modal mejorado */}
+        {/* Modal */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold text-gray-800">Nueva Asignación</DialogTitle>
+              <DialogTitle className="text-2xl font-bold">Nueva Asignación</DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Área</label>
+                <label className="text-sm font-medium">Área</label>
                 <Select name="idArea" value={form.idArea} onValueChange={v => setForm(f => ({ ...f, idArea: v }))} required>
                   <SelectTrigger>
                     <SelectValue placeholder="Selecciona un área" />
@@ -388,7 +389,7 @@ const AssignmentEvaluations = () => {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Periodo</label>
+                <label className="text-sm font-medium">Periodo</label>
                 <Input 
                   name="periodo" 
                   value={form.periodo} 
@@ -400,7 +401,7 @@ const AssignmentEvaluations = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Fecha Inicio</label>
+                  <label className="text-sm font-medium">Fecha Inicio</label>
                   <Input 
                     name="fechaInicio" 
                     type="date" 
@@ -410,7 +411,7 @@ const AssignmentEvaluations = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Fecha Fin</label>
+                  <label className="text-sm font-medium">Fecha Fin</label>
                   <Input 
                     name="fechaFin" 
                     type="date" 
@@ -423,7 +424,7 @@ const AssignmentEvaluations = () => {
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Hora Inicio</label>
+                  <label className="text-sm font-medium">Hora Inicio</label>
                   <Input 
                     name="horaInicio" 
                     type="time" 
@@ -433,7 +434,7 @@ const AssignmentEvaluations = () => {
                   />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-gray-700">Hora Fin</label>
+                  <label className="text-sm font-medium">Hora Fin</label>
                   <Input 
                     name="horaFin" 
                     type="time" 
@@ -445,7 +446,7 @@ const AssignmentEvaluations = () => {
               </div>
 
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
                   {error}
                 </div>
               )}
@@ -454,7 +455,7 @@ const AssignmentEvaluations = () => {
                 <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="bg-blue-600 hover:bg-blue-700">
+                <Button type="submit" disabled={loading}>
                   {loading ? 'Guardando...' : 'Crear Asignación'}
                 </Button>
               </DialogFooter>
