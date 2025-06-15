@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from 'react';
 import { getCriteriosPorTipoEvaluacion, crearEvaluacion } from '../../services/evaluacionApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Users, BookOpen, MessageSquare, Send, Loader2, AlertCircle } from 'lucide-react';
+import { Users, BookOpen, MessageSquare, Send, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EvaluationCard from '../../components/EvaluationCard';
@@ -17,22 +18,14 @@ import { getToken } from '@/contexts/AuthContext';
 
 export default function StudentEvaluationPage() {
   const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
-  const [selectedEvaluacion, setSelectedEvaluacion] = useState(null);
+  const [mostrarFormulario, setMostrarFormulario] = useState(false);
+  const [evaluacionActual, setEvaluacionActual] = useState(null);
   const [criterios, setCriterios] = useState([]);
   const [loading, setLoading] = useState(true);
   const [puntajes, setPuntajes] = useState({});
   const [comentario, setComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
-  const [evaluacionInfo, setEvaluacionInfo] = useState(null);
-
-  // Lista de periodos académicos
-  const periodosAcademicos = [
-    { value: '2024-1', label: '2024 - I' },
-    { value: '2024-2', label: '2024 - II' },
-    { value: '2025-1', label: '2025 - I' },
-    { value: '2025-2', label: '2025 - II' }
-  ];
 
   useEffect(() => {
     const fetchPendientes = async () => {
@@ -57,16 +50,16 @@ export default function StudentEvaluationPage() {
     fetchPendientes();
   }, []);
 
-  const handleSeleccionarEvaluacion = async (evaluacion) => {
+  const iniciarEvaluacion = async (idEvaluacion) => {
     setLoading(true);
     setError(null);
     try {
-      const info = await obtenerInfoEvaluacion(evaluacion.idEvaluacion);
-      setEvaluacionInfo(info.evaluacion);
+      const info = await obtenerInfoEvaluacion(idEvaluacion);
+      setEvaluacionActual(info.evaluacion);
       // Obtener criterios de evaluación tipo 1
       const criteriosData = await getCriteriosPorTipoEvaluacion(1);
       setCriterios(criteriosData.criterios);
-      setSelectedEvaluacion(evaluacion);
+      setMostrarFormulario(true);
       setPuntajes({});
       setComentario('');
     } catch (e) {
@@ -76,12 +69,17 @@ export default function StudentEvaluationPage() {
     }
   };
 
-  const handlePuntaje = (idSubCriterio, valor) => {
-    setPuntajes(prev => ({ ...prev, [idSubCriterio]: valor }));
+  const volverALista = () => {
+    setMostrarFormulario(false);
+    setEvaluacionActual(null);
+    setCriterios([]);
+    setPuntajes({});
+    setComentario('');
+    setError(null);
   };
 
-  const handlePeriodoChange = (value) => {
-    setEvaluacionInfo(prev => ({ ...prev, periodo: value }));
+  const handlePuntaje = (idSubCriterio, valor) => {
+    setPuntajes(prev => ({ ...prev, [idSubCriterio]: valor }));
   };
 
   const renderRatingOptions = (idSubCriterio, currentValue) => {
@@ -141,17 +139,17 @@ export default function StudentEvaluationPage() {
         score,
         comments: comentario,
         status: 'Activo',
-        idAsignacion: evaluacionInfo.idAsignacion,
-        idEvaluador: evaluacionInfo.idEvaluador,
-        idEvaluado: evaluacionInfo.idEvaluado,
+        idAsignacion: evaluacionActual.idAsignacion,
+        idEvaluador: evaluacionActual.idEvaluador,
+        idEvaluado: evaluacionActual.idEvaluado,
         idTipoEvaluacion: 1,
-        periodo: evaluacionInfo.periodo,
+        periodo: evaluacionActual.periodo,
         detalles
       };
       await crearEvaluacion(evaluacionData);
       alert('Evaluación enviada exitosamente');
-      setSelectedEvaluacion(null);
-      setEvaluacionInfo(null);
+      setMostrarFormulario(false);
+      setEvaluacionActual(null);
       setPuntajes({});
       setComentario('');
       // Refrescar lista de pendientes
@@ -188,10 +186,10 @@ export default function StudentEvaluationPage() {
     );
   }
 
-  if (!selectedEvaluacion) {
+  // Vista de lista de evaluaciones pendientes
+  if (!mostrarFormulario) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6">
-        <h2 className="text-2xl font-bold mb-4">Evaluaciones pendientes (Estudiante al Docente)</h2>
+      <div className="max-w-6xl mx-auto space-y-6">
         {error && (
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
@@ -199,24 +197,50 @@ export default function StudentEvaluationPage() {
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
-        {evaluacionesPendientes.length === 0 ? (
-          <div className="text-center text-muted-foreground">No tienes evaluaciones pendientes.</div>
-        ) : (
-          <div className="grid gap-4">
-            {evaluacionesPendientes.map(ev => (
+
+        {/* Header */}
+        <Card className="border-none shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
+          <CardHeader className="pb-4">
+            <div className="flex items-center gap-3">
+              <div className="p-3 bg-blue-500 rounded-xl">
+                <Users className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl text-blue-900 dark:text-blue-100">
+                  Evaluaciones Pendientes (Estudiante al Docente)
+                </CardTitle>
+                <CardDescription className="text-blue-700 dark:text-blue-300">
+                  Selecciona una evaluación para completar
+                </CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+        </Card>
+
+        {/* Lista de evaluaciones */}
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {evaluacionesPendientes.length === 0 ? (
+            <div className="col-span-full text-center py-12">
+              <div className="text-gray-500 dark:text-gray-400">
+                No tienes evaluaciones pendientes.
+              </div>
+            </div>
+          ) : (
+            evaluacionesPendientes.map((evaluacion) => (
               <EvaluationCard
-                key={ev.idEvaluacion}
-                evaluacion={ev}
+                key={evaluacion.idEvaluacion}
+                evaluacion={evaluacion}
                 colorScheme="blue"
-                onStartEvaluation={() => handleSeleccionarEvaluacion(ev)}
+                onStartEvaluation={iniciarEvaluacion}
               />
-            ))}
-          </div>
-        )}
+            ))
+          )}
+        </div>
       </div>
     );
   }
 
+  // Vista del formulario de evaluación
   return (
     <div className="max-w-4xl mx-auto space-y-6">
       {error && (
@@ -227,19 +251,28 @@ export default function StudentEvaluationPage() {
         </Alert>
       )}
 
-      {/* Header Card */}
+      {/* Header Card con botón de regreso */}
       <Card className="border-none shadow-lg bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-950/20 dark:to-indigo-950/20">
         <CardHeader className="pb-4">
           <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={volverALista}
+              className="mr-2"
+            >
+              <ArrowLeft className="h-4 w-4 mr-2" />
+              Volver
+            </Button>
             <div className="p-3 bg-blue-500 rounded-xl">
               <Users className="h-6 w-6 text-white" />
             </div>
             <div>
               <CardTitle className="text-2xl text-blue-900 dark:text-blue-100">
-                Evaluación Estudiante al Docente
+                Evaluación Estudiante al Docente - Periodo {evaluacionActual?.periodo}
               </CardTitle>
               <CardDescription className="text-blue-700 dark:text-blue-300">
-                Evalúa el desempeño y metodología de tu docente
+                {evaluacionActual?.areaNombre}
               </CardDescription>
             </div>
           </div>
@@ -271,7 +304,7 @@ export default function StudentEvaluationPage() {
                   Nombre del Docente
                 </label>
                 <Input
-                  value={evaluacionInfo.nombreEvaluado}
+                  value={evaluacionActual?.nombreEvaluado || ''}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -281,7 +314,7 @@ export default function StudentEvaluationPage() {
                   Área
                 </label>
                 <Input
-                  value={evaluacionInfo.areaNombre}
+                  value={evaluacionActual?.areaNombre || ''}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -291,7 +324,7 @@ export default function StudentEvaluationPage() {
                   Fecha
                 </label>
                 <Input
-                  value={evaluacionInfo.fechaEvaluacion || new Date().toLocaleDateString()}
+                  value={evaluacionActual?.fechaEvaluacion || new Date().toLocaleDateString()}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -304,7 +337,7 @@ export default function StudentEvaluationPage() {
                   Periodo
                 </label>
                 <Input
-                  value={evaluacionInfo.periodo || ''}
+                  value={evaluacionActual?.periodo || ''}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -314,7 +347,7 @@ export default function StudentEvaluationPage() {
                   Nombre del Estudiante
                 </label>
                 <Input
-                  value={evaluacionInfo.nombreEstudiante || ''}
+                  value={evaluacionActual?.nombreEstudiante || ''}
                   disabled
                   className="bg-white dark:bg-gray-700"
                 />
@@ -421,7 +454,6 @@ export default function StudentEvaluationPage() {
                 )}
               </Button>
             </div>
-            <Button type="button" variant="outline" className="w-full" onClick={() => setSelectedEvaluacion(null)} disabled={enviando}>Volver a la lista</Button>
           </form>
         </CardContent>
       </Card>
