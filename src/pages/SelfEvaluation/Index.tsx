@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getCriteriosPorTipoEvaluacion, crearEvaluacion } from '../../services/evaluacionApi';
+import { getCriteriosPorTipoEvaluacion, crearEvaluacion, actualizarEvaluacion } from '../../services/evaluacionApi';
 import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion } from '../../services/evaluacionPendienteApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ export default function SelfEvaluationPage() {
   const [comentario, setComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
+  const [estadoEvaluacion, setEstadoEvaluacion] = useState('Pendiente');
 
   // Lista de periodos académicos
   const periodosAcademicos = [
@@ -68,6 +69,7 @@ export default function SelfEvaluationPage() {
       // Obtener información de la evaluación
       const infoData = await obtenerInfoEvaluacion(idEvaluacion);
       setEvaluacionActual(infoData.evaluacion);
+      setEstadoEvaluacion(infoData.evaluacion.estado);
       
       // Obtener criterios de autoevaluación
       const criteriosData = await getCriteriosPorTipoEvaluacion(3);
@@ -129,18 +131,14 @@ export default function SelfEvaluationPage() {
     );
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleGuardar = async () => {
     setEnviando(true);
     setError(null);
-    
     try {
-      // Validar que todos los criterios estén calificados
       const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
       if (Object.keys(puntajes).length !== totalSubcriterios) {
-        throw new Error('Debe calificar todos los criterios antes de enviar la autoevaluación');
+        throw new Error('Debe calificar todos los criterios antes de guardar la autoevaluación');
       }
-
       const detalles = [];
       criterios.forEach(criterio => {
         criterio.subcriterios.forEach(sub => {
@@ -152,31 +150,68 @@ export default function SelfEvaluationPage() {
           }
         });
       });
-      
       const score = detalles.length > 0 ? detalles.reduce((a, b) => a + b.puntaje, 0) / detalles.length : 0;
-      const evaluacionData = {
-        date: new Date().toISOString().slice(0, 10),
-        time: new Date().toLocaleTimeString('en-GB', { hour12: false }),
-        score,
-        comments: comentario,
-        status: 'Activo',
-        idTipoEvaluacion: 3,
-        idEvaluador: Number(evaluacionActual?.idEvaluador),
-        idEvaluado: Number(evaluacionActual?.idEvaluado),
-        periodo: evaluacionActual?.periodo,
+      const puntaje20 = Math.round(score * 20 * 100) / 100;
+      await actualizarEvaluacion(evaluacionActual.idEvaluacion, {
+        puntajeTotal: puntaje20,
+        comentario,
+        status: 'Pendiente',
         detalles
-      };
-      
-      const res = await crearEvaluacion(evaluacionData);
-      alert('Autoevaluación enviada exitosamente');
-      setPuntajes({});
-      setComentario('');
+      });
+      alert('Autoevaluación guardada como pendiente. Puedes seguir editando mientras esté en periodo.');
     } catch (e) {
-      setError(e.message || 'Error al enviar autoevaluación');
+      setError(e.message || 'Error al guardar autoevaluación');
     } finally {
       setEnviando(false);
     }
   };
+
+  const handleFinalizar = async () => {
+    setEnviando(true);
+    setError(null);
+    try {
+      const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
+      if (Object.keys(puntajes).length !== totalSubcriterios) {
+        throw new Error('Debe calificar todos los criterios antes de finalizar la autoevaluación');
+      }
+      const detalles = [];
+      criterios.forEach(criterio => {
+        criterio.subcriterios.forEach(sub => {
+          if (puntajes[sub.idSubCriterio]) {
+            detalles.push({
+              idSubCriterio: sub.idSubCriterio,
+              puntaje: Number(puntajes[sub.idSubCriterio])
+            });
+          }
+        });
+      });
+      const score = detalles.length > 0 ? detalles.reduce((a, b) => a + b.puntaje, 0) / detalles.length : 0;
+      const puntaje20 = Math.round(score * 20 * 100) / 100;
+      await actualizarEvaluacion(evaluacionActual.idEvaluacion, {
+        puntajeTotal: puntaje20,
+        comentario,
+        status: 'Completada',
+        detalles
+      });
+      setEstadoEvaluacion('Completada');
+      alert('¡Autoevaluación finalizada! Ya no podrás editarla.');
+    } catch (e) {
+      setError(e.message || 'Error al finalizar autoevaluación');
+    } finally {
+      setEnviando(false);
+    }
+  };
+
+  // Calcular puntaje 0-20 y criterios bajos
+  const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
+  const detallesCriterio = criterios.map(criterio => {
+    const subPuntajes = criterio.subcriterios.map(sub => Number(puntajes[sub.idSubCriterio] || 0));
+    const promedio = subPuntajes.length > 0 ? subPuntajes.reduce((a, b) => a + b, 0) / subPuntajes.length : 0;
+    return { nombre: criterio.nombre, promedio };
+  });
+  const criteriosBajos = detallesCriterio.filter(c => c.promedio < 0.55);
+  const puntajeTotal = totalSubcriterios > 0 ? (Object.values(puntajes).map(Number).reduce((a, b) => a + b, 0) / totalSubcriterios) : 0;
+  const puntaje20 = Math.round(puntajeTotal * 20 * 100) / 100;
 
   const getProgress = () => {
     const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
@@ -307,7 +342,7 @@ export default function SelfEvaluationPage() {
       {/* Form Card */}
       <Card className="shadow-lg">
         <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleGuardar} className="space-y-6">
             {/* Información del Docente Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="space-y-2">
@@ -421,6 +456,41 @@ export default function SelfEvaluationPage() {
                 className="min-h-[100px] resize-none"
               />
             </div>
+
+            {/* Mostrar puntaje y criterios bajos */}
+            <div className="flex flex-col md:flex-row gap-4 items-center justify-between p-4">
+              <div className="text-lg font-bold">Puntaje: {puntaje20} / 20</div>
+              <div className={puntaje20 >= 11 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>
+                {puntaje20 >= 11 ? 'Aprobado' : 'Desaprobado'}
+              </div>
+            </div>
+            {criteriosBajos.length > 0 && (
+              <Alert variant="warning" className="mb-4">
+                <AlertTitle>¡Atención!</AlertTitle>
+                <AlertDescription>
+                  Los siguientes criterios tienen un promedio bajo:
+                  <ul className="list-disc ml-6">
+                    {criteriosBajos.map(c => (
+                      <li key={c.nombre}>{c.nombre} (promedio: {Math.round(c.promedio * 100) / 100})</li>
+                    ))}
+                  </ul>
+                </AlertDescription>
+              </Alert>
+            )}
+
+            {/* Botones Guardar y Finalizar */}
+            {estadoEvaluacion === 'Pendiente' && (
+              <div className="flex gap-4 justify-end">
+                <Button type="button" onClick={handleGuardar} disabled={enviando || loading} variant="outline">Guardar</Button>
+                <Button type="button" onClick={handleFinalizar} disabled={enviando || loading} className="bg-purple-600 text-white">Finalizar</Button>
+              </div>
+            )}
+            {estadoEvaluacion === 'Completada' && (
+              <Alert variant="success" className="mt-4">¡Autoevaluación finalizada! Ya no puedes editarla.</Alert>
+            )}
+            {estadoEvaluacion === 'Cancelada' && (
+              <Alert variant="destructive" className="mt-4">La autoevaluación fue cancelada por pasar la fecha/hora límite.</Alert>
+            )}
 
             {/* Submit Button */}
             <div className="flex justify-end pt-4">
