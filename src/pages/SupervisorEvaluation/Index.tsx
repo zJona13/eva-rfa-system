@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getCriteriosPorTipoEvaluacion, crearEvaluacion } from '../../services/evaluacionApi';
-import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion } from '../../services/evaluacionPendienteApi';
+import { getCriteriosPorTipoEvaluacion, crearEvaluacion, actualizarEvaluacion } from '../../services/evaluacionApi';
+import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion, obtenerTodasLasEvaluacionesPorUsuarioYTipo } from '../../services/evaluacionPendienteApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,9 +17,11 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem } from '
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { cn } from '@/lib/utils';
 import { getToken } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
 
 export default function SupervisorEvaluationPage() {
-  const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
+  const [historialEvaluaciones, setHistorialEvaluaciones] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
   const [evaluacionActual, setEvaluacionActual] = useState(null);
   const [criterios, setCriterios] = useState([]);
@@ -30,15 +32,8 @@ export default function SupervisorEvaluationPage() {
   const [error, setError] = useState(null);
   const [docentes, setDocentes] = useState([]);
   const [open, setOpen] = useState(false);
-  const [evaluacionInfo, setEvaluacionInfo] = useState({
-    nombreDocente: '',
-    nombreSupervisor: '',
-    area: '',
-    fecha: new Date().toLocaleDateString(),
-    periodo: '',
-    idDocente: '',
-    idSupervisor: ''
-  });
+  const [estadoEvaluacion, setEstadoEvaluacion] = useState('Pendiente');
+  const navigate = useNavigate();
 
   // Lista de periodos académicos
   const periodosAcademicos = [
@@ -49,11 +44,11 @@ export default function SupervisorEvaluationPage() {
   ];
 
   useEffect(() => {
-    const fetchEvaluacionesPendientes = async () => {
+    const fetchEvaluaciones = async () => {
       try {
         setError(null);
+        setLoading(true);
         const token = getToken();
-        // Obtener información del usuario actual
         const response = await fetch('http://localhost:3309/api/users/current', {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
@@ -61,18 +56,18 @@ export default function SupervisorEvaluationPage() {
           throw new Error('Error al obtener información del usuario');
         }
         const userData = await response.json();
-        // Obtener evaluaciones pendientes de supervisor (tipo 2)
-        const evaluacionesData = await obtenerEvaluacionesPendientes(userData.id, 2);
-        setEvaluacionesPendientes(evaluacionesData.evaluaciones || []);
+        // Obtener TODAS las evaluaciones de supervisor (tipo 2) del usuario
+        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userData.id, 2);
+        setHistorialEvaluaciones(evaluacionesData.evaluaciones || []);
         setLoading(false);
       } catch (error) {
-        console.error('Error al cargar evaluaciones pendientes:', error);
+        console.error('Error al cargar historial de evaluaciones de supervisor:', error);
         setError(error.message);
         setLoading(false);
       }
     };
 
-    fetchEvaluacionesPendientes();
+    fetchEvaluaciones();
   }, []);
 
   const iniciarEvaluacion = async (idEvaluacion) => {
@@ -80,18 +75,48 @@ export default function SupervisorEvaluationPage() {
       setLoading(true);
       setError(null);
       
-      // Obtener información de la evaluación
+      // Obtener información de la evaluación, que ahora incluye detalles
       const infoData = await obtenerInfoEvaluacion(idEvaluacion);
-      setEvaluacionActual(infoData.evaluacion);
+      const evaluacionCargada = infoData.evaluacion;
+
+      console.log('Evaluación de supervisor cargada (iniciarEvaluacion):', evaluacionCargada);
+
+      setEvaluacionActual(evaluacionCargada);
+      setEstadoEvaluacion(evaluacionCargada.estado);
+      setComentario(evaluacionCargada.comentario || ''); // Cargar comentario
+
+      // Cargar puntajes si existen detalles guardados
+      if (evaluacionCargada.detalles && Array.isArray(evaluacionCargada.detalles)) {
+        const loadedPuntajes = {};
+        evaluacionCargada.detalles.forEach(detalle => {
+          let formattedPuntaje;
+          if (parseFloat(detalle.puntaje) === 1) {
+            formattedPuntaje = '1';
+          } else if (parseFloat(detalle.puntaje) === 0.5) {
+            formattedPuntaje = '0.5';
+          } else if (parseFloat(detalle.puntaje) === 0) {
+            formattedPuntaje = '0';
+          } else {
+            formattedPuntaje = ''; 
+          }
+          loadedPuntajes[detalle.idSubCriterio] = formattedPuntaje;
+        });
+        setPuntajes(loadedPuntajes);
+        console.log('Puntajes cargados (loadedPuntajes):', loadedPuntajes);
+      } else {
+        setPuntajes({});
+        console.log('No se encontraron detalles para cargar puntajes.');
+      }
       
-      // Obtener criterios de evaluación supervisor-docente
+      // Obtener criterios de evaluación supervisor-docente (tipo 2)
       const criteriosData = await getCriteriosPorTipoEvaluacion(2);
       setCriterios(criteriosData.criterios);
+      console.log('Criterios obtenidos (criteriosData.criterios):', criteriosData.criterios);
       
       setMostrarFormulario(true);
       setLoading(false);
     } catch (error) {
-      console.error('Error al iniciar evaluación:', error);
+      console.error('Error al iniciar evaluación de supervisor (iniciarEvaluacion):', error);
       setError(error.message);
       setLoading(false);
     }
@@ -104,6 +129,7 @@ export default function SupervisorEvaluationPage() {
     setPuntajes({});
     setComentario('');
     setError(null);
+    setEstadoEvaluacion('Pendiente'); // Resetear el estado al volver a la lista
   };
 
   const handlePuntaje = (idSubCriterio, valor) => {
@@ -111,16 +137,16 @@ export default function SupervisorEvaluationPage() {
   };
 
   const handlePeriodoChange = (value) => {
-    setEvaluacionInfo(prev => ({ ...prev, periodo: value }));
+    //setEvaluacionInfo(prev => ({ ...prev, periodo: value })); // No es necesario si se carga por asignación
   };
 
   const handleDocenteSelect = (docente) => {
-    setEvaluacionInfo(prev => ({
-      ...prev,
-      nombreDocente: docente.name,
-      idDocente: docente.id
-    }));
-    setOpen(false);
+    //setEvaluacionInfo(prev => ({ // No es necesario si se carga por asignación
+    //  ...prev,
+    //  nombreDocente: docente.name,
+    //  idDocente: docente.id
+    //}));
+    //setOpen(false);
   };
 
   const renderRatingOptions = (idSubCriterio, currentValue) => {
@@ -136,10 +162,15 @@ export default function SupervisorEvaluationPage() {
           value={currentValue || ''}
           onValueChange={(value) => handlePuntaje(idSubCriterio, value)}
           className="space-y-2"
+          disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
         >
           {options.map((option) => (
             <div key={option.value} className="flex items-center space-x-2">
-              <RadioGroupItem value={option.value} id={`${idSubCriterio}-${option.value}`} />
+              <RadioGroupItem 
+                value={option.value} 
+                id={`${idSubCriterio}-${option.value}`} 
+                disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
+              />
               <Label 
                 htmlFor={`${idSubCriterio}-${option.value}`} 
                 className={`text-sm cursor-pointer ${option.color} font-medium`}
@@ -153,21 +184,16 @@ export default function SupervisorEvaluationPage() {
     );
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleEnviar = async () => {
     setEnviando(true);
     setError(null);
     
     try {
-      // Validar que todos los criterios estén calificados
       const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
       if (Object.keys(puntajes).length !== totalSubcriterios) {
-        throw new Error('Debe calificar todos los criterios antes de enviar la evaluación');
-      }
-
-      // Validar que se haya seleccionado un docente
-      if (!evaluacionInfo.idDocente) {
-        throw new Error('Debe seleccionar un docente para evaluar');
+        const errorMessage = 'Debe calificar todos los criterios antes de enviar la evaluación';
+        console.error('Error de validación frontend (handleEnviar):', errorMessage);
+        throw new Error(errorMessage);
       }
 
       const detalles = [];
@@ -183,29 +209,55 @@ export default function SupervisorEvaluationPage() {
       });
       
       const score = detalles.length > 0 ? detalles.reduce((a, b) => a + b.puntaje, 0) / detalles.length : 0;
-      const evaluacionData = {
-        date: new Date().toISOString().slice(0, 10),
-        time: new Date().toLocaleTimeString('en-GB', { hour12: false }),
-        score,
-        comments: comentario,
-        status: 'Activo',
-        idTipoEvaluacion: 2,
-        idEvaluador: Number(evaluacionInfo.idSupervisor),
-        idEvaluado: Number(evaluacionInfo.idDocente),
-        periodo: evaluacionInfo.periodo,
+      const puntaje20 = Math.round(score * 20 * 100) / 100;
+
+      const evaluacionDataToSend = {
+        puntajeTotal: puntaje20,
+        comentario,
+        status: 'Activo', // Se guarda como Activo para permitir ediciones
         detalles
       };
       
-      const res = await crearEvaluacion(evaluacionData);
-      alert('Evaluación enviada exitosamente');
-      setPuntajes({});
-      setComentario('');
+      console.log('Enviando evaluación de supervisor - ID de evaluación:', evaluacionActual.idEvaluacion);
+      console.log('Datos a enviar:', evaluacionDataToSend);
+
+      const result = await actualizarEvaluacion(evaluacionActual.idEvaluacion, evaluacionDataToSend);
+      
+      if (result.success) {
+        setEstadoEvaluacion('Activo');
+        toast.success('Evaluación enviada', {
+          description: 'Puedes seguir editando mientras la asignación esté activa.',
+        });
+        console.log('Evaluación de supervisor enviada exitosamente.', result);
+        volverALista();
+        navigate('/supervisor-evaluation');
+      } else {
+        console.error('Error en la respuesta del backend (handleEnviar):', result.message);
+        throw new Error(result.message);
+      }
     } catch (e) {
+      console.error('Error general al enviar evaluación de supervisor (handleEnviar):', e.message);
       setError(e.message || 'Error al enviar evaluación');
     } finally {
       setEnviando(false);
     }
   };
+
+  const handleCancelar = () => {
+    volverALista();
+    navigate('/supervisor-evaluation');
+  };
+
+  // Calcular puntaje 0-20 y criterios bajos
+  const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
+  const detallesCriterio = criterios.map(criterio => {
+    const subPuntajes = criterio.subcriterios.map(sub => Number(puntajes[sub.idSubCriterio] || 0));
+    const promedio = subPuntajes.length > 0 ? subPuntajes.reduce((a, b) => a + b, 0) / subPuntajes.length : 0;
+    return { nombre: criterio.nombre, promedio };
+  });
+  const criteriosBajos = detallesCriterio.filter(c => c.promedio < 0.55);
+  const puntajeTotal = totalSubcriterios > 0 ? (Object.values(puntajes).map(Number).reduce((a, b) => a + b, 0) / totalSubcriterios) : 0;
+  const puntaje20 = Math.round(puntajeTotal * 20 * 100) / 100;
 
   const getProgress = () => {
     const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
@@ -226,7 +278,7 @@ export default function SupervisorEvaluationPage() {
     );
   }
 
-  // Vista de lista de evaluaciones pendientes
+  // Vista de lista de evaluaciones
   if (!mostrarFormulario) {
     return (
       <div className="max-w-6xl mx-auto space-y-6">
@@ -235,6 +287,7 @@ export default function SupervisorEvaluationPage() {
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
+            <button onClick={() => setError(null)} className="text-sm mt-2 underline">Cerrar</button>
           </Alert>
         )}
 
@@ -247,10 +300,10 @@ export default function SupervisorEvaluationPage() {
               </div>
               <div>
                 <CardTitle className="text-2xl text-green-900 dark:text-green-100">
-                  Evaluaciones de Supervisión Pendientes
+                  Historial de Evaluaciones (Supervisor al Docente)
                 </CardTitle>
                 <CardDescription className="text-green-700 dark:text-green-300">
-                  Selecciona una evaluación para completar
+                  Revisa tus evaluaciones de supervisor a docente.
                 </CardDescription>
               </div>
             </div>
@@ -259,19 +312,19 @@ export default function SupervisorEvaluationPage() {
 
         {/* Lista de evaluaciones */}
         <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {evaluacionesPendientes.length === 0 ? (
+          {historialEvaluaciones.length === 0 ? (
             <div className="col-span-full text-center py-12">
               <div className="text-gray-500 dark:text-gray-400">
-                No tienes evaluaciones de supervisión pendientes
+                No tienes evaluaciones de supervisor a docente en tu historial.
               </div>
             </div>
           ) : (
-            evaluacionesPendientes.map((evaluacion) => (
+            historialEvaluaciones.map((evaluacion) => (
               <EvaluationCard
                 key={evaluacion.idEvaluacion}
                 evaluacion={evaluacion}
-                onStartEvaluation={iniciarEvaluacion}
                 colorScheme="green"
+                onStartEvaluation={iniciarEvaluacion}
               />
             ))
           )}
@@ -288,215 +341,99 @@ export default function SupervisorEvaluationPage() {
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>Error</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
+          <button onClick={() => setError(null)} className="text-sm mt-2 underline">Cerrar</button>
         </Alert>
       )}
 
-      {/* Header con botón de regreso */}
-      <Card className="border-none shadow-lg bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-950/20 dark:to-emerald-950/20">
-        <CardHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              size="sm" 
-              onClick={volverALista}
-              className="mr-2"
-            >
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Volver
-            </Button>
-            <div className="p-3 bg-green-500 rounded-xl">
-              <ClipboardCheck className="h-6 w-6 text-white" />
+      <div className="flex items-center gap-3">
+        <Button variant="ghost" size="icon" onClick={volverALista}>
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+        <h1 className="text-3xl font-bold tracking-tight">Evaluar Docente</h1>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Detalles de la Evaluación</CardTitle>
+          <CardDescription>Completa el formulario para evaluar al docente.</CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <Label>Docente</Label>
+              <Input value={evaluacionActual?.nombreEvaluado || ''} disabled />
             </div>
             <div>
-              <CardTitle className="text-2xl text-green-900 dark:text-green-100">
-                Evaluación Supervisor-Docente - Periodo {evaluacionActual?.periodo}
-              </CardTitle>
-              <CardDescription className="text-green-700 dark:text-green-300">
-                {evaluacionActual?.areaNombre}
-              </CardDescription>
+              <Label>Curso</Label>
+              <Input value={evaluacionActual?.nombreAsignacion || ''} disabled />
             </div>
           </div>
-          
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-green-700 dark:text-green-300 mb-2">
-              <span>Progreso de evaluación</span>
-              <span>{Math.round(getProgress())}% completado</span>
-            </div>
-            <div className="w-full bg-green-200 dark:bg-green-800 rounded-full h-2">
-              <div 
-                className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${getProgress()}%` }}
-              />
-            </div>
+          <div>
+            <Label>Período Académico</Label>
+            <Input value={evaluacionActual?.periodo || ''} disabled />
           </div>
-        </CardHeader>
-      </Card>
 
-      {/* Form Card */}
-      <Card className="shadow-lg">
-        <CardContent className="p-6">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Información de la Evaluación Section */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Nombre del Docente
-                </label>
-                <Input
-                  value={evaluacionActual?.nombreEvaluado || ''}
-                  disabled
-                  className="bg-white dark:bg-gray-700"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Nombre del Supervisor
-                </label>
-                <Input
-                  value={evaluacionActual?.nombreEvaluador || ''}
-                  disabled
-                  className="bg-white dark:bg-gray-700"
-                />
-              </div>
-            </div>
+          <Separator />
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Área
-                </label>
-                <Input
-                  value={evaluacionActual?.areaNombre || ''}
-                  disabled
-                  className="bg-white dark:bg-gray-700"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Periodo
-                </label>
-                <Input
-                  value={evaluacionActual?.periodo || ''}
-                  disabled
-                  className="bg-white dark:bg-gray-700"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Fecha
-                </label>
-                <Input
-                  value={new Date().toLocaleDateString()}
-                  disabled
-                  className="bg-white dark:bg-gray-700"
-                />
-              </div>
-            </div>
-
-            {/* Criterios Section */}
-            {loading ? (
-              <div className="flex items-center justify-center py-12">
-                <div className="flex items-center gap-3">
-                  <Loader2 className="h-6 w-6 animate-spin text-green-500" />
-                  <span className="text-lg font-medium text-gray-600 dark:text-gray-400">
-                    Cargando criterios...
-                  </span>
+          <h2 className="text-xl font-semibold">Criterios de Evaluación</h2>
+          {criterios.map((criterio) => (
+            <div key={criterio.idCriterio} className="space-y-4">
+              <h3 className="text-lg font-medium">{criterio.nombre}</h3>
+              {criterio.subcriterios.map((sub) => (
+                <div key={sub.idSubCriterio} className="ml-4 p-3 border rounded-md">
+                  <p className="font-medium text-gray-800 dark:text-gray-200 mb-2">{sub.nombre}</p>
+                  {renderRatingOptions(sub.idSubCriterio, puntajes[sub.idSubCriterio])}
                 </div>
-              </div>
-            ) : (
-              <div className="space-y-6">
-                {criterios.map((criterio, index) => (
-                  <Card key={criterio.idCriterio} className="border-l-4 border-l-green-500">
-                    <CardHeader className="pb-4">
-                      <div className="flex items-center gap-3">
-                        <Badge variant="secondary" className="text-xs">
-                          Criterio {index + 1}
-                        </Badge>
-                        <CheckSquare className="h-5 w-5 text-green-500" />
-                      </div>
-                      <CardTitle className="text-lg text-gray-900 dark:text-gray-100">
-                        {criterio.nombre}
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-6">
-                        {criterio.subcriterios.map((sub, subIndex) => (
-                          <div key={sub.idSubCriterio} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                            <div className="flex flex-col space-y-4">
-                              <div className="flex items-start justify-between">
-                                <div className="flex-1">
-                                  <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
-                                    {sub.nombre}
-                                  </h4>
-                                  {sub.descripcion && (
-                                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                                      {sub.descripcion}
-                                    </p>
-                                  )}
-                                </div>
-                                <Badge variant="outline" className="ml-4">
-                                  {subIndex + 1}
-                                </Badge>
-                              </div>
-                              
-                              <div className="space-y-3">
-                                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                                  Calificación:
-                                </span>
-                                {renderRatingOptions(sub.idSubCriterio, puntajes[sub.idSubCriterio])}
-                              </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-
-            <Separator />
-
-            {/* Comentarios Section */}
-            <div className="space-y-3">
-              <div className="flex items-center gap-2">
-                <MessageSquare className="h-5 w-5 text-gray-500" />
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Comentarios adicionales (opcional)
-                </label>
-              </div>
-              <Textarea
-                placeholder="Agregue comentarios adicionales sobre la evaluación..."
-                value={comentario}
-                onChange={e => setComentario(e.target.value)}
-                className="min-h-[100px] resize-none"
-              />
+              ))}
             </div>
+          ))}
 
-            {/* Submit Button */}
-            <div className="flex justify-end pt-4">
-              <Button 
-                type="submit" 
-                disabled={enviando || loading}
-                className="px-8 py-3 bg-green-500 hover:bg-green-600 text-white font-medium"
-              >
-                {enviando ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Enviar Evaluación
-                  </>
-                )}
-              </Button>
-            </div>
-          </form>
+          <Separator />
+
+          <h2 className="text-xl font-semibold">Comentarios Adicionales</h2>
+          <Textarea
+            placeholder="Escribe tus comentarios aquí..."
+            value={comentario}
+            onChange={(e) => setComentario(e.target.value)}
+            rows={5}
+            disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
+          />
         </CardContent>
       </Card>
+
+      <div className="flex justify-end space-x-4">
+        <Button variant="outline" onClick={handleCancelar} disabled={enviando}>
+          <ArrowLeft className="mr-2 h-4 w-4" />
+          Cancelar
+        </Button>
+        <Button onClick={handleEnviar} disabled={enviando || estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}>
+          {enviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Send className="mr-2 h-4 w-4" />
+          Enviar
+        </Button>
+      </div>
+
+      {/* Sección de Resumen y Recomendaciones */}
+      {(estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada') && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Resumen de la Evaluación</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-lg font-semibold">Puntaje Total: <span className="text-green-600">{puntaje20} / 20</span></p>
+            {criteriosBajos.length > 0 && (
+              <div className="space-y-2">
+                <h3 className="font-medium">Criterios con menor puntaje:</h3>
+                <ul className="list-disc pl-5">
+                  {criteriosBajos.map((c, index) => (
+                    <li key={index} className="text-sm text-red-600">{c.nombre} (Promedio: {(c.promedio * 100).toFixed(0)}%)</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }
