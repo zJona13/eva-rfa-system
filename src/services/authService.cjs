@@ -242,7 +242,6 @@ const resetPassword = async (email, code, newPassword) => {
 const login = async (correo, contrasena) => {
   try {
     console.log('🔐 Iniciando proceso de login para:', correo);
-    
     // Consulta ajustada a la estructura real de la base de datos
     const [users] = await pool.execute(
       `SELECT u.idUsuario, u.correo, u.contrasena, u.estado,
@@ -272,10 +271,21 @@ const login = async (correo, contrasena) => {
     }
 
     const isPasswordValid = await bcrypt.compare(contrasena, user.contrasena);
-    
     if (!isPasswordValid) {
       console.log('❌ Contraseña incorrecta para:', correo);
       return { success: false, message: 'Contraseña incorrecta' };
+    }
+
+    let estudianteName = null;
+    if (user.role.toLowerCase() === 'estudiante') {
+      // Buscar nombre completo del estudiante
+      const [estRows] = await pool.execute(
+        `SELECT CONCAT(nombreEstudiante, ' ', apePaEstudiante, ' ', apeMaEstudiante) as estudianteName FROM ESTUDIANTE WHERE idUsuario = ?`,
+        [user.idUsuario]
+      );
+      if (estRows.length > 0) {
+        estudianteName = estRows[0].estudianteName;
+      }
     }
 
     // Login exitoso, generar token
@@ -284,7 +294,9 @@ const login = async (correo, contrasena) => {
       email: user.correo,
       role: user.role,
       colaboradorId: user.idColaborador,
-      colaboradorName: user.colaboradorName
+      colaboradorName: user.colaboradorName,
+      estudianteName: estudianteName,
+      name: user.colaboradorName || estudianteName || user.correo
     };
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '8h' });
 

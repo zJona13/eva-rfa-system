@@ -43,16 +43,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   // Función para mapear roles de la API a tipos UserRole
   const mapRole = (role: string): UserRole => {
-    switch(role) {
-      case 'Administrador':
+    switch(role?.toLowerCase()) {
+      case 'administrador':
         return 'admin';
-      case 'Evaluador':
+      case 'evaluador':
         return 'evaluator';
-      case 'Evaluado':
+      case 'evaluado':
         return 'evaluated';
-      case 'Estudiante':
+      case 'estudiante':
         return 'student';
-      case 'Validador':
+      case 'validador':
         return 'validator';
       default:
         return 'guest';
