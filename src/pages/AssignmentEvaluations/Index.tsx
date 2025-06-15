@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -100,23 +99,23 @@ const AssignmentEvaluations = () => {
     let filtered = evaluations;
 
     if (searchTerm) {
-      filtered = filtered.filter(eval => 
-        eval.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        eval.evaluator.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        eval.area.toLowerCase().includes(searchTerm.toLowerCase())
+      filtered = filtered.filter(evaluation => 
+        evaluation.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        evaluation.evaluator.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        evaluation.area.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
 
     if (statusFilter !== 'all') {
-      filtered = filtered.filter(eval => eval.status === statusFilter);
+      filtered = filtered.filter(evaluation => evaluation.status === statusFilter);
     }
 
     if (typeFilter !== 'all') {
-      filtered = filtered.filter(eval => eval.type === typeFilter);
+      filtered = filtered.filter(evaluation => evaluation.type === typeFilter);
     }
 
     if (periodFilter !== 'all') {
-      filtered = filtered.filter(eval => eval.period === periodFilter);
+      filtered = filtered.filter(evaluation => evaluation.period === periodFilter);
     }
 
     setFilteredEvaluations(filtered);
