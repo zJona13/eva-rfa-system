@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { getCriteriosPorTipoEvaluacion, crearEvaluacion, actualizarEvaluacion } from '../../services/evaluacionApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,8 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label } from '@/components/ui/label';
-import { Users, BookOpen, MessageSquare, Send, Loader2, AlertCircle, ArrowLeft } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Users, BookOpen, MessageSquare, Send, Loader2, AlertCircle, ArrowLeft, CheckCircle2, TrendingUp, Award, Star, Target, Zap } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EvaluationCard from '../../components/EvaluationCard';
@@ -40,7 +41,6 @@ export default function StudentEvaluationPage() {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         const userData = await resUser.json();
-        // Obtener TODAS las evaluaciones de estudiante a docente (tipo 1) del usuario
         const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userData.id, 1);
         setHistorialEvaluaciones(evaluacionesData.evaluaciones || []);
       } catch (e) {
@@ -57,7 +57,6 @@ export default function StudentEvaluationPage() {
     setLoading(true);
     setError(null);
     try {
-      // Obtener información de la evaluación, que ahora incluye detalles
       const infoData = await obtenerInfoEvaluacion(idEvaluacion);
       const evaluacionCargada = infoData.evaluacion;
 
@@ -65,9 +64,8 @@ export default function StudentEvaluationPage() {
 
       setEvaluacionActual(evaluacionCargada);
       setEstadoEvaluacion(evaluacionCargada.estado);
-      setComentario(evaluacionCargada.comentario || ''); // Cargar comentario
+      setComentario(evaluacionCargada.comentario || '');
 
-      // Cargar puntajes si existen detalles guardados
       if (evaluacionCargada.detalles && Array.isArray(evaluacionCargada.detalles)) {
         const loadedPuntajes = {};
         evaluacionCargada.detalles.forEach(detalle => {
@@ -90,7 +88,6 @@ export default function StudentEvaluationPage() {
         console.log('No se encontraron detalles para cargar puntajes.');
       }
       
-      // Obtener criterios de evaluación tipo 1
       const criteriosData = await getCriteriosPorTipoEvaluacion(1);
       setCriterios(criteriosData.criterios);
       console.log('Criterios obtenidos (criteriosData.criterios):', criteriosData.criterios);
@@ -111,7 +108,7 @@ export default function StudentEvaluationPage() {
     setPuntajes({});
     setComentario('');
     setError(null);
-    setEstadoEvaluacion('Pendiente'); // Resetear el estado al volver a la lista
+    setEstadoEvaluacion('Pendiente');
   };
 
   const handlePuntaje = (idSubCriterio, valor) => {
@@ -120,9 +117,9 @@ export default function StudentEvaluationPage() {
 
   const renderRatingOptions = (idSubCriterio, currentValue) => {
     const options = [
-      { value: '1', label: 'Cumple Totalmente / Observado Satisfactoriamente', color: 'text-green-600' },
-      { value: '0.5', label: 'Cumple Parcialmente / Observado con Áreas de Mejora', color: 'text-yellow-600' },
-      { value: '0', label: 'No Cumple / No Observado', color: 'text-red-600' }
+      { value: '1', label: 'Cumple Totalmente / Observado Satisfactoriamente', color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-950/20' },
+      { value: '0.5', label: 'Cumple Parcialmente / Observado con Áreas de Mejora', color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-950/20' },
+      { value: '0', label: 'No Cumple / No Observado', color: 'text-red-500 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-950/20' }
     ];
 
     return (
@@ -130,19 +127,24 @@ export default function StudentEvaluationPage() {
         <RadioGroup
           value={currentValue || ''}
           onValueChange={(value) => handlePuntaje(idSubCriterio, value)}
-          className="space-y-2"
+          className="space-y-3"
           disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
         >
           {options.map((option) => (
-            <div key={option.value} className="flex items-center space-x-2">
+            <div key={option.value} className={`flex items-center space-x-3 p-3 rounded-lg border-2 transition-all duration-200 hover:shadow-md ${
+              currentValue === option.value 
+                ? `${option.bgColor} border-current shadow-sm` 
+                : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+            }`}>
               <RadioGroupItem 
                 value={option.value} 
                 id={`${idSubCriterio}-${option.value}`} 
                 disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
+                className="border-2"
               />
               <Label 
                 htmlFor={`${idSubCriterio}-${option.value}`} 
-                className={`text-sm cursor-pointer ${option.color} font-medium`}
+                className={`text-sm cursor-pointer ${option.color} font-medium flex-1`}
               >
                 {option.label}
               </Label>
@@ -180,7 +182,7 @@ export default function StudentEvaluationPage() {
       const evaluacionDataToSend = {
         puntajeTotal: puntaje20,
         comentario,
-        status: 'Activo', // Se guarda como Activo para permitir ediciones
+        status: 'Activo',
         detalles
       };
 
@@ -229,6 +231,27 @@ export default function StudentEvaluationPage() {
     const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
     const completedSubcriterios = Object.keys(puntajes).length;
     return totalSubcriterios > 0 ? (completedSubcriterios / totalSubcriterios) * 100 : 0;
+  };
+
+  const getScoreColor = (score) => {
+    if (score >= 16) return 'text-emerald-500';
+    if (score >= 12) return 'text-blue-500';
+    if (score >= 8) return 'text-amber-500';
+    return 'text-red-500';
+  };
+
+  const getScoreIcon = (score) => {
+    if (score >= 16) return Award;
+    if (score >= 12) return Star;
+    if (score >= 8) return Target;
+    return TrendingUp;
+  };
+
+  const getScoreMessage = (score) => {
+    if (score >= 16) return { title: '¡Excelente Evaluación!', subtitle: 'Evaluación sobresaliente del docente' };
+    if (score >= 12) return { title: 'Buena Evaluación', subtitle: 'Evaluación satisfactoria del docente' };
+    if (score >= 8) return { title: 'Evaluación Regular', subtitle: 'Hay oportunidades de mejora' };
+    return { title: 'Necesita Mejoras', subtitle: 'Se requiere plan de desarrollo' };
   };
 
   if (loading) {
@@ -301,6 +324,24 @@ export default function StudentEvaluationPage() {
   // Vista del formulario de evaluación
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Barra de progreso sticky */}
+      {mostrarFormulario && (
+        <div className="sticky top-0 z-40 bg-white/95 dark:bg-gray-900/95 backdrop-blur-sm border-b shadow-sm">
+          <div className="max-w-4xl mx-auto p-4">
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-blue-500" />
+                <span className="font-medium text-gray-900 dark:text-gray-100">Evaluación Estudiante-Docente</span>
+              </div>
+              <div className="text-sm text-gray-600 dark:text-gray-400">
+                {Object.keys(puntajes).length} de {totalSubcriterios} criterios
+              </div>
+            </div>
+            <Progress value={getProgress()} className="h-2" />
+          </div>
+        </div>
+      )}
+
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -314,86 +355,273 @@ export default function StudentEvaluationPage() {
         <Button variant="ghost" size="icon" onClick={volverALista}>
           <ArrowLeft className="h-5 w-5" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Evaluar Docente</h1>
+        <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          Evaluar Docente
+        </h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Detalles de la Evaluación</CardTitle>
-          <CardDescription>Completa el formulario para evaluar al docente.</CardDescription>
+      <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20">
+        <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+          <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+            <BookOpen className="h-5 w-5" />
+            Detalles de la Evaluación
+          </CardTitle>
+          <CardDescription className="text-blue-700 dark:text-blue-300">
+            Completa el formulario para evaluar al docente.
+          </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-6 p-6">
           <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Docente</Label>
-              <Input value={evaluacionActual?.nombreEvaluado || ''} disabled />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Docente</Label>
+              <Input 
+                value={evaluacionActual?.nombreEvaluado || ''} 
+                disabled 
+                className="bg-gray-50 dark:bg-gray-800/50"
+              />
             </div>
-            <div>
-              <Label>Curso</Label>
-              <Input value={evaluacionActual?.nombreAsignacion || ''} disabled />
+            <div className="space-y-2">
+              <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Curso</Label>
+              <Input 
+                value={evaluacionActual?.nombreAsignacion || ''} 
+                disabled 
+                className="bg-gray-50 dark:bg-gray-800/50"
+              />
             </div>
           </div>
-          <div>
-            <Label>Período Académico</Label>
-            <Input value={evaluacionActual?.periodo || ''} disabled />
+          <div className="space-y-2">
+            <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">Período Académico</Label>
+            <Input 
+              value={evaluacionActual?.periodo || ''} 
+              disabled 
+              className="bg-gray-50 dark:bg-gray-800/50"
+            />
           </div>
+        </CardContent>
+      </Card>
 
-          <Separator />
+      <div className="space-y-6">
+        <div className="flex items-center gap-3 mb-6">
+          <CheckCircle2 className="h-6 w-6 text-blue-500" />
+          <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Criterios de Evaluación</h2>
+        </div>
 
-          <h2 className="text-xl font-semibold">Criterios de Evaluación</h2>
-          {criterios.map((criterio) => (
-            <div key={criterio.idCriterio} className="space-y-4">
-              <h3 className="text-lg font-medium">{criterio.nombre}</h3>
-              {criterio.subcriterios.map((sub) => (
-                <div key={sub.idSubCriterio} className="ml-4 p-3 border rounded-md">
-                  <p className="font-medium text-gray-800 dark:text-gray-200 mb-2">{sub.nombre}</p>
-                  {renderRatingOptions(sub.idSubCriterio, puntajes[sub.idSubCriterio])}
-                </div>
-              ))}
-            </div>
-          ))}
+        {criterios.length === 0 ? (
+          <Card className="p-8 text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-blue-500" />
+            <p className="text-gray-600 dark:text-gray-400">Cargando criterios de evaluación...</p>
+          </Card>
+        ) : (
+          <div className="space-y-8">
+            {criterios.map((criterio, index) => (
+              <Card key={criterio.idCriterio} className="border-l-4 border-l-blue-500 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-r from-white to-blue-50/30 dark:from-blue-950/20">
+                <CardHeader className="pb-4 bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+                  <div className="flex items-center gap-3">
+                    <Badge variant="secondary" className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+                      Criterio {index + 1}
+                    </Badge>
+                    <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">
+                      {criterio.subcriterios?.length || 0} subcriterios
+                    </span>
+                  </div>
+                  <CardTitle className="text-xl text-blue-900 dark:text-blue-100">
+                    {criterio.nombre}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {criterio.subcriterios?.map((sub, subIndex) => (
+                    <div key={sub.idSubCriterio} className="p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                      <div className="flex items-start gap-3 mb-4">
+                        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-600 border-blue-200 dark:bg-blue-950/50 dark:text-blue-400 dark:border-blue-800">
+                          {index + 1}.{subIndex + 1}
+                        </Badge>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-gray-900 dark:text-gray-100 mb-2 leading-relaxed">
+                            {sub.nombre}
+                          </h4>
+                          {renderRatingOptions(sub.idSubCriterio, puntajes[sub.idSubCriterio])}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
 
-          <Separator />
-
-          <h2 className="text-xl font-semibold">Comentarios Adicionales</h2>
+      <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50/30 dark:from-gray-800 dark:to-blue-950/20">
+        <CardHeader className="bg-gradient-to-r from-blue-50/50 to-indigo-50/50 dark:from-blue-950/20 dark:to-indigo-950/20">
+          <CardTitle className="flex items-center gap-2 text-blue-900 dark:text-blue-100">
+            <MessageSquare className="h-5 w-5" />
+            Comentarios Adicionales
+          </CardTitle>
+          <CardDescription className="text-blue-700 dark:text-blue-300">
+            Comparte observaciones adicionales sobre el desempeño del docente (opcional)
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
           <Textarea
-            placeholder="Escribe tus comentarios aquí..."
+            placeholder="Escribe tus comentarios y observaciones aquí..."
             value={comentario}
             onChange={(e) => setComentario(e.target.value)}
             rows={5}
             disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
+            className="min-h-[120px] resize-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           />
         </CardContent>
       </Card>
 
-      <div className="flex justify-end space-x-4">
-        <Button variant="outline" onClick={handleCancelar} disabled={enviando}>
+      <div className="flex justify-end space-x-4 pt-6">
+        <Button variant="outline" onClick={handleCancelar} disabled={enviando} className="px-6">
           <ArrowLeft className="mr-2 h-4 w-4" />
           Cancelar
         </Button>
-        <Button onClick={handleEnviar} disabled={enviando || estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}>
+        <Button 
+          onClick={handleEnviar} 
+          disabled={enviando || estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
+          className="px-6 bg-blue-600 hover:bg-blue-700 text-white"
+        >
           {enviando && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
           <Send className="mr-2 h-4 w-4" />
-          Enviar
+          Enviar Evaluación
         </Button>
       </div>
 
-      {/* Sección de Resumen y Recomendaciones (Opcional, similar a Autoevaluación) */}
-      {(estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada') && (
-        <Card className="mt-6">
-          <CardHeader>
-            <CardTitle>Resumen de la Evaluación</CardTitle>
+      {/* Sección de Resumen Final Mejorada */}
+      {(estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada' || Object.keys(puntajes).length === totalSubcriterios) && (
+        <Card className="mt-8 shadow-2xl border-0 bg-gradient-to-br from-white via-blue-50/20 to-indigo-50/30 dark:from-gray-800 dark:via-blue-950/10 dark:to-indigo-950/20 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/5 to-indigo-500/5 dark:from-blue-400/5 dark:to-indigo-400/5" />
+          <CardHeader className="relative bg-gradient-to-r from-blue-500/10 to-indigo-500/10 dark:from-blue-400/10 dark:to-indigo-400/10 border-b border-blue-200/20 dark:border-blue-800/20">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500 rounded-lg">
+                <TrendingUp className="h-6 w-6 text-white" />
+              </div>
+              <div>
+                <CardTitle className="text-2xl font-bold text-blue-900 dark:text-blue-100">
+                  Resumen de la Evaluación
+                </CardTitle>
+                <CardDescription className="text-blue-700 dark:text-blue-300">
+                  Análisis detallado de los resultados obtenidos
+                </CardDescription>
+              </div>
+            </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-lg font-semibold">Puntaje Total: <span className="text-blue-600">{puntaje20} / 20</span></p>
-            {criteriosBajos.length > 0 && (
+          <CardContent className="relative p-8 space-y-8">
+            {/* Puntaje Principal */}
+            <div className="text-center space-y-4">
+              <div className="relative inline-block">
+                <div className={`text-6xl font-bold ${getScoreColor(puntaje20)} relative z-10`}>
+                  {puntaje20.toFixed(1)}
+                  <span className="text-2xl ml-1 text-gray-500 dark:text-gray-400">
+                    / 20
+                  </span>
+                </div>
+                <div className="absolute -top-2 -right-2">
+                  {(() => {
+                    const IconComponent = getScoreIcon(puntaje20);
+                    return <IconComponent className={`h-8 w-8 ${getScoreColor(puntaje20)}`} />;
+                  })()}
+                </div>
+              </div>
+              
               <div className="space-y-2">
-                <h3 className="font-medium">Criterios con menor puntaje:</h3>
-                <ul className="list-disc pl-5">
-                  {criteriosBajos.map((c, index) => (
-                    <li key={index} className="text-sm text-red-600">{c.nombre} (Promedio: {(c.promedio * 100).toFixed(0)}%)</li>
+                <h3 className={`text-2xl font-bold ${getScoreColor(puntaje20)}`}>
+                  {getScoreMessage(puntaje20).title}
+                </h3>
+                <p className="text-gray-600 dark:text-gray-400 text-lg">
+                  {getScoreMessage(puntaje20).subtitle}
+                </p>
+              </div>
+
+              {/* Barra de progreso visual */}
+              <div className="max-w-md mx-auto">
+                <div className="flex justify-between text-sm text-gray-500 dark:text-gray-400 mb-2">
+                  <span>0</span>
+                  <span>20</span>
+                </div>
+                <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                  <div 
+                    className={`h-full rounded-full transition-all duration-1000 ${
+                      puntaje20 >= 16 ? 'bg-gradient-to-r from-emerald-400 to-emerald-600' :
+                      puntaje20 >= 12 ? 'bg-gradient-to-r from-blue-400 to-blue-600' :
+                      puntaje20 >= 8 ? 'bg-gradient-to-r from-amber-400 to-amber-600' :
+                      'bg-gradient-to-r from-red-400 to-red-600'
+                    }`}
+                    style={{ width: `${(puntaje20 / 20) * 100}%` }}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Estadísticas */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                <CheckCircle2 className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {Object.keys(puntajes).length}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Criterios Evaluados
+                </div>
+              </div>
+              
+              <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                <Star className="h-8 w-8 text-blue-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {((puntaje20 / 20) * 100).toFixed(0)}%
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Porcentaje Obtenido
+                </div>
+              </div>
+              
+              <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-xl border border-blue-100 dark:border-blue-900/30">
+                <Zap className="h-8 w-8 text-amber-500 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
+                  {criteriosBajos.length}
+                </div>
+                <div className="text-sm text-gray-600 dark:text-gray-400">
+                  Áreas de Mejora
+                </div>
+              </div>
+            </div>
+
+            {/* Criterios con menor puntaje */}
+            {criteriosBajos.length > 0 && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <Target className="h-5 w-5 text-amber-500" />
+                  Áreas de Mejora Identificadas
+                </h3>
+                <div className="space-y-3">
+                  {criteriosBajos.map((criterio, index) => (
+                    <div key={index} className="flex items-center justify-between p-4 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800/30 rounded-lg">
+                      <span className="font-medium text-amber-800 dark:text-amber-200">
+                        {criterio.nombre}
+                      </span>
+                      <Badge variant="secondary" className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300">
+                        {(criterio.promedio * 100).toFixed(0)}%
+                      </Badge>
+                    </div>
                   ))}
-                </ul>
+                </div>
+              </div>
+            )}
+
+            {/* Comentarios */}
+            {comentario && (
+              <div className="space-y-4">
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-blue-500" />
+                  Comentarios de la Evaluación
+                </h3>
+                <div className="p-4 bg-blue-50 dark:bg-blue-950/20 border border-blue-200 dark:border-blue-800/30 rounded-lg">
+                  <p className="text-gray-700 dark:text-gray-300 leading-relaxed">
+                    {comentario}
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>
