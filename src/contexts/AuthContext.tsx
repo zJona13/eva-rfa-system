@@ -60,6 +60,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      fetch(`${API_URL}/users/current`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      })
+        .then(res => res.json())
+        .then(data => {
+          if (data.success && data.user) {
+            const mappedUser = {
+              id: data.user.id.toString(),
+              name: data.user.name,
+              email: data.user.email,
+              role: mapRole(data.user.role),
+              colaboradorId: data.user.colaboradorId,
+              colaboradorName: data.user.colaboradorName
+            };
+            setUser(mappedUser);
+          } else {
+            localStorage.removeItem('token');
+          }
+        })
+        .catch(() => {
+          localStorage.removeItem('token');
+        });
+    }
     setIsLoading(false);
   }, []);
 

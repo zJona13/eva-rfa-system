@@ -1305,8 +1305,8 @@ app.get('/api/evaluaciones/:idEvaluacion/info', async (req, res) => {
               e.idEvaluador, e.idEvaluado,
               a.periodo, a.fechaInicio, a.fechaFin, a.horaInicio, a.horaFin,
               ar.nombre as areaNombre,
-              CONCAT(ce.nombres, ' ', ce.apePat, ' ', ce.apeMat) as nombreEvaluado,
-              CONCAT(cr.nombres, ' ', cr.apePat, ' ', cr.apeMat) as nombreEvaluador
+              CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador) as nombreEvaluado,
+              CONCAT(cr.nombreColaborador, ' ', cr.apePaColaborador, ' ', cr.apeMaColaborador) as nombreEvaluador
        FROM EVALUACION e
        JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
        JOIN AREA ar ON a.idArea = ar.idArea

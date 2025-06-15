@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/ui/select';
 import { crearAsignacion, listarAsignaciones } from '@/services/asignacionApi';
+import { getToken } from '@/contexts/AuthContext';
 
 const AssignmentEvaluations = () => {
   const [asignaciones, setAsignaciones] = useState([]);
@@ -25,7 +26,10 @@ const AssignmentEvaluations = () => {
 
   // Cargar áreas y asignaciones
   useEffect(() => {
-    fetch('/api/areas')
+    const token = getToken();
+    fetch('http://localhost:3309/api/areas', {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    })
       .then(res => res.json())
       .then(data => setAreas(data.areas || []));
     cargarAsignaciones();
@@ -33,7 +37,8 @@ const AssignmentEvaluations = () => {
 
   const cargarAsignaciones = async () => {
     try {
-      const data = await listarAsignaciones();
+      const token = getToken();
+      const data = await listarAsignaciones(token);
       setAsignaciones(data.asignaciones || []);
     } catch (e) {
       setError('Error al cargar asignaciones');
@@ -49,8 +54,8 @@ const AssignmentEvaluations = () => {
     setLoading(true);
     setError('');
     try {
-      // El idUsuario debe ser el admin actual, aquí lo ponemos fijo 1 (ajustar según auth real)
-      const res = await crearAsignacion({ ...form, idUsuario: 1 });
+      const token = getToken();
+      const res = await crearAsignacion({ ...form, idUsuario: 1 }, token);
       setModalOpen(false);
       setForm({ idArea: '', periodo: '', fechaInicio: '', fechaFin: '', horaInicio: '', horaFin: '' });
       cargarAsignaciones();

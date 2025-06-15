@@ -11,11 +11,11 @@ export async function obtenerEvaluacionesPendientes(idUsuario: number, idTipoEva
   return res.json();
 }
 
-export async function obtenerInfoEvaluacion(idEvaluacion: number) {
+export const obtenerInfoEvaluacion = async (idEvaluacion: number) => {
   const token = getToken();
-  const res = await fetch(`${API_URL}/${idEvaluacion}/info`, {
+  const response = await fetch(`${API_URL}/${idEvaluacion}/info`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  if (!res.ok) throw new Error('Error al obtener información de evaluación');
-  return res.json();
-}
+  if (!response.ok) throw new Error('Error al obtener información de evaluación');
+  return response.json();
+};

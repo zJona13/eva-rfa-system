@@ -1,21 +1,20 @@
 const API_URL = '/api/asignaciones';
 import { getToken } from '../contexts/AuthContext';
 
-export async function crearAsignacion(asignacionData) {
-  const res = await fetch(`${API_URL}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(asignacionData)
-  });
-  if (!res.ok) throw new Error('Error al crear asignación');
-  return res.json();
-}
-
-export async function listarAsignaciones() {
-  const token = getToken();
-  const res = await fetch(`${API_URL}`, {
+export const listarAsignaciones = async (token: string) => {
+  const response = await fetch(`${API_URL}`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  if (!res.ok) throw new Error('Error al obtener asignaciones');
-  return res.json();
-} 
+  if (!response.ok) throw new Error('Error al obtener asignaciones');
+  return response.json();
+};
+
+export const crearAsignacion = async (data: any, token: string) => {
+  const response = await fetch(`${API_URL}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error('Error al crear asignación');
+  return response.json();
+}; 
