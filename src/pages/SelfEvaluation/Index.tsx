@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { getCriteriosPorTipoEvaluacion, crearEvaluacion, actualizarEvaluacion } from '../../services/evaluacionApi';
-import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion } from '../../services/evaluacionPendienteApi';
+import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion, obtenerTodasLasEvaluacionesPorUsuarioYTipo } from '../../services/evaluacionPendienteApi';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,8 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import EvaluationCard from '../../components/EvaluationCard';
 import { getToken } from '@/contexts/AuthContext';
+import { useNavigate } from 'react-router-dom';
+import { toast } from "sonner";
 
 export default function SelfEvaluationPage() {
   const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
@@ -26,6 +28,7 @@ export default function SelfEvaluationPage() {
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState(null);
   const [estadoEvaluacion, setEstadoEvaluacion] = useState('Pendiente');
+  const navigate = useNavigate();
 
   // Lista de periodos académicos
   const periodosAcademicos = [
@@ -36,9 +39,10 @@ export default function SelfEvaluationPage() {
   ];
 
   useEffect(() => {
-    const fetchEvaluacionesPendientes = async () => {
+    const fetchEvaluaciones = async () => {
+      setLoading(true);
+      setError(null);
       try {
-        setError(null);
         const token = getToken();
         // Obtener información del usuario actual
         const response = await fetch('http://localhost:3309/api/users/current', {
@@ -48,17 +52,17 @@ export default function SelfEvaluationPage() {
           throw new Error('Error al obtener información del usuario');
         }
         const userData = await response.json();
-        // Obtener evaluaciones pendientes de autoevaluación (tipo 3)
-        const evaluacionesData = await obtenerEvaluacionesPendientes(userData.id, 3);
+        // Obtener TODAS las autoevaluaciones (tipo 3) del usuario
+        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userData.id, 3);
         setEvaluacionesPendientes(evaluacionesData.evaluaciones || []);
-        setLoading(false);
-      } catch (error) {
-        console.error('Error al cargar evaluaciones pendientes:', error);
-        setError(error.message);
+      } catch (e) {
+        console.error('Error al cargar historial de autoevaluaciones:', e);
+        setError('Error al cargar historial de autoevaluaciones');
+      } finally {
         setLoading(false);
       }
     };
-    fetchEvaluacionesPendientes();
+    fetchEvaluaciones();
   }, []);
 
   const iniciarEvaluacion = async (idEvaluacion) => {
@@ -66,19 +70,49 @@ export default function SelfEvaluationPage() {
       setLoading(true);
       setError(null);
       
-      // Obtener información de la evaluación
+      // Obtener información de la evaluación, que ahora incluye detalles
       const infoData = await obtenerInfoEvaluacion(idEvaluacion);
-      setEvaluacionActual(infoData.evaluacion);
-      setEstadoEvaluacion(infoData.evaluacion.estado);
+      const evaluacionCargada = infoData.evaluacion;
+
+      console.log('Evaluación cargada (iniciarEvaluacion):', evaluacionCargada);
+
+      setEvaluacionActual(evaluacionCargada);
+      setEstadoEvaluacion(evaluacionCargada.estado);
+      setComentario(evaluacionCargada.comentario || ''); // Cargar comentario
+
+      // Cargar puntajes si existen detalles guardados
+      if (evaluacionCargada.detalles && Array.isArray(evaluacionCargada.detalles)) {
+        const loadedPuntajes = {};
+        evaluacionCargada.detalles.forEach(detalle => {
+          let formattedPuntaje;
+          // Asegurarse de que el puntaje coincida exactamente con los valores de las opciones del RadioGroup
+          if (parseFloat(detalle.puntaje) === 1) {
+            formattedPuntaje = '1';
+          } else if (parseFloat(detalle.puntaje) === 0.5) {
+            formattedPuntaje = '0.5';
+          } else if (parseFloat(detalle.puntaje) === 0) {
+            formattedPuntaje = '0';
+          } else {
+            formattedPuntaje = ''; // En caso de un valor inesperado
+          }
+          loadedPuntajes[detalle.idSubCriterio] = formattedPuntaje;
+        });
+        setPuntajes(loadedPuntajes);
+        console.log('Puntajes cargados (loadedPuntajes):', loadedPuntajes);
+      } else {
+        setPuntajes({}); // Si no hay detalles, inicializar vacio
+        console.log('No se encontraron detalles para cargar puntajes.');
+      }
       
       // Obtener criterios de autoevaluación
       const criteriosData = await getCriteriosPorTipoEvaluacion(3);
       setCriterios(criteriosData.criterios);
+      console.log('Criterios obtenidos (criteriosData.criterios):', criteriosData.criterios);
       
       setMostrarFormulario(true);
       setLoading(false);
     } catch (error) {
-      console.error('Error al iniciar evaluación:', error);
+      console.error('Error al iniciar evaluación (iniciarEvaluacion):', error);
       setError(error.message);
       setLoading(false);
     }
@@ -114,10 +148,15 @@ export default function SelfEvaluationPage() {
           value={currentValue || ''}
           onValueChange={(value) => handlePuntaje(idSubCriterio, value)}
           className="space-y-2"
+          disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
         >
           {options.map((option) => (
             <div key={option.value} className="flex items-center space-x-2">
-              <RadioGroupItem value={option.value} id={`${idSubCriterio}-${option.value}`} />
+              <RadioGroupItem 
+                value={option.value} 
+                id={`${idSubCriterio}-${option.value}`} 
+                disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
+              />
               <Label 
                 htmlFor={`${idSubCriterio}-${option.value}`} 
                 className={`text-sm cursor-pointer ${option.color} font-medium`}
@@ -131,13 +170,15 @@ export default function SelfEvaluationPage() {
     );
   };
 
-  const handleGuardar = async () => {
+  const handleEnviar = async () => {
     setEnviando(true);
     setError(null);
     try {
       const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
       if (Object.keys(puntajes).length !== totalSubcriterios) {
-        throw new Error('Debe calificar todos los criterios antes de guardar la autoevaluación');
+        const errorMessage = 'Debe calificar todos los criterios antes de enviar la autoevaluación';
+        console.error('Error de validación frontend (handleEnviar):', errorMessage);
+        throw new Error(errorMessage);
       }
       const detalles = [];
       criterios.forEach(criterio => {
@@ -152,51 +193,48 @@ export default function SelfEvaluationPage() {
       });
       const score = detalles.length > 0 ? detalles.reduce((a, b) => a + b.puntaje, 0) / detalles.length : 0;
       const puntaje20 = Math.round(score * 20 * 100) / 100;
-      await actualizarEvaluacion(evaluacionActual.idEvaluacion, {
+
+      const evaluacionDataToSend = {
         puntajeTotal: puntaje20,
         comentario,
-        status: 'Pendiente',
+        status: 'Activo', // Se guarda como Activo para permitir ediciones
         detalles
-      });
-      alert('Autoevaluación guardada como pendiente. Puedes seguir editando mientras esté en periodo.');
+      };
+
+      console.log('Enviando autoevaluación - ID de evaluación:', evaluacionActual.idEvaluacion);
+      console.log('Datos a enviar:', evaluacionDataToSend);
+
+      const result = await actualizarEvaluacion(evaluacionActual.idEvaluacion, evaluacionDataToSend);
+      
+      if (result.success) {
+        setEstadoEvaluacion('Activo');
+        toast.success('Autoevaluación enviada', {
+          description: 'Puedes seguir editando mientras la asignación esté activa.',
+        });
+        console.log('Autoevaluación enviada exitosamente.', result);
+        volverALista();
+        navigate('/self-evaluation');
+      } else {
+        console.error('Error en la respuesta del backend (handleEnviar):', result.message);
+        throw new Error(result.message);
+      }
     } catch (e) {
-      setError(e.message || 'Error al guardar autoevaluación');
+      console.error('Error general al enviar autoevaluación (handleEnviar):', e.message);
+      setError(e.message || 'Error al enviar autoevaluación');
     } finally {
       setEnviando(false);
     }
   };
 
-  const handleFinalizar = async () => {
+  const handleCancelar = async () => {
     setEnviando(true);
     setError(null);
     try {
-      const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
-      if (Object.keys(puntajes).length !== totalSubcriterios) {
-        throw new Error('Debe calificar todos los criterios antes de finalizar la autoevaluación');
-      }
-      const detalles = [];
-      criterios.forEach(criterio => {
-        criterio.subcriterios.forEach(sub => {
-          if (puntajes[sub.idSubCriterio]) {
-            detalles.push({
-              idSubCriterio: sub.idSubCriterio,
-              puntaje: Number(puntajes[sub.idSubCriterio])
-            });
-          }
-        });
-      });
-      const score = detalles.length > 0 ? detalles.reduce((a, b) => a + b.puntaje, 0) / detalles.length : 0;
-      const puntaje20 = Math.round(score * 20 * 100) / 100;
-      await actualizarEvaluacion(evaluacionActual.idEvaluacion, {
-        puntajeTotal: puntaje20,
-        comentario,
-        status: 'Completada',
-        detalles
-      });
-      setEstadoEvaluacion('Completada');
-      alert('¡Autoevaluación finalizada! Ya no podrás editarla.');
+      // No se actualiza el estado de la evaluación, solo se vuelve a la lista.
+      volverALista(); 
+      navigate('/self-evaluation'); // Asegura la redirección también al cancelar
     } catch (e) {
-      setError(e.message || 'Error al finalizar autoevaluación');
+      setError(e.message || 'Error al cancelar autoevaluación');
     } finally {
       setEnviando(false);
     }
@@ -253,10 +291,10 @@ export default function SelfEvaluationPage() {
               </div>
               <div>
                 <CardTitle className="text-2xl text-purple-900 dark:text-purple-100">
-                  Autoevaluaciones Pendientes
+                  Historial de Autoevaluaciones
                 </CardTitle>
                 <CardDescription className="text-purple-700 dark:text-purple-300">
-                  Selecciona una autoevaluación para completar
+                  Revisa tus autoevaluaciones pasadas y pendientes
                 </CardDescription>
               </div>
             </div>
@@ -342,7 +380,7 @@ export default function SelfEvaluationPage() {
       {/* Form Card */}
       <Card className="shadow-lg">
         <CardContent className="p-6">
-          <form onSubmit={handleGuardar} className="space-y-6">
+          <form onSubmit={handleEnviar} className="space-y-6">
             {/* Información del Docente Section */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div className="space-y-2">
@@ -454,6 +492,7 @@ export default function SelfEvaluationPage() {
                 value={comentario}
                 onChange={e => setComentario(e.target.value)}
                 className="min-h-[100px] resize-none"
+                disabled={estadoEvaluacion === 'Completada' || estadoEvaluacion === 'Cancelada'}
               />
             </div>
 
@@ -465,7 +504,7 @@ export default function SelfEvaluationPage() {
               </div>
             </div>
             {criteriosBajos.length > 0 && (
-              <Alert variant="warning" className="mb-4">
+              <Alert variant="default" className="mb-4">
                 <AlertTitle>¡Atención!</AlertTitle>
                 <AlertDescription>
                   Los siguientes criterios tienen un promedio bajo:
@@ -478,40 +517,19 @@ export default function SelfEvaluationPage() {
               </Alert>
             )}
 
-            {/* Botones Guardar y Finalizar */}
-            {estadoEvaluacion === 'Pendiente' && (
+            {/* Botones Enviar y Cancelar */}
+            {estadoEvaluacion === 'Pendiente' || estadoEvaluacion === 'Activo' ? (
               <div className="flex gap-4 justify-end">
-                <Button type="button" onClick={handleGuardar} disabled={enviando || loading} variant="outline">Guardar</Button>
-                <Button type="button" onClick={handleFinalizar} disabled={enviando || loading} className="bg-purple-600 text-white">Finalizar</Button>
+                <Button type="button" onClick={handleCancelar} disabled={enviando || loading} variant="outline">Cancelar</Button>
+                <Button type="submit" onClick={handleEnviar} disabled={enviando || loading} className="bg-purple-600 text-white">Enviar</Button>
               </div>
-            )}
+            ) : null}
             {estadoEvaluacion === 'Completada' && (
-              <Alert variant="success" className="mt-4">¡Autoevaluación finalizada! Ya no puedes editarla.</Alert>
+              <Alert variant="default" className="mt-4">¡Autoevaluación finalizada! Ya no puedes editarla.</Alert>
             )}
             {estadoEvaluacion === 'Cancelada' && (
               <Alert variant="destructive" className="mt-4">La autoevaluación fue cancelada por pasar la fecha/hora límite.</Alert>
             )}
-
-            {/* Submit Button */}
-            <div className="flex justify-end pt-4">
-              <Button 
-                type="submit" 
-                disabled={enviando || loading}
-                className="px-8 py-3 bg-purple-500 hover:bg-purple-600 text-white font-medium"
-              >
-                {enviando ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Enviando...
-                  </>
-                ) : (
-                  <>
-                    <Send className="h-4 w-4 mr-2" />
-                    Enviar Autoevaluación
-                  </>
-                )}
-              </Button>
-            </div>
           </form>
         </CardContent>
       </Card>

@@ -1294,12 +1294,30 @@ app.get('/api/evaluaciones/pendientes/:idUsuario/:idTipoEvaluacion', async (req,
   }
 });
 
+// NUEVA RUTA: Obtener todas las evaluaciones por usuario evaluador y tipo (todos los estados)
+app.get('/api/evaluaciones/byUserAndType/:idUsuario/:idTipoEvaluacion', authenticateToken, async (req, res) => {
+  const { idUsuario, idTipoEvaluacion } = req.params;
+  
+  try {
+    const result = await evaluacionService.getEvaluacionesByEvaluadorAndTipoAllStates(idUsuario, idTipoEvaluacion);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error en GET /api/evaluaciones/byUserAndType/:idUsuario/:idTipoEvaluacion:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener evaluaciones por usuario y tipo' });
+  }
+});
+
 // Obtener información de una evaluación específica para iniciarla
 app.get('/api/evaluaciones/:idEvaluacion/info', async (req, res) => {
   const { idEvaluacion } = req.params;
   
   try {
-    const [rows] = await pool.execute(
+    // Obtener información principal de la evaluación
+    const [evaluacionRows] = await pool.execute(
       `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, 
               e.puntajeTotal, e.comentario, e.estado, e.idTipoEvaluacion,
               e.idEvaluador, e.idEvaluado,
@@ -1326,11 +1344,22 @@ app.get('/api/evaluaciones/:idEvaluacion/info', async (req, res) => {
       [idEvaluacion]
     );
     
-    if (rows.length === 0) {
+    if (evaluacionRows.length === 0) {
       return res.status(404).json({ success: false, message: 'Evaluación no encontrada' });
     }
     
-    res.json({ success: true, evaluacion: rows[0] });
+    let evaluacion = evaluacionRows[0];
+
+    // Obtener detalles de la evaluación (puntajes de subcriterios)
+    const [detallesRows] = await pool.execute(
+      'SELECT idSubCriterio, puntaje FROM DETALLE_EVALUACION WHERE idEvaluacion = ?',
+      [idEvaluacion]
+    );
+
+    // Adjuntar los detalles a la evaluación principal
+    evaluacion.detalles = detallesRows;
+
+    res.json({ success: true, evaluacion });
   } catch (error) {
     console.error('Error al obtener información de evaluación:', error);
     res.status(500).json({ success: false, message: 'Error al obtener información de evaluación' });
@@ -1347,42 +1376,26 @@ app.get('/api/protegido', authenticateToken, (req, res) => {
 app.put('/api/evaluaciones/:idEvaluacion', authenticateToken, async (req, res) => {
   const { idEvaluacion } = req.params;
   const { detalles, puntajeTotal, comentario, status } = req.body;
+  console.log(`[PUT /api/evaluaciones/${idEvaluacion}] Recibida solicitud para actualizar evaluación.`);
+  console.log('Body recibido:', req.body);
+
   try {
-    // Obtener la evaluación actual
-    const [rows] = await pool.execute('SELECT * FROM EVALUACION WHERE idEvaluacion = ?', [idEvaluacion]);
-    if (rows.length === 0) {
-      return res.status(404).json({ success: false, message: 'Evaluación no encontrada' });
+    // Llamar al servicio de evaluación para manejar la actualización
+    const result = await evaluacionService.updateEvaluacion(
+      idEvaluacion,
+      { puntajeTotal, comentario, status, detalles }
+    );
+
+    if (result.success) {
+      res.json({ success: true, message: 'Evaluación actualizada correctamente' });
+      console.log(`[PUT /api/evaluaciones/${idEvaluacion}] Evaluación actualizada exitosamente.`);
+    } else {
+      // Si el servicio devuelve un error específico (ej. fecha límite excedida)
+      console.warn(`[PUT /api/evaluaciones/${idEvaluacion}] Error del servicio: ${result.message}`);
+      res.status(400).json(result); // Enviar 400 Bad Request con el mensaje del servicio
     }
-    const evaluacion = rows[0];
-    // Verificar si ya está completada o cancelada
-    if (evaluacion.estado === 'Completada' || evaluacion.estado === 'Cancelada') {
-      return res.status(400).json({ success: false, message: 'La evaluación ya está finalizada o cancelada y no puede ser editada.' });
-    }
-    // Verificar si la fecha/hora límite ya pasó
-    const fechaLimite = new Date(evaluacion.fechaFin || evaluacion.fechaEvaluacion);
-    const horaLimite = evaluacion.horaFin || evaluacion.horaEvaluacion;
-    let limite = fechaLimite;
-    if (horaLimite) {
-      const [h, m, s] = horaLimite.split(':');
-      limite.setHours(Number(h), Number(m), Number(s || 0));
-    }
-    if (new Date() > limite) {
-      await pool.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', ['Cancelada', idEvaluacion]);
-      return res.status(400).json({ success: false, message: 'La evaluación ha sido cancelada por pasar la fecha/hora límite.' });
-    }
-    // Actualizar evaluación
-    await pool.execute('UPDATE EVALUACION SET puntajeTotal = ?, comentario = ?, estado = ? WHERE idEvaluacion = ?', [puntajeTotal, comentario, status, idEvaluacion]);
-    // Eliminar detalles anteriores
-    await pool.execute('DELETE FROM DETALLE_EVALUACION WHERE idEvaluacion = ?', [idEvaluacion]);
-    // Insertar nuevos detalles
-    if (Array.isArray(detalles)) {
-      for (const detalle of detalles) {
-        await pool.execute('INSERT INTO DETALLE_EVALUACION (puntaje, idEvaluacion, idSubCriterio) VALUES (?, ?, ?)', [detalle.puntaje, idEvaluacion, detalle.idSubCriterio]);
-      }
-    }
-    res.json({ success: true, message: 'Evaluación actualizada correctamente' });
   } catch (error) {
-    console.error('Error al actualizar evaluación:', error);
+    console.error(`[PUT /api/evaluaciones/${idEvaluacion}] Error durante la actualización de la evaluación:`, error);
     res.status(500).json({ success: false, message: 'Error al actualizar evaluación' });
   }
 });

@@ -9,6 +9,22 @@ import { Select, SelectTrigger, SelectContent, SelectItem } from '@/components/u
 import { crearAsignacion, listarAsignaciones } from '@/services/asignacionApi';
 import { getToken } from '@/contexts/AuthContext';
 
+// Función para formatear la fecha en formato DD-MM-YY
+const formatDate = (dateString: string) => {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}/${month}/${year}`;
+};
+
+// Función para formatear la hora en formato 24 horas
+const formatTime = (timeString: string) => {
+  if (!timeString) return '';
+  return timeString.split(':').slice(0, 2).join(':');
+};
+
 const AssignmentEvaluations = () => {
   const [asignaciones, setAsignaciones] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
@@ -144,10 +160,10 @@ const AssignmentEvaluations = () => {
                     <Badge variant="outline">Periodo: {asignacion.periodo}</Badge>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Fechas: {asignacion.fechaInicio} a {asignacion.fechaFin}
+                    Fechas: {formatDate(asignacion.fechaInicio)} a {formatDate(asignacion.fechaFin)}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Horario: {asignacion.horaInicio} - {asignacion.horaFin}
+                    Horario: {formatTime(asignacion.horaInicio)} - {formatTime(asignacion.horaFin)}
                   </p>
                 </div>
                 <div className="flex items-center gap-4">

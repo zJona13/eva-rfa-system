@@ -124,45 +124,92 @@ const createEvaluacion = async (evaluacionData) => {
 
 // Actualizar una evaluación - SIMPLIFICADO
 const updateEvaluacion = async (evaluacionId, evaluacionData) => {
+  console.log('Iniciando actualización de evaluación:', { evaluacionId, evaluacionData });
+  const conn = await pool.getConnection();
   try {
-    // Obtener la evaluación actual para validar la fecha
-    const [rows] = await pool.execute('SELECT fechaEvaluacion, estado FROM EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
+    await conn.beginTransaction();
+
+    // Obtener la evaluación actual y las fechas de la asignación
+    console.log('Obteniendo estado actual de la evaluación y fechas de asignación...');
+    const [rows] = await conn.execute(
+      `SELECT e.estado, a.fechaFin, a.horaFin 
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       WHERE e.idEvaluacion = ?`,
+      [evaluacionId]
+    );
+    
     if (rows.length === 0) {
+      console.warn('Advertencia (updateEvaluacion): Evaluación no encontrada para ID:', evaluacionId);
+      await conn.rollback();
       return { success: false, message: 'Evaluación no encontrada' };
     }
+    
     const evaluacion = rows[0];
+    console.log('Estado actual de la evaluación:', evaluacion.estado);
+    console.log('Fechas de asignación asociadas:', { fechaFin: evaluacion.fechaFin, horaFin: evaluacion.horaFin });
+    
     // Solo restringir si está pendiente
-    if (evaluacion.estado === 'Pendiente') {
-      const fechaEvaluacion = new Date(evaluacion.fechaEvaluacion);
+    if (evaluacion.estado === 'Pendiente' || evaluacion.estado === 'Activo') { // Considerar 'Activo' también para la restricción
       const ahora = new Date();
-      const diffMs = ahora - fechaEvaluacion;
-      const diffDias = diffMs / (1000 * 60 * 60 * 24);
-      if (diffDias > 2) {
-        return { success: false, message: 'No se puede editar la evaluación porque han pasado más de 2 días desde su creación.' };
+      const fechaLimite = new Date(evaluacion.fechaFin);
+      if (evaluacion.horaFin) {
+        const [h, m, s] = evaluacion.horaFin.split(':');
+        fechaLimite.setHours(Number(h), Number(m), Number(s || 0));
+      }
+      console.log('Fecha y hora actuales:', ahora.toISOString());
+      console.log('Fecha y hora límite de asignación:', fechaLimite.toISOString());
+      
+      if (ahora > fechaLimite) {
+        console.warn('Advertencia (updateEvaluacion): Fecha límite excedida para la evaluación ID:', evaluacionId);
+        await conn.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', ['Cancelada', evaluacionId]);
+        await conn.commit();
+        return { success: false, message: 'No se puede editar la evaluación porque ha pasado la fecha límite de la asignación y ha sido cancelada.' };
       }
     }
-    // Actualizar solo la evaluación principal
-    await pool.execute(
-      'UPDATE EVALUACION SET fechaEvaluacion = ?, horaEvaluacion = ?, puntaje = ?, comentario = ?, tipo = ?, estado = ? WHERE idEvaluacion = ?',
-      [
-        evaluacionData.date,
-        evaluacionData.time,
-        evaluacionData.score,
-        evaluacionData.comments,
-        evaluacionData.type,
-        evaluacionData.status,
-        evaluacionId
-      ]
-    );
-    // Llamar a la cancelación automática después de actualizar
-    await cancelarBorradoresVencidos();
+    
+    // Actualizar la evaluación principal
+    console.log('Actualizando la evaluación principal...');
+    const updateQuery = 'UPDATE EVALUACION SET puntajeTotal = ?, comentario = ?, estado = ? WHERE idEvaluacion = ?';
+    const updateParams = [
+      evaluacionData.puntajeTotal,
+      evaluacionData.comentario,
+      evaluacionData.status,
+      evaluacionId
+    ];
+    console.log('Query UPDATE:', updateQuery);
+    console.log('Params UPDATE:', updateParams);
+    await conn.execute(updateQuery, updateParams);
+
+    // Eliminar detalles anteriores de la evaluación
+    console.log('Eliminando detalles anteriores para evaluacion ID:', evaluacionId);
+    await conn.execute('DELETE FROM DETALLE_EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
+
+    // Insertar nuevos detalles de subcriterios
+    if (Array.isArray(evaluacionData.detalles)) {
+      console.log('Insertando nuevos detalles de subcriterios:', evaluacionData.detalles.length);
+      for (const detalle of evaluacionData.detalles) {
+        const insertDetalleQuery = 'INSERT INTO DETALLE_EVALUACION (puntaje, idEvaluacion, idSubCriterio) VALUES (?, ?, ?)';
+        const insertDetalleParams = [detalle.puntaje, evaluacionId, detalle.idSubCriterio];
+        console.log('Query INSERT DETALLE:', insertDetalleQuery);
+        console.log('Params INSERT DETALLE:', insertDetalleParams);
+        await conn.execute(insertDetalleQuery, insertDetalleParams);
+      }
+    }
+    
+    await conn.commit();
+    console.log('Transacción de actualización de evaluación completada exitosamente para ID:', evaluacionId);
     return {
       success: true,
       message: 'Evaluación actualizada exitosamente'
     };
   } catch (error) {
-    console.error('Error al actualizar evaluación:', error);
+    await conn.rollback();
+    console.error('Error en updateEvaluacion (rollback realizado):', error.message, error.stack);
     return { success: false, message: 'Error al actualizar la evaluación' };
+  } finally {
+    conn.release();
+    console.log('Conexión de base de datos liberada.');
   }
 };
 
@@ -234,22 +281,35 @@ const getColaboradorByUserId = async (userId) => {
 // Finalizar una evaluación (cambiar estado a Completada)
 const finalizarEvaluacion = async (evaluacionId) => {
   try {
-    // Obtener la evaluación actual para validar la fecha
-    const [rows] = await pool.execute('SELECT fechaEvaluacion, estado FROM EVALUACION WHERE idEvaluacion = ?', [evaluacionId]);
+    // Obtener la evaluación actual y las fechas de la asignación
+    const [rows] = await pool.execute(
+      `SELECT e.estado, a.fechaFin, a.horaFin 
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       WHERE e.idEvaluacion = ?`,
+      [evaluacionId]
+    );
+    
     if (rows.length === 0) {
       return { success: false, message: 'Evaluación no encontrada' };
     }
+    
     const evaluacion = rows[0];
+    
     // Solo restringir si está pendiente
     if (evaluacion.estado === 'Pendiente') {
-      const fechaEvaluacion = new Date(evaluacion.fechaEvaluacion);
       const ahora = new Date();
-      const diffMs = ahora - fechaEvaluacion;
-      const diffDias = diffMs / (1000 * 60 * 60 * 24);
-      if (diffDias > 2) {
-        return { success: false, message: 'No se puede finalizar la evaluación porque han pasado más de 2 días desde su creación.' };
+      const fechaLimite = new Date(evaluacion.fechaFin);
+      if (evaluacion.horaFin) {
+        const [h, m, s] = evaluacion.horaFin.split(':');
+        fechaLimite.setHours(Number(h), Number(m), Number(s || 0));
+      }
+      
+      if (ahora > fechaLimite) {
+        return { success: false, message: 'No se puede finalizar la evaluación porque ha pasado la fecha límite de la asignación.' };
       }
     }
+    
     await pool.execute(
       'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
       ['Completada', evaluacionId]
@@ -267,17 +327,27 @@ const finalizarEvaluacion = async (evaluacionId) => {
 // Cancelar automáticamente evaluaciones pendientes vencidas
 const cancelarBorradoresVencidos = async () => {
   try {
-    // Selecciona evaluaciones pendientes con más de 1 día de antigüedad
+    // Selecciona evaluaciones pendientes y obtiene las fechas de la asignación
     const [rows] = await pool.execute(
-      `SELECT idEvaluacion, fechaEvaluacion FROM EVALUACION WHERE estado = 'Pendiente'`
+      `SELECT e.idEvaluacion, e.estado, a.fechaFin, a.horaFin 
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       WHERE e.estado = 'Pendiente'`
     );
+    
     const ahora = new Date();
     let canceladas = 0;
+    
     for (const row of rows) {
-      const fechaEvaluacion = new Date(row.fechaEvaluacion);
-      const diffMs = ahora - fechaEvaluacion;
-      const diffDias = diffMs / (1000 * 60 * 60 * 24);
-      if (diffDias > 1) {
+      // Crear fecha límite combinando fechaFin y horaFin
+      const fechaLimite = new Date(row.fechaFin);
+      if (row.horaFin) {
+        const [h, m, s] = row.horaFin.split(':');
+        fechaLimite.setHours(Number(h), Number(m), Number(s || 0));
+      }
+      
+      // Si la fecha actual es posterior a la fecha límite, cancelar la evaluación
+      if (ahora > fechaLimite) {
         await pool.execute(
           'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
           ['Cancelada', row.idEvaluacion]
@@ -285,6 +355,7 @@ const cancelarBorradoresVencidos = async () => {
         canceladas++;
       }
     }
+    
     if (canceladas > 0) {
       console.log(`⏰ Evaluaciones pendientes canceladas automáticamente: ${canceladas}`);
     }
@@ -325,6 +396,45 @@ const getCriteriosYSubcriteriosPorTipoEvaluacion = async (idTipoEvaluacion) => {
   }
 };
 
+// Obtener evaluaciones pendientes por usuario y tipo (la antigua)
+// Esta se mantendrá para compatibilidad si otras partes del sistema la usan.
+// Pero la nueva función será para obtener todas los estados.
+
+// Nueva función: Obtener evaluaciones por usuario evaluador y tipo, sin filtro de estado
+const getEvaluacionesByEvaluadorAndTipoAllStates = async (idEvaluador, idTipoEvaluacion) => {
+  try {
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, 
+              e.puntajeTotal, e.comentario, e.estado,
+              a.periodo, a.fechaInicio, a.fechaFin, a.horaInicio, a.horaFin,
+              ar.nombre as areaNombre,
+              CASE 
+                WHEN e.idTipoEvaluacion = 1 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+                WHEN e.idTipoEvaluacion = 2 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+                WHEN e.idTipoEvaluacion = 3 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+              END as nombreEvaluado,
+              CASE 
+                WHEN e.idTipoEvaluacion = 1 THEN 'Estudiante al Docente'
+                WHEN e.idTipoEvaluacion = 2 THEN 'Supervisor al Docente'
+                WHEN e.idTipoEvaluacion = 3 THEN 'Autoevaluación'
+              END as tipoEvaluacionNombre
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       JOIN AREA ar ON a.idArea = ar.idArea
+       JOIN USUARIO ue ON e.idEvaluado = ue.idUsuario
+       LEFT JOIN COLABORADOR ce ON ue.idColaborador = ce.idColaborador
+       WHERE e.idEvaluador = ? AND e.idTipoEvaluacion = ?
+       ORDER BY a.periodo DESC, e.fechaEvaluacion DESC`,
+      [idEvaluador, idTipoEvaluacion]
+    );
+    
+    return { success: true, evaluaciones: rows };
+  } catch (error) {
+    console.error('Error al obtener evaluaciones por evaluador y tipo (todos los estados):', error);
+    return { success: false, message: 'Error al obtener evaluaciones' };
+  }
+};
+
 /**
  * Ejemplo de payload para crear una evaluación:
  * {
@@ -358,5 +468,6 @@ module.exports = {
   getColaboradorByUserId,
   finalizarEvaluacion,
   cancelarBorradoresVencidos,
-  getCriteriosYSubcriteriosPorTipoEvaluacion
+  getCriteriosYSubcriteriosPorTipoEvaluacion,
+  getEvaluacionesByEvaluadorAndTipoAllStates
 };
