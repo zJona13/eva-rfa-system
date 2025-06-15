@@ -360,22 +360,24 @@ export default function SelfEvaluationPage() {
               </CardDescription>
             </div>
           </div>
-          
-          {/* Progress Bar */}
-          <div className="mt-4">
-            <div className="flex justify-between text-sm text-purple-700 dark:text-purple-300 mb-2">
-              <span>Progreso de autoevaluación</span>
-              <span>{Math.round(getProgress())}% completado</span>
-            </div>
-            <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-2">
-              <div 
-                className="bg-purple-500 h-2 rounded-full transition-all duration-300"
-                style={{ width: `${getProgress()}%` }}
-              />
-            </div>
-          </div>
         </CardHeader>
       </Card>
+
+      {/* Sticky Progress Bar */}
+      <div className="sticky top-14 z-30 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/95 border-b pb-4 mb-6">
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-950/20 dark:to-indigo-950/20 p-4 rounded-lg border shadow-sm">
+          <div className="flex justify-between text-sm text-purple-700 dark:text-purple-300 mb-2">
+            <span>Progreso de autoevaluación</span>
+            <span>{Math.round(getProgress())}% completado</span>
+          </div>
+          <div className="w-full bg-purple-200 dark:bg-purple-800 rounded-full h-3">
+            <div 
+              className="bg-purple-500 h-3 rounded-full transition-all duration-300"
+              style={{ width: `${getProgress()}%` }}
+            />
+          </div>
+        </div>
+      </div>
 
       {/* Form Card */}
       <Card className="shadow-lg">
