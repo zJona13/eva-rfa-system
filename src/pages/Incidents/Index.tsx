@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAuth, getToken, UserRole } from '@/contexts/AuthContext';
-import { AlertTriangle, Calendar, Clock, Filter, Search, User, FileText, CheckCircle, AlertCircle, Users } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:3309/api';
 
@@ -70,18 +69,7 @@ const Incidents = () => {
   console.log('needsArea:', needsArea, 'userArea:', userArea);
   if (needsArea && !userArea) {
     console.warn('No tienes un área asignada. Contacta al administrador. user:', user);
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-red-50 via-white to-red-50 dark:from-red-950/20 dark:via-background dark:to-red-950/20 flex items-center justify-center">
-        <Card className="max-w-md mx-auto shadow-lg border-red-200 dark:border-red-800">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3 text-red-600 dark:text-red-400">
-              <AlertTriangle className="h-6 w-6" />
-              <p className="font-semibold">No tienes un área asignada. Contacta al administrador.</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <div className="text-red-600 font-semibold">No tienes un área asignada. Contacta al administrador.</div>;
   }
 
   console.log('Parámetros para fetchIncidencias:', { userId, userRole, userArea });
@@ -135,35 +123,24 @@ const Incidents = () => {
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case 'Completada':
-        return 'bg-emerald-100 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400 dark:border-emerald-800';
+        return 'bg-green-100 text-green-800';
       case 'Pendiente':
-        return 'bg-amber-100 text-amber-700 border-amber-200 dark:bg-amber-900/20 dark:text-amber-400 dark:border-amber-800';
+        return 'bg-yellow-100 text-yellow-800';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getTipoColor = (tipo: string) => {
     switch (tipo) {
       case 'Académica':
-        return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400 dark:border-blue-800';
+        return 'bg-blue-100 text-blue-800';
       case 'Administrativa':
-        return 'bg-purple-100 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-800';
+        return 'bg-purple-100 text-purple-800';
       case 'Técnica':
-        return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/20 dark:text-orange-400 dark:border-orange-800';
+        return 'bg-orange-100 text-orange-800';
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700';
-    }
-  };
-
-  const getEstadoIcon = (estado: string) => {
-    switch (estado) {
-      case 'Completada':
-        return <CheckCircle className="h-4 w-4" />;
-      case 'Pendiente':
-        return <AlertCircle className="h-4 w-4" />;
-      default:
-        return <AlertTriangle className="h-4 w-4" />;
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
@@ -183,231 +160,117 @@ const Incidents = () => {
   }
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-950/20 dark:via-background dark:to-indigo-950/20 flex items-center justify-center">
-        <Card className="shadow-lg">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="h-6 w-6 animate-spin rounded-full border-2 border-primary border-t-transparent"></div>
-              <p className="text-lg font-medium">Cargando incidencias...</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+    return <div>Cargando incidencias...</div>;
   }
 
-  const stats = {
-    total: incidencias.length,
-    pendientes: incidencias.filter((i: any) => i.estado === 'Pendiente').length,
-    completadas: incidencias.filter((i: any) => i.estado === 'Completada').length,
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-950/20 dark:via-background dark:to-indigo-950/20">
-      {/* Header Section */}
-      <div className="bg-white/80 dark:bg-background/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-10">
-        <div className="container mx-auto p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-2">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
-                  <AlertTriangle className="h-6 w-6" />
-                </div>
-                <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
-                    Gestión de Incidencias
-                  </h1>
-                  <p className="text-muted-foreground">Administra y supervisa las incidencias del sistema</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="flex gap-4">
-              <div className="bg-gradient-to-br from-emerald-500 to-green-600 text-white px-4 py-2 rounded-lg text-center shadow-lg">
-                <div className="text-2xl font-bold">{stats.completadas}</div>
-                <div className="text-xs opacity-90">Completadas</div>
-              </div>
-              <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg text-center shadow-lg">
-                <div className="text-2xl font-bold">{stats.pendientes}</div>
-                <div className="text-xs opacity-90">Pendientes</div>
-              </div>
-              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg text-center shadow-lg">
-                <div className="text-2xl font-bold">{stats.total}</div>
-                <div className="text-xs opacity-90">Total</div>
-              </div>
-            </div>
-          </div>
+    <div className="container mx-auto p-4">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Incidencias</h1>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Buscar incidencias..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64"
+          />
+          <Select value={filterEstado} onValueChange={setFilterEstado}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los estados</SelectItem>
+              <SelectItem value="Pendiente">Pendiente</SelectItem>
+              <SelectItem value="Completada">Completada</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterTipo} onValueChange={setFilterTipo}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los tipos</SelectItem>
+              <SelectItem value="Académica">Académica</SelectItem>
+              <SelectItem value="Administrativa">Administrativa</SelectItem>
+              <SelectItem value="Técnica">Técnica</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
-
-      <div className="container mx-auto p-6">
-        {/* Filters Section */}
-        <Card className="mb-6 shadow-lg border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                  <Input
-                    placeholder="Buscar por descripción, reportador o afectado..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 bg-background/50 border-border/50 focus:bg-background transition-colors"
-                  />
-                </div>
-              </div>
-              
-              <div className="flex gap-3">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
-                  <Select value={filterEstado} onValueChange={setFilterEstado}>
-                    <SelectTrigger className="w-[180px] bg-background/50 border-border/50">
-                      <SelectValue placeholder="Estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todos">Todos los estados</SelectItem>
-                      <SelectItem value="Pendiente">Pendiente</SelectItem>
-                      <SelectItem value="Completada">Completada</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <Select value={filterTipo} onValueChange={setFilterTipo}>
-                  <SelectTrigger className="w-[180px] bg-background/50 border-border/50">
-                    <SelectValue placeholder="Tipo" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todos">Todos los tipos</SelectItem>
-                    <SelectItem value="Académica">Académica</SelectItem>
-                    <SelectItem value="Administrativa">Administrativa</SelectItem>
-                    <SelectItem value="Técnica">Técnica</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        
-        {/* Incidents Grid */}
-        <div className="space-y-4">
-          {filteredIncidencias.length === 0 ? (
-            <Card className="shadow-lg border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm">
-              <CardContent className="py-12">
-                <div className="text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="h-8 w-8 text-muted-foreground" />
-                  </div>
+      
+      <div className="grid gap-4">
+        {filteredIncidencias.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No se encontraron incidencias con los filtros seleccionados
+          </div>
+        ) : (
+          filteredIncidencias.map((incidencia: any) => (
+            <Card key={incidencia.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
                   <div>
-                    <h3 className="text-lg font-semibold">No se encontraron incidencias</h3>
-                    <p className="text-muted-foreground">No hay incidencias que coincidan con los filtros seleccionados</p>
+                    <CardTitle className="text-lg">
+                      Incidencia #{incidencia.id}
+                    </CardTitle>
+                    <CardDescription>
+                      {new Date(incidencia.fecha).toLocaleDateString()} {incidencia.hora}
+                    </CardDescription>
+                  </div>
+                  <div className="flex gap-2">
+                    <Badge className={getTipoColor(incidencia.tipo)}>
+                      {incidencia.tipo}
+                    </Badge>
+                    <Badge className={getEstadoColor(incidencia.estado)}>
+                      {incidencia.estado}
+                    </Badge>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
-          ) : (
-            filteredIncidencias.map((incidencia: any) => (
-              <Card key={incidencia.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-card/90">
-                <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-xl font-bold text-foreground">
-                            Incidencia #{incidencia.id}
-                          </CardTitle>
-                          <CardDescription className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            {new Date(incidencia.fecha).toLocaleDateString('es-ES', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
-                            <Clock className="h-4 w-4 ml-2" />
-                            {incidencia.hora}
-                          </CardDescription>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge className={`${getTipoColor(incidencia.tipo)} border font-medium`}>
-                        {incidencia.tipo}
-                      </Badge>
-                      <Badge className={`${getEstadoColor(incidencia.estado)} border font-medium flex items-center gap-1`}>
-                        {getEstadoIcon(incidencia.estado)}
-                        {incidencia.estado}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="bg-muted/50 p-4 rounded-lg border border-border/50">
-                    <p className="font-semibold text-foreground mb-2 flex items-center gap-2">
-                      <FileText className="h-4 w-4" />
-                      Descripción:
-                    </p>
-                    <p className="text-muted-foreground leading-relaxed">{incidencia.descripcion}</p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-semibold">Descripción:</p>
+                    <p className="text-gray-600">{incidencia.descripcion}</p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p className="font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
-                        <User className="h-4 w-4" />
-                        Reportado por:
-                      </p>
-                      <p className="text-blue-600 dark:text-blue-300 font-medium">{incidencia.reportadorNombre}</p>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-semibold">Reportado por:</p>
+                      <p className="text-gray-600">{incidencia.reportadorNombre}</p>
                     </div>
-                    <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                      <p className="font-semibold text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Afectado:
-                      </p>
-                      <p className="text-purple-600 dark:text-purple-300 font-medium">{incidencia.afectadoNombre}</p>
+                    <div>
+                      <p className="font-semibold">Afectado:</p>
+                      <p className="text-gray-600">{incidencia.afectadoNombre}</p>
                     </div>
                   </div>
 
                   {incidencia.accionTomada && (
-                    <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                      <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-2">
-                        <CheckCircle className="h-4 w-4" />
-                        Acción tomada:
-                      </p>
-                      <p className="text-emerald-600 dark:text-emerald-300">{incidencia.accionTomada}</p>
+                    <div>
+                      <p className="font-semibold">Acción tomada:</p>
+                      <p className="text-gray-600">{incidencia.accionTomada}</p>
                     </div>
                   )}
 
                   {canModifyStatus() && incidencia.estado === 'Pendiente' && (
-                    <div className="pt-4 border-t border-border/50">
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm font-medium text-muted-foreground">Cambiar estado:</span>
-                        <Select
-                          value={incidencia.estado}
-                          onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
-                        >
-                          <SelectTrigger className="w-[180px] bg-background border-border">
-                            <SelectValue placeholder="Cambiar estado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Completada" className="text-emerald-600 dark:text-emerald-400">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                Completada
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                    <div className="flex gap-2">
+                      <Select
+                        value={incidencia.estado}
+                        onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Cambiar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Completada">Completada</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   )}
-                </CardContent>
-              </Card>
-            ))
-          )}
-        </div>
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
