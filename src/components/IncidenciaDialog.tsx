@@ -51,7 +51,7 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
       fecha: now.toISOString().split('T')[0],
       hora: now.toTimeString().split(' ')[0],
       descripcion: `Evaluación desaprobatoria (${evaluacionData.score}/20) - ${evaluacionData.type}: ${descripcion}`,
-      estado: 'En proceso', // Estado por defecto
+      estado: 'Pendiente', // Estado por defecto
       tipo: tipo,
       reportadorId: user.id,
       afectadoId: evaluacionData.evaluatedId
@@ -69,7 +69,7 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
     .then(response => response.json())
     .then(data => {
       console.log('Incidencia creation success:', data);
-      toast.success('Incidencia creada exitosamente. Se ha notificado al docente.');
+      toast.success('Incidencia creada exitosamente. Se ha notificado al evaluado.');
       onOpenChange(false);
       setDescripcion('');
       setTipo('Académica');
@@ -120,7 +120,7 @@ const IncidenciaDialog: React.FC<IncidenciaDialogProps> = ({ open, onOpenChange,
 
           <div className="bg-muted p-3 rounded-lg">
             <p className="text-sm text-muted-foreground">
-              <strong>Nota:</strong> Esta incidencia será creada con estado "En proceso" y enviada como notificación al docente evaluado.
+              <strong>Nota:</strong> Esta incidencia será creada con estado "Pendiente" y enviada como notificación al evaluado.
             </p>
           </div>
 

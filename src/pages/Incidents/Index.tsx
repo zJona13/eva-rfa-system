@@ -5,18 +5,24 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
-import { useAuth, getToken } from '@/contexts/AuthContext';
+import { useAuth, getToken, UserRole } from '@/contexts/AuthContext';
 
 const API_BASE_URL = 'http://localhost:3309/api';
 
-const fetchIncidencias = async (userId: number, userRole: string, userArea: number) => {
+const fetchIncidencias = async (userId: string, userRole: UserRole, userArea?: string) => {
   const token = getToken();
+  console.log('Fetching incidents with:', { userId, userRole, userArea });
+  
   const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
   });
 
   if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
   }
 
   return response.json();
@@ -26,12 +32,16 @@ const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: stri
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
     method: 'PUT',
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
-    body: JSON.stringify({ estado }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ estado })
   });
 
   if (!response.ok) {
-    throw new Error(`Error ${response.status}: ${response.statusText}`);
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
   }
 
   return response.json();
@@ -41,16 +51,29 @@ const Incidents = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const userId = user?.id ? parseInt(user.id) : 0;
-  const userRole = user?.role || '';
-  const userArea = user?.idArea || 0;
+  console.log('Usuario actual desde contexto:', user);
+  if (user) {
+    console.log('user.idArea:', user.idArea, 'typeof:', typeof user.idArea);
+  }
 
-  console.log('Usuario actual:', user); // Debug log para verificar datos del usuario
+  const userId = user?.id || '';
+  const userRole = (user?.role || '') as UserRole;
+  const userArea = user?.idArea !== undefined && user?.idArea !== null ? String(user.idArea) : undefined;
 
-  const { data: incidenciasData, isLoading } = useQuery({
+  // Validación antes de hacer la petición
+  const needsArea = userRole === 'evaluator' || userRole === 'student';
+  console.log('needsArea:', needsArea, 'userArea:', userArea);
+  if (needsArea && !userArea) {
+    console.warn('No tienes un área asignada. Contacta al administrador. user:', user);
+    return <div className="text-red-600 font-semibold">No tienes un área asignada. Contacta al administrador.</div>;
+  }
+
+  console.log('Parámetros para fetchIncidencias:', { userId, userRole, userArea });
+
+  const { data: incidenciasData, isLoading, error } = useQuery({
     queryKey: ['incidencias', userId, userRole, userArea],
     queryFn: () => fetchIncidencias(userId, userRole, userArea),
-    enabled: !!userId,
+    enabled: !!userId && !!userRole && (!needsArea || !!userArea),
   });
 
   const updateEstadoMutation = useMutation({
@@ -67,6 +90,10 @@ const Incidents = () => {
   const incidencias = incidenciasData?.incidencias || [];
 
   const handleEstadoChange = (incidenciaId: number, nuevoEstado: string) => {
+    if (!['Pendiente', 'Completada'].includes(nuevoEstado)) {
+      toast.error('Estado no válido');
+      return;
+    }
     updateEstadoMutation.mutate({ id: incidenciaId, estado: nuevoEstado });
   };
 
@@ -95,8 +122,6 @@ const Incidents = () => {
         return 'bg-green-100 text-green-800';
       case 'Pendiente':
         return 'bg-yellow-100 text-yellow-800';
-      case 'Cancelada':
-        return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
     }
@@ -114,6 +139,10 @@ const Incidents = () => {
         return 'bg-gray-100 text-gray-800';
     }
   };
+
+  if (error) {
+    console.error('Error fetching incidents:', error);
+  }
 
   if (isLoading) {
     return <div>Cargando incidencias...</div>;
@@ -183,7 +212,6 @@ const Incidents = () => {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Completada">Completada</SelectItem>
-                        <SelectItem value="Cancelada">Cancelada</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

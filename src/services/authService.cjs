@@ -245,7 +245,7 @@ const login = async (correo, contrasena) => {
     // Consulta ajustada a la estructura real de la base de datos
     const [users] = await pool.execute(
       `SELECT u.idUsuario, u.correo, u.contrasena, u.estado,
-              t.nombre as role, t.idTipoUsuario as roleId, u.idColaborador,
+              t.nombre as role, t.idTipoUsuario as roleId, u.idColaborador, u.idArea as idArea,
               CASE 
                 WHEN u.idColaborador IS NOT NULL 
                 THEN CONCAT(c.nombreColaborador, ' ', c.apePaColaborador, ' ', c.apeMaColaborador)
@@ -296,7 +296,8 @@ const login = async (correo, contrasena) => {
       colaboradorId: user.idColaborador,
       colaboradorName: user.colaboradorName,
       estudianteName: estudianteName,
-      name: user.colaboradorName || estudianteName || user.correo
+      name: user.colaboradorName || estudianteName || user.correo,
+      idArea: user.idArea
     };
     const token = jwt.sign(payload, SECRET_KEY, { expiresIn: '8h' });
 

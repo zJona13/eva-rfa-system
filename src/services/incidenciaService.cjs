@@ -52,7 +52,14 @@ const getIncidenciasByUser = async (userId, userRole, userArea) => {
     if (!userRole) {
       throw new Error('El rol del usuario es requerido');
     }
-    if ((userRole === 'Evaluador' || userRole === 'Estudiante') && (userArea === undefined || userArea === null)) {
+
+    // Normalizar el rol del usuario
+    const normalizedRole = userRole.toLowerCase();
+    const isAdmin = normalizedRole === 'admin' || normalizedRole === 'administrador';
+    const isEvaluator = normalizedRole === 'evaluator' || normalizedRole === 'evaluador';
+    const isStudent = normalizedRole === 'student' || normalizedRole === 'estudiante';
+
+    if ((isEvaluator || isStudent) && (userArea === undefined || userArea === null)) {
       throw new Error('El área del usuario es requerida para este rol');
     }
 
@@ -82,18 +89,24 @@ const getIncidenciasByUser = async (userId, userRole, userArea) => {
     let params = [];
 
     // Filtrar según el rol del usuario
-    if (userRole === 'Administrador') {
+    if (isAdmin) {
       // Los administradores ven todas las incidencias
       query += ' ORDER BY i.fecha DESC, i.hora DESC';
-    } else if (userRole === 'Evaluador' || userRole === 'Estudiante') {
-      // Los evaluadores y estudiantes ven las incidencias de su área
+    } else if (isEvaluator) {
+      // Los evaluadores ven las incidencias de su área
       query += ' WHERE ur.idArea = ? OR ua.idArea = ? ORDER BY i.fecha DESC, i.hora DESC';
       params = [userArea, userArea];
+    } else if (isStudent) {
+      // Los estudiantes solo ven sus propias incidencias
+      query += ' WHERE i.idUsuarioReportador = ? OR i.idUsuarioAfectado = ? ORDER BY i.fecha DESC, i.hora DESC';
+      params = [userId, userId];
     } else {
       // Otros roles solo ven sus propias incidencias
       query += ' WHERE i.idUsuarioReportador = ? OR i.idUsuarioAfectado = ? ORDER BY i.fecha DESC, i.hora DESC';
       params = [userId, userId];
     }
+
+    console.log('Executing query:', { query, params, userRole, normalizedRole });
 
     const [rows] = await pool.execute(query, params);
     
@@ -145,6 +158,8 @@ const getAllIncidencias = async () => {
 // Actualizar estado de incidencia
 const updateIncidenciaEstado = async (incidenciaId, estado, userId, userRole, userArea) => {
   try {
+    console.log('Updating incident status in service:', { incidenciaId, estado, userId, userRole, userArea });
+
     // Verificar permisos
     const [incidencia] = await pool.execute(
       `SELECT i.*, ur.idArea as areaReportador, ua.idArea as areaAfectado
@@ -171,6 +186,11 @@ const updateIncidenciaEstado = async (incidenciaId, estado, userId, userRole, us
       }
     } else {
       return { success: false, message: 'No tiene permiso para modificar incidencias' };
+    }
+
+    // Validar que el estado sea válido
+    if (!['Pendiente', 'Completada'].includes(estado)) {
+      return { success: false, message: 'Estado no válido' };
     }
 
     // Actualizar estado
@@ -216,7 +236,7 @@ const createIncidenciaEvaluacionDesaprobada = async (evaluacionData) => {
     const incidenciaData = {
       fecha: now.toISOString().split('T')[0],
       hora: now.toTimeString().split(' ')[0],
-      descripcion: `Evaluación desaprobada (${evaluacionData.puntajeTotal}/20). Criterios a mejorar: ${evaluacionData.criteriosAMejorar}`,
+      descripcion: `Evaluación desaprobada (${evaluacionData.puntajeTotal}/20). Criterios que requieren mejora: ${evaluacionData.criteriosAMejorar}. Se recomienda revisar y mejorar estos aspectos para futuras evaluaciones.`,
       tipo: 'Académica',
       reportadorId: evaluacionData.idEvaluador,
       afectadoId: evaluacionData.idEvaluado
@@ -225,7 +245,7 @@ const createIncidenciaEvaluacionDesaprobada = async (evaluacionData) => {
     return await createIncidencia(incidenciaData);
   } catch (error) {
     console.error('Error al crear incidencia por evaluación desaprobada:', error);
-    return { success: false, message: 'Error al crear la incidencia' };
+    return { success: false, message: 'Error al crear la incidencia por evaluación desaprobada' };
   }
 };
 

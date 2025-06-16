@@ -160,7 +160,7 @@ CREATE TABLE INCIDENCIA (
     hora TIME NOT NULL,
     descripcion VARCHAR(500) NOT NULL,
     tipo VARCHAR(50) NOT NULL,
-    estado ENUM('Activo','Inactivo','Pendiente'),
+    estado ENUM('Pendiente','Completada') DEFAULT 'Pendiente',
     accionTomada VARCHAR(500),
     idUsuarioReportador INT NOT NULL,
     idUsuarioAfectado INT NOT NULL,

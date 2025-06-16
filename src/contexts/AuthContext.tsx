@@ -12,6 +12,7 @@ export interface User {
   role: UserRole;
   colaboradorId?: number | null;
   colaboradorName?: string | null;
+  idArea?: number | null;
 }
 
 interface AuthContextType {
@@ -67,6 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       })
         .then(res => res.json())
         .then(data => {
+          console.log('Respuesta cruda de /api/users/current:', data);
           if (data.success && data.user) {
             const mappedUser = {
               id: data.user.id.toString(),
@@ -74,7 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               email: data.user.email,
               role: mapRole(data.user.role),
               colaboradorId: data.user.colaboradorId,
-              colaboradorName: data.user.colaboradorName
+              colaboradorName: data.user.colaboradorName,
+              idArea: data.user.idArea
             };
             setUser(mappedUser);
           } else {
@@ -118,7 +121,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           email: data.user.email,
           role: mapRole(data.user.role),
           colaboradorId: data.user.colaboradorId,
-          colaboradorName: data.user.colaboradorName
+          colaboradorName: data.user.colaboradorName,
+          idArea: data.user.idArea
         };
         setUser(mappedUser);
         toast.success(`Bienvenido, ${mappedUser.colaboradorName || mappedUser.name}`);

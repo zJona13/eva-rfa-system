@@ -554,7 +554,7 @@ app.get('/api/users/current', authenticateToken, async (req, res) => {
         THEN CONCAT(c.nombreColaborador, ' ', c.apePaColaborador, ' ', c.apeMaColaborador)
         ELSE NULL 
       END as colaboradorName,
-      u.idArea as areaId,
+      u.idArea as idArea,
       a.nombre as areaName,
       CASE 
         WHEN e.idEstudiante IS NOT NULL 
@@ -575,7 +575,8 @@ app.get('/api/users/current', authenticateToken, async (req, res) => {
     const user = rows[0];
     user.name = user.colaboradorName || user.estudianteName || user.email;
     user.active = user.active === 'Activo';
-    res.json(user);
+    console.log('Usuario enviado al frontend:', user);
+    res.json({ success: true, user });
   } catch (error) {
     console.error('Error al obtener usuario actual:', error);
     res.status(500).json({ success: false, message: 'Error al obtener usuario actual' });
@@ -732,11 +733,13 @@ app.get('/api/incidencias/user/:userId', authenticateToken, async (req, res) => 
     const userRole = req.user.role;
     const userArea = req.user.idArea;
 
+    console.log('Fetching incidents for user:', { userId, userRole, userArea });
+
     const result = await incidenciaService.getIncidenciasByUser(userId, userRole, userArea);
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(400).json({ message: result.message });
     }
   } catch (error) {
     console.error('Error in GET /api/incidencias/user:', error);
@@ -769,15 +772,17 @@ app.put('/api/incidencias/:id/estado', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { estado } = req.body;
-    const userId = req.user.id;
+    const userId = parseInt(req.user.id);
     const userRole = req.user.role;
-    const userArea = req.user.idArea;
+    const userArea = req.user.idArea ? parseInt(req.user.idArea) : null;
+    
+    console.log('Updating incident status:', { id, estado, userId, userRole, userArea });
     
     const result = await incidenciaService.updateIncidenciaEstado(id, estado, userId, userRole, userArea);
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(400).json({ message: result.message });
     }
   } catch (error) {
     console.error('Error in PUT /api/incidencias/estado:', error);
