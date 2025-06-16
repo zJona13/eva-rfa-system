@@ -39,9 +39,6 @@ const Header = ({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => void })
               <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
-          <h1 className="text-base md:text-lg font-semibold truncate">
-            {t('header.systemTitle')}
-          </h1>
         </div>
         
         <div className="flex items-center space-x-2 md:space-x-4">
