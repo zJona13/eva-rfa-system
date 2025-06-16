@@ -2,7 +2,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4 } from 'lucide-react';
+import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4, TrendingUp } from 'lucide-react';
 import { useAuth, getToken } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { modulesData } from '@/config/navigation';
@@ -60,8 +60,8 @@ const Dashboard = () => {
       console.log('✅ Dashboard stats fetched successfully:', data);
       return data;
     },
-    refetchInterval: 30000, // Refetch every 30 seconds
-    retry: 3 // Retry failed requests 3 times
+    refetchInterval: 30000,
+    retry: 3
   });
 
   const stats = statsData?.data?.stats || {};
@@ -74,163 +74,179 @@ const Dashboard = () => {
     return t('dashboard.goodEvening');
   };
 
-  // Use full collaborator name if available, otherwise use user name
   const displayName = user?.colaboradorName || user?.name;
-
-  // Determine if user is evaluated (docente) - using English role values
   const isEvaluated = userRole === 'evaluated';
   const isAdminOrEvaluator = userRole === 'admin' || userRole === 'evaluator';
 
   // Loading skeleton for stats
   const StatsSkeleton = () => (
-    <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
+    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="p-6 bg-card rounded-xl border shadow-sm">
-          <Skeleton className="h-4 w-24 mb-3" />
-          <Skeleton className="h-8 w-16" />
+        <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+          <Skeleton className="h-4 w-24 mb-4" />
+          <Skeleton className="h-8 w-16 mb-2" />
+          <Skeleton className="h-3 w-32" />
         </div>
       ))}
     </div>
   );
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8 space-y-8">
-        {/* Header Section */}
-        <div className="space-y-2">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-primary/10 border border-primary/20">
-              <BarChart4 className="h-6 w-6 text-primary" />
-            </div>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-foreground">
-                {getGreeting()}, {displayName}
-              </h1>
-              <p className="text-muted-foreground text-sm md:text-base mt-1">
-                {t('dashboard.welcome')}
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Error alert */}
-        {statsError && (
-          <Alert variant="destructive" className="border-l-4 border-l-destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              {t('dashboard.errorLoadingStats')}
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {/* Stats overview */}
-        {(!isAdminOrEvaluator || userRole === 'evaluator') && (
-          <div className="space-y-4">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <div className="w-1 h-6 bg-primary rounded-full"></div>
-              Estadísticas Generales
-            </h2>
-            {statsLoading ? (
-              <StatsSkeleton />
-            ) : (
-              <div className="grid gap-6 grid-cols-1 md:grid-cols-2 xl:grid-cols-4">
-                {isEvaluated ? (
-                  // Estadísticas para docentes evaluados
-                  <>
-                    <StatCard
-                      title={t('dashboard.receivedEvaluations')}
-                      value={stats.evaluacionesRecibidas || '0'}
-                      icon={<ClipboardList className="h-5 w-5" />}
-                      className="hover:shadow-md transition-shadow"
-                    />
-                    <StatCard
-                      title={t('dashboard.approvedEvaluations')}
-                      value={stats.evaluacionesAprobadas || '0'}
-                      icon={<CheckSquare className="h-5 w-5" />}
-                      valueClassName="text-emerald-600 dark:text-emerald-400"
-                      className="hover:shadow-md transition-shadow"
-                    />
-                    <StatCard
-                      title={t('dashboard.averageScore')}
-                      value={`${(stats.promedioCalificacion || 0).toFixed(1)}/20`}
-                      icon={<BarChart4 className="h-5 w-5" />}
-                      valueClassName="text-blue-600 dark:text-blue-400"
-                      className="hover:shadow-md transition-shadow"
-                    />
-                    <StatCard
-                      title={t('dashboard.personalIncidents')}
-                      value={stats.incidenciasPersonales || '0'}
-                      icon={<AlertCircle className="h-5 w-5" />}
-                      valueClassName="text-amber-600 dark:text-amber-400"
-                      className="hover:shadow-md transition-shadow"
-                    />
-                  </>
-                ) : (
-                  // Estadísticas para estudiantes y evaluadores
-                  <>
-                    <StatCard
-                      title={t('dashboard.pendingEvaluations')}
-                      value={stats.evaluacionesPendientes || '0'}
-                      icon={<ClipboardList className="h-5 w-5" />}
-                      className="hover:shadow-md transition-shadow"
-                    />
-                    <StatCard
-                      title={t('dashboard.activeIncidents')}
-                      value={stats.incidenciasActivas || '0'}
-                      icon={<AlertCircle className="h-5 w-5" />}
-                      valueClassName="text-amber-600 dark:text-amber-400"
-                      className="hover:shadow-md transition-shadow"
-                    />
-                    <StatCard
-                      title={t('dashboard.pendingValidations')}
-                      value={stats.validacionesPendientes || '0'}
-                      icon={<ShieldCheck className="h-5 w-5" />}
-                      className="hover:shadow-md transition-shadow"
-                    />
-                    <StatCard
-                      title={t('dashboard.totalResults')}
-                      value={stats.totalResultados || '0'}
-                      icon={<BarChart4 className="h-5 w-5" />}
-                      className="hover:shadow-md transition-shadow"
-                    />
-                  </>
-                )}
-              </div>
-            )}
-          </div>
-        )}
-
-        {/* Main Content Grid */}
-        <div className="grid gap-8 lg:grid-cols-12">
-          {/* Recent evaluations */}
-          <div className="lg:col-span-7 space-y-4">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <div className="w-1 h-6 bg-primary rounded-full"></div>
-              Actividad Reciente
-            </h2>
-            <div className="bg-card rounded-xl border shadow-sm">
-              <RecentEvaluations />
-            </div>
-          </div>
-          
-          {/* Module access */}
-          <div className="lg:col-span-5 space-y-4">
-            <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
-              <div className="w-1 h-6 bg-primary rounded-full"></div>
-              Acceso Rápido
-            </h2>
-            <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
-              {filteredModules.slice(0, 6).map((module) => (
-                <div key={module.id} className="transform hover:scale-105 transition-transform duration-200">
-                  <ModuleCard
-                    title={module.title}
-                    description={module.description}
-                    href={module.href}
-                    icon={<module.icon className="h-5 w-5" />}
-                    color={module.color}
-                  />
+    <div className="min-h-screen bg-gray-50/50">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+        <div className="space-y-8">
+          {/* Header Section */}
+          <div className="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-sm">
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100">
+                  <BarChart4 className="h-8 w-8 text-blue-600" />
                 </div>
-              ))}
+                <div>
+                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
+                    {getGreeting()}, {displayName}
+                  </h1>
+                  <p className="text-gray-600 mt-1 text-lg">
+                    {t('dashboard.welcome')}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="md:ml-auto flex items-center gap-3">
+                <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
+                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                  <span className="text-sm font-medium text-emerald-700">Sistema Activo</span>
+                </div>
+                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+                  {userRole === 'admin' ? 'Administrador' : 
+                   userRole === 'evaluator' ? 'Evaluador' : 
+                   userRole === 'evaluated' ? 'Evaluado' : 
+                   userRole === 'student' ? 'Estudiante' : 
+                   userRole === 'validator' ? 'Validador' : 'Invitado'}
+                </Badge>
+              </div>
+            </div>
+          </div>
+
+          {/* Error alert */}
+          {statsError && (
+            <Alert className="border-red-200 bg-red-50 rounded-2xl">
+              <AlertCircle className="h-5 w-5 text-red-600" />
+              <AlertDescription className="text-red-800">
+                {t('dashboard.errorLoadingStats')}
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {/* Stats overview */}
+          {(!isAdminOrEvaluator || userRole === 'evaluator') && (
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
+                <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2>
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+              
+              {statsLoading ? (
+                <StatsSkeleton />
+              ) : (
+                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                  {isEvaluated ? (
+                    <>
+                      <StatCard
+                        title={t('dashboard.receivedEvaluations')}
+                        value={stats.evaluacionesRecibidas || '0'}
+                        icon={<ClipboardList className="h-6 w-6" />}
+                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                      />
+                      <StatCard
+                        title={t('dashboard.approvedEvaluations')}
+                        value={stats.evaluacionesAprobadas || '0'}
+                        icon={<CheckSquare className="h-6 w-6" />}
+                        valueClassName="text-emerald-600"
+                        className="bg-white border-gray-100 hover:border-emerald-200 hover:shadow-md transition-all duration-300"
+                      />
+                      <StatCard
+                        title={t('dashboard.averageScore')}
+                        value={`${(stats.promedioCalificacion || 0).toFixed(1)}/20`}
+                        icon={<BarChart4 className="h-6 w-6" />}
+                        valueClassName="text-blue-600"
+                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                      />
+                      <StatCard
+                        title={t('dashboard.personalIncidents')}
+                        value={stats.incidenciasPersonales || '0'}
+                        icon={<AlertCircle className="h-6 w-6" />}
+                        valueClassName="text-amber-600"
+                        className="bg-white border-gray-100 hover:border-amber-200 hover:shadow-md transition-all duration-300"
+                      />
+                    </>
+                  ) : (
+                    <>
+                      <StatCard
+                        title={t('dashboard.pendingEvaluations')}
+                        value={stats.evaluacionesPendientes || '0'}
+                        icon={<ClipboardList className="h-6 w-6" />}
+                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                      />
+                      <StatCard
+                        title={t('dashboard.activeIncidents')}
+                        value={stats.incidenciasActivas || '0'}
+                        icon={<AlertCircle className="h-6 w-6" />}
+                        valueClassName="text-amber-600"
+                        className="bg-white border-gray-100 hover:border-amber-200 hover:shadow-md transition-all duration-300"
+                      />
+                      <StatCard
+                        title={t('dashboard.pendingValidations')}
+                        value={stats.validacionesPendientes || '0'}
+                        icon={<ShieldCheck className="h-6 w-6" />}
+                        className="bg-white border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-300"
+                      />
+                      <StatCard
+                        title={t('dashboard.totalResults')}
+                        value={stats.totalResultados || '0'}
+                        icon={<BarChart4 className="h-6 w-6" />}
+                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                      />
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Main Content Grid */}
+          <div className="grid gap-8 lg:grid-cols-3">
+            {/* Recent evaluations */}
+            <div className="lg:col-span-2 space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-8 bg-purple-600 rounded-full"></div>
+                <h2 className="text-2xl font-bold text-gray-900">Actividad Reciente</h2>
+              </div>
+              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+                <RecentEvaluations />
+              </div>
+            </div>
+            
+            {/* Module access */}
+            <div className="space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-8 bg-indigo-600 rounded-full"></div>
+                <h2 className="text-2xl font-bold text-gray-900">Acceso Rápido</h2>
+              </div>
+              <div className="grid gap-4">
+                {filteredModules.slice(0, 6).map((module) => (
+                  <div key={module.id} className="transform hover:scale-[1.02] transition-all duration-200">
+                    <ModuleCard
+                      title={module.title}
+                      description={module.description}
+                      href={module.href}
+                      icon={<module.icon className="h-5 w-5" />}
+                      color={module.color}
+                    />
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         </div>

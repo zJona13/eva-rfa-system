@@ -19,23 +19,23 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   description,
   href,
   icon,
-  color = "bg-primary/10 text-primary border-primary/20"
+  color = "bg-blue-50 text-blue-600 border-blue-200"
 }) => {
   const navigate = useNavigate();
   
   return (
-    <Card className="h-full group border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:bg-card hover:shadow-md transition-all duration-300">
-      <CardHeader className="pb-3">
+    <Card className="group border-gray-100 shadow-sm bg-white hover:shadow-md hover:border-gray-200 transition-all duration-300 rounded-2xl">
+      <CardHeader className="pb-4">
         <div className="flex items-start justify-between">
-          <div className={cn("flex items-center justify-center w-12 h-12 rounded-xl border group-hover:scale-110 transition-transform duration-300", color)}>
+          <div className={cn("flex items-center justify-center w-12 h-12 rounded-xl border group-hover:scale-105 transition-transform duration-300", color)}>
             {icon}
           </div>
         </div>
-        <div className="space-y-1">
-          <CardTitle className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+        <div className="space-y-2">
+          <CardTitle className="text-lg font-semibold text-gray-900 group-hover:text-blue-600 transition-colors leading-tight">
             {title}
           </CardTitle>
-          <CardDescription className="text-xs text-muted-foreground line-clamp-2">
+          <CardDescription className="text-sm text-gray-600 line-clamp-2 leading-relaxed">
             {description}
           </CardDescription>
         </div>
@@ -44,10 +44,10 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
         <Button 
           variant="ghost" 
           onClick={() => navigate(href)}
-          className="w-full justify-between text-xs h-8 px-3 hover:bg-primary/10 group-hover:bg-primary/15 transition-colors"
+          className="w-full justify-between text-sm h-10 px-4 hover:bg-blue-50 group-hover:bg-blue-50 group-hover:text-blue-600 transition-all duration-300 rounded-xl"
         >
-          <span>Acceder</span>
-          <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
+          <span className="font-medium">Acceder</span>
+          <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform duration-300" />
         </Button>
       </CardFooter>
     </Card>
