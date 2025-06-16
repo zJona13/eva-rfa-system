@@ -43,7 +43,7 @@ const Header = ({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => void })
           
           <div className="hidden md:block">
             <h1 className="text-lg font-semibold text-foreground/90">
-              Sistema de Evaluaciones
+            Sistema de Evaluación para Desempeño del Personal - IES
             </h1>
           </div>
         </div>
