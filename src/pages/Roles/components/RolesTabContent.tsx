@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +30,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { getToken } from '@/contexts/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 // Tipos
 interface Role {
   id: number;
@@ -40,7 +41,7 @@ interface Role {
 // Servicios API - Updated port from 5000 to 3309
 const createRole = async (name: string): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch('http://localhost:3309/api/roles', {
+  const response = await fetch(`${API_URL}/roles`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -57,7 +58,7 @@ const createRole = async (name: string): Promise<{ success: boolean, message: st
 
 const updateRole = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`http://localhost:3309/api/roles/${id}`, {
+  const response = await fetch(`${API_URL}/roles/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -74,7 +75,7 @@ const updateRole = async ({ id, name }: { id: number, name: string }): Promise<{
 
 const deleteRole = async (id: number): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`http://localhost:3309/api/roles/${id}`, {
+  const response = await fetch(`${API_URL}/roles/${id}`, {
     method: 'DELETE',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });

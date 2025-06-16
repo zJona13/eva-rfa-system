@@ -18,6 +18,8 @@ import { getToken } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 export default function SelfEvaluationPage() {
   const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
   const [mostrarFormulario, setMostrarFormulario] = useState(false);
@@ -46,7 +48,7 @@ export default function SelfEvaluationPage() {
       try {
         const token = getToken();
         // Obtener información del usuario actual
-        const response = await fetch('http://localhost:3309/api/users/current', {
+        const response = await fetch(`${API_URL}/users/current`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) {
