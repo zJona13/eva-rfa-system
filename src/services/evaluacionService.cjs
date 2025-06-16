@@ -437,9 +437,10 @@ const getCriteriosYSubcriteriosPorTipoEvaluacion = async (idTipoEvaluacion) => {
   }
 };
 
-// Nueva función: Obtener evaluaciones por usuario evaluador y tipo, sin filtro de estado
+// Obtener evaluaciones por usuario evaluador y tipo, sin filtro de estado
 const getEvaluacionesByEvaluadorAndTipoAllStates = async (idEvaluador, idTipoEvaluacion) => {
   try {
+    console.log('Buscando evaluaciones como evaluador:', { idEvaluador, idTipoEvaluacion });
     const [rows] = await pool.execute(
       `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, 
               e.puntajeTotal, e.comentario, e.estado,
@@ -464,15 +465,54 @@ const getEvaluacionesByEvaluadorAndTipoAllStates = async (idEvaluador, idTipoEva
        ORDER BY a.periodo DESC, e.fechaEvaluacion DESC`,
       [idEvaluador, idTipoEvaluacion]
     );
-    
+    console.log('Resultados encontrados (evaluador):', rows.length);
     const processedEvaluations = await processEvaluationsStatus(rows); // Procesa los estados aquí
-
     return {
       success: true,
       evaluaciones: processedEvaluations
     };
   } catch (error) {
     console.error('Error al obtener evaluaciones por evaluador y tipo (todos los estados):', error);
+    return { success: false, message: 'Error al obtener evaluaciones' };
+  }
+};
+
+// Nueva función: Obtener evaluaciones por usuario evaluado y tipo, sin filtro de estado
+const getEvaluacionesByEvaluadoAndTipoAllStates = async (idEvaluado, idTipoEvaluacion) => {
+  try {
+    console.log('Buscando evaluaciones como evaluado:', { idEvaluado, idTipoEvaluacion });
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, 
+              e.puntajeTotal, e.comentario, e.estado,
+              a.periodo, a.fechaInicio, a.fechaFin, a.horaInicio, a.horaFin,
+              ar.nombre as areaNombre,
+              CASE 
+                WHEN e.idTipoEvaluacion = 1 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+                WHEN e.idTipoEvaluacion = 2 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+                WHEN e.idTipoEvaluacion = 3 THEN CONCAT(ce.nombreColaborador, ' ', ce.apePaColaborador, ' ', ce.apeMaColaborador)
+              END as nombreEvaluado,
+              CASE 
+                WHEN e.idTipoEvaluacion = 1 THEN 'Estudiante al Docente'
+                WHEN e.idTipoEvaluacion = 2 THEN 'Supervisor al Docente'
+                WHEN e.idTipoEvaluacion = 3 THEN 'Autoevaluación'
+              END as tipoEvaluacionNombre
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       JOIN AREA ar ON a.idArea = ar.idArea
+       JOIN USUARIO ue ON e.idEvaluado = ue.idUsuario
+       LEFT JOIN COLABORADOR ce ON ue.idColaborador = ce.idColaborador
+       WHERE e.idEvaluado = ? AND e.idTipoEvaluacion = ?
+       ORDER BY a.periodo DESC, e.fechaEvaluacion DESC`,
+      [idEvaluado, idTipoEvaluacion]
+    );
+    console.log('Resultados encontrados (evaluado):', rows.length);
+    const processedEvaluations = await processEvaluationsStatus(rows); // Procesa los estados aquí
+    return {
+      success: true,
+      evaluaciones: processedEvaluations
+    };
+  } catch (error) {
+    console.error('Error al obtener evaluaciones por evaluado y tipo (todos los estados):', error);
     return { success: false, message: 'Error al obtener evaluaciones' };
   }
 };
@@ -549,5 +589,6 @@ module.exports = {
   getColaboradorByUserId,
   getCriteriosYSubcriteriosPorTipoEvaluacion,
   getEvaluacionesByEvaluadorAndTipoAllStates,
+  getEvaluacionesByEvaluadoAndTipoAllStates,
   cancelarBorradoresVencidos
 };

@@ -20,9 +20,15 @@ export const obtenerInfoEvaluacion = async (idEvaluacion: number) => {
   return response.json();
 };
 
-export async function obtenerTodasLasEvaluacionesPorUsuarioYTipo(idUsuario: number, idTipoEvaluacion: number) {
+export async function obtenerTodasLasEvaluacionesPorUsuarioYTipo(idUsuario: number, idTipoEvaluacion: number, rol: 'evaluador' | 'evaluado' = 'evaluador') {
   const token = getToken();
-  const res = await fetch(`${API_URL}/byUserAndType/${idUsuario}/${idTipoEvaluacion}`, {
+  let url = '';
+  if (rol === 'evaluador') {
+    url = `${API_URL}/byUserAndType/${idUsuario}/${idTipoEvaluacion}`;
+  } else {
+    url = `${API_URL}/byEvaluadoAndType/${idUsuario}/${idTipoEvaluacion}`;
+  }
+  const res = await fetch(url, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error('Error al obtener todas las evaluaciones por usuario y tipo');

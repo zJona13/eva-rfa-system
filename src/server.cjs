@@ -1327,6 +1327,22 @@ app.get('/api/evaluaciones/byUserAndType/:idUsuario/:idTipoEvaluacion', authenti
   }
 });
 
+// NUEVO: Obtener todas las evaluaciones por usuario evaluado y tipo (todos los estados)
+app.get('/api/evaluaciones/byEvaluadoAndType/:idUsuario/:idTipoEvaluacion', authenticateToken, async (req, res) => {
+  const { idUsuario, idTipoEvaluacion } = req.params;
+  try {
+    const result = await evaluacionService.getEvaluacionesByEvaluadoAndTipoAllStates(idUsuario, idTipoEvaluacion);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(500).json(result);
+    }
+  } catch (error) {
+    console.error('Error en GET /api/evaluaciones/byEvaluadoAndType/:idUsuario/:idTipoEvaluacion:', error);
+    res.status(500).json({ success: false, message: 'Error al obtener evaluaciones por usuario evaluado y tipo' });
+  }
+});
+
 // Obtener información de una evaluación específica para iniciarla
 app.get('/api/evaluaciones/:idEvaluacion/info', async (req, res) => {
   const { idEvaluacion } = req.params;

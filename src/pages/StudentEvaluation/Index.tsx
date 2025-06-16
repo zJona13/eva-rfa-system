@@ -41,7 +41,8 @@ export default function StudentEvaluationPage() {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         const userData = await resUser.json();
-        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userData.id, 1);
+        const userId = userData.user?.id;
+        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userId, 1, 'evaluador');
         setHistorialEvaluaciones(evaluacionesData.evaluaciones || []);
       } catch (e) {
         console.error('Error al cargar historial de evaluaciones de estudiante:', e);

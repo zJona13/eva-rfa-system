@@ -53,8 +53,9 @@ export default function SelfEvaluationPage() {
           throw new Error('Error al obtener información del usuario');
         }
         const userData = await response.json();
+        const userId = userData.user?.id;
         // Obtener TODAS las autoevaluaciones (tipo 3) del usuario
-        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userData.id, 3);
+        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userId, 3, 'evaluador');
         setEvaluacionesPendientes(evaluacionesData.evaluaciones || []);
       } catch (e) {
         console.error('Error al cargar historial de autoevaluaciones:', e);

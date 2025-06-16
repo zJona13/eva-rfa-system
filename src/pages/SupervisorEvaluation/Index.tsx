@@ -57,7 +57,8 @@ export default function SupervisorEvaluationPage() {
           throw new Error('Error al obtener información del usuario');
         }
         const userData = await response.json();
-        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userData.id, 2);
+        const userId = userData.user?.id;
+        const evaluacionesData = await obtenerTodasLasEvaluacionesPorUsuarioYTipo(userId, 2, 'evaluador');
         setHistorialEvaluaciones(evaluacionesData.evaluaciones || []);
         setLoading(false);
       } catch (error) {
