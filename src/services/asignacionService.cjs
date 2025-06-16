@@ -1,5 +1,6 @@
 const { pool } = require('../utils/dbConnection.cjs');
 const evaluacionService = require('./evaluacionService.cjs');
+const incidenciaService = require('./incidenciaService.cjs');
 
 // Crear una nueva asignación y evaluaciones automáticas
 const createAsignacion = async (data) => {
@@ -71,8 +72,41 @@ const createAsignacion = async (data) => {
 
 // Listar asignaciones
 const getAllAsignaciones = async () => {
+  let conn;
   try {
-    const [rows] = await pool.execute(
+    conn = await pool.getConnection();
+    // Buscar asignaciones vencidas y activas
+    const [vencidas] = await conn.execute(
+      `SELECT * FROM ASIGNACION WHERE estado = 'Activo' AND CONCAT(fechaFin, 'T', horaFin) < ?`,
+      [new Date().toISOString().slice(0, 16)]
+    );
+    // Actualizar asignaciones vencidas a 'Inactivo'
+    if (vencidas.length > 0) {
+      await conn.execute(
+        `UPDATE ASIGNACION SET estado = 'Inactivo' 
+         WHERE estado = 'Activo' 
+         AND CONCAT(fechaFin, 'T', horaFin) < ?`,
+        [new Date().toISOString().slice(0, 16)]
+      );
+      // Crear incidencia para cada asignación vencida
+      for (const asignacion of vencidas) {
+        // Buscar el usuario responsable (idUsuario)
+        const idUsuario = asignacion.idUsuario;
+        // Crear incidencia
+        const now = new Date();
+        const fecha = now.toISOString().slice(0, 10);
+        const hora = now.toTimeString().slice(0, 8);
+        await incidenciaService.createIncidencia({
+          fecha,
+          hora,
+          descripcion: `La asignación ${asignacion.idAsignacion} fue cancelada automáticamente por superar la fecha y hora límite.`,
+          tipo: 'Cancelación automática',
+          reportadorId: idUsuario,
+          afectadoId: idUsuario
+        });
+      }
+    }
+    const [rows] = await conn.execute(
       `SELECT a.*, ar.nombre as areaNombre, u.correo as usuarioCorreo FROM ASIGNACION a
       JOIN AREA ar ON a.idArea = ar.idArea
       JOIN USUARIO u ON a.idUsuario = u.idUsuario
@@ -82,6 +116,8 @@ const getAllAsignaciones = async () => {
   } catch (error) {
     console.error('Error al obtener asignaciones:', error);
     return { success: false, message: 'Error al obtener las asignaciones' };
+  } finally {
+    if (conn) conn.release();
   }
 };
 

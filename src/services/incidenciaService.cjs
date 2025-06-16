@@ -2,8 +2,10 @@ const { pool } = require('../utils/dbConnection.cjs');
 
 // Crear una nueva incidencia
 const createIncidencia = async (incidenciaData) => {
+  let conn;
   try {
-    const [result] = await pool.execute(
+    conn = await pool.getConnection();
+    const [result] = await conn.execute(
       'INSERT INTO INCIDENCIA (fecha, hora, descripcion, estado, tipo, idUsuarioReportador, idUsuarioAfectado) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
         incidenciaData.fecha,
@@ -15,11 +17,9 @@ const createIncidencia = async (incidenciaData) => {
         incidenciaData.afectadoId
       ]
     );
-    
     const incidenciaId = result.insertId;
-    
     // Crear notificación automáticamente
-    await pool.execute(
+    await conn.execute(
       'INSERT INTO NOTIFICACION (descripcion, fechaEnvio, horaEnvio, leido, idUsuario, idIncidencia) VALUES (?, ?, ?, ?, ?, ?)',
       [
         `Se ha creado una incidencia: ${incidenciaData.descripcion}`,
@@ -30,7 +30,6 @@ const createIncidencia = async (incidenciaData) => {
         incidenciaId
       ]
     );
-    
     return {
       success: true,
       incidenciaId: incidenciaId,
@@ -39,6 +38,8 @@ const createIncidencia = async (incidenciaData) => {
   } catch (error) {
     console.error('Error al crear incidencia:', error);
     return { success: false, message: 'Error al crear la incidencia' };
+  } finally {
+    if (conn) conn.release();
   }
 };
 

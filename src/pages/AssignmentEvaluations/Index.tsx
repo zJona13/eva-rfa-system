@@ -27,6 +27,21 @@ const formatTime = (timeString: string) => {
   return timeString.split(':').slice(0, 2).join(':');
 };
 
+// Función para determinar si la asignación ya terminó
+const isAssignmentFinished = (fechaFin, horaFin) => {
+  if (!fechaFin || !horaFin) return false;
+  const fin = new Date(`${fechaFin}T${horaFin}`);
+  return new Date() > fin;
+};
+
+// Función para mostrar el estado visual
+const mostrarEstado = (asignacion) => {
+  if (asignacion.estado === 'Activo' && isAssignmentFinished(asignacion.fechaFin, asignacion.horaFin)) {
+    return 'Finalizado';
+  }
+  return asignacion.estado;
+};
+
 const AssignmentEvaluations = () => {
   const [asignaciones, setAsignaciones] = useState([]);
   const [filteredAsignaciones, setFilteredAsignaciones] = useState([]);
@@ -324,9 +339,9 @@ const AssignmentEvaluations = () => {
                                 Periodo: {asignacion.periodo}
                               </Badge>
                               <Badge 
-                                className={`text-white ${getStatusColor(asignacion.estado)}`}
+                                className={`text-white ${getStatusColor(mostrarEstado(asignacion))}`}
                               >
-                                {asignacion.estado}
+                                {mostrarEstado(asignacion)}
                               </Badge>
                             </div>
                           </div>
