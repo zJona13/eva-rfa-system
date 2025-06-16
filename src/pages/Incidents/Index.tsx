@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAuth, getToken, UserRole } from '@/contexts/AuthContext';
 
@@ -50,6 +51,9 @@ const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: stri
 const Incidents = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [filterEstado, setFilterEstado] = useState<string>('todos');
+  const [filterTipo, setFilterTipo] = useState<string>('todos');
+  const [searchTerm, setSearchTerm] = useState<string>('');
 
   console.log('Usuario actual desde contexto:', user);
   if (user) {
@@ -140,6 +144,17 @@ const Incidents = () => {
     }
   };
 
+  const filteredIncidencias = incidencias.filter((incidencia: any) => {
+    const matchesEstado = filterEstado === 'todos' || incidencia.estado === filterEstado;
+    const matchesTipo = filterTipo === 'todos' || incidencia.tipo === filterTipo;
+    const matchesSearch = searchTerm === '' || 
+      incidencia.descripcion.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      incidencia.reportadorNombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      incidencia.afectadoNombre.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    return matchesEstado && matchesTipo && matchesSearch;
+  });
+
   if (error) {
     console.error('Error fetching incidents:', error);
   }
@@ -150,76 +165,112 @@ const Incidents = () => {
 
   return (
     <div className="container mx-auto p-4">
-      <h1 className="text-2xl font-bold mb-4">Incidencias</h1>
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold">Incidencias</h1>
+        <div className="flex gap-2">
+          <Input
+            placeholder="Buscar incidencias..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-64"
+          />
+          <Select value={filterEstado} onValueChange={setFilterEstado}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por estado" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los estados</SelectItem>
+              <SelectItem value="Pendiente">Pendiente</SelectItem>
+              <SelectItem value="Completada">Completada</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={filterTipo} onValueChange={setFilterTipo}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filtrar por tipo" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="todos">Todos los tipos</SelectItem>
+              <SelectItem value="Académica">Académica</SelectItem>
+              <SelectItem value="Administrativa">Administrativa</SelectItem>
+              <SelectItem value="Técnica">Técnica</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+      </div>
       
       <div className="grid gap-4">
-        {incidencias.map((incidencia: any) => (
-          <Card key={incidencia.id}>
-            <CardHeader>
-              <div className="flex justify-between items-start">
-                <div>
-                  <CardTitle className="text-lg">
-                    Incidencia #{incidencia.id}
-                  </CardTitle>
-                  <CardDescription>
-                    {new Date(incidencia.fecha).toLocaleDateString()} {incidencia.hora}
-                  </CardDescription>
-                </div>
-                <div className="flex gap-2">
-                  <Badge className={getTipoColor(incidencia.tipo)}>
-                    {incidencia.tipo}
-                  </Badge>
-                  <Badge className={getEstadoColor(incidencia.estado)}>
-                    {incidencia.estado}
-                  </Badge>
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <p className="font-semibold">Descripción:</p>
-                  <p className="text-gray-600">{incidencia.descripcion}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
+        {filteredIncidencias.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No se encontraron incidencias con los filtros seleccionados
+          </div>
+        ) : (
+          filteredIncidencias.map((incidencia: any) => (
+            <Card key={incidencia.id} className="hover:shadow-lg transition-shadow">
+              <CardHeader>
+                <div className="flex justify-between items-start">
                   <div>
-                    <p className="font-semibold">Reportado por:</p>
-                    <p className="text-gray-600">{incidencia.reportadorNombre}</p>
+                    <CardTitle className="text-lg">
+                      Incidencia #{incidencia.id}
+                    </CardTitle>
+                    <CardDescription>
+                      {new Date(incidencia.fecha).toLocaleDateString()} {incidencia.hora}
+                    </CardDescription>
                   </div>
-                  <div>
-                    <p className="font-semibold">Afectado:</p>
-                    <p className="text-gray-600">{incidencia.afectadoNombre}</p>
-                  </div>
-                </div>
-
-                {incidencia.accionTomada && (
-                  <div>
-                    <p className="font-semibold">Acción tomada:</p>
-                    <p className="text-gray-600">{incidencia.accionTomada}</p>
-                  </div>
-                )}
-
-                {canModifyStatus() && incidencia.estado === 'Pendiente' && (
                   <div className="flex gap-2">
-                    <Select
-                      value={incidencia.estado}
-                      onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder="Cambiar estado" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Completada">Completada</SelectItem>
-                      </SelectContent>
-                    </Select>
+                    <Badge className={getTipoColor(incidencia.tipo)}>
+                      {incidencia.tipo}
+                    </Badge>
+                    <Badge className={getEstadoColor(incidencia.estado)}>
+                      {incidencia.estado}
+                    </Badge>
                   </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        ))}
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div>
+                    <p className="font-semibold">Descripción:</p>
+                    <p className="text-gray-600">{incidencia.descripcion}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="font-semibold">Reportado por:</p>
+                      <p className="text-gray-600">{incidencia.reportadorNombre}</p>
+                    </div>
+                    <div>
+                      <p className="font-semibold">Afectado:</p>
+                      <p className="text-gray-600">{incidencia.afectadoNombre}</p>
+                    </div>
+                  </div>
+
+                  {incidencia.accionTomada && (
+                    <div>
+                      <p className="font-semibold">Acción tomada:</p>
+                      <p className="text-gray-600">{incidencia.accionTomada}</p>
+                    </div>
+                  )}
+
+                  {canModifyStatus() && incidencia.estado === 'Pendiente' && (
+                    <div className="flex gap-2">
+                      <Select
+                        value={incidencia.estado}
+                        onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
+                      >
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Cambiar estado" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Completada">Completada</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ))
+        )}
       </div>
     </div>
   );
