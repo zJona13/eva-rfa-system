@@ -729,7 +729,15 @@ app.post('/api/incidencias', authenticateToken, async (req, res) => {
 app.get('/api/incidencias/user/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    const result = await incidenciaService.getIncidenciasByUser(userId);
+    const userRole = req.user.role?.toLowerCase() || '';
+
+    console.log('Datos del usuario en el servidor:', { 
+      userId, 
+      userRole,
+      originalRole: req.user.role 
+    }); // Debug log
+
+    const result = await incidenciaService.getIncidenciasByUser(userId, userRole);
     if (result.success) {
       res.json(result);
     } else {
@@ -761,12 +769,13 @@ app.put('/api/incidencias/:id/estado', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { estado } = req.body;
+    const userRole = req.user.role;
     
-    const result = await incidenciaService.updateIncidenciaEstado(id, estado);
+    const result = await incidenciaService.updateIncidenciaEstado(id, estado, userRole);
     if (result.success) {
       res.json(result);
     } else {
-      res.status(500).json({ message: result.message });
+      res.status(403).json({ message: result.message });
     }
   } catch (error) {
     console.error('Error in PUT /api/incidencias/estado:', error);

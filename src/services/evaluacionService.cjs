@@ -1,4 +1,5 @@
 const { pool } = require('../utils/dbConnection.cjs');
+const incidenciaService = require('./incidenciaService.cjs');
 
 const UM_APROBACION = 11; // Umbral de aprobación para las evaluaciones (ej. 10 sobre 20)
 
@@ -466,6 +467,44 @@ const cancelarBorradoresVencidos = async () => {
   }
 };
 
+// Actualizar estado de evaluación
+const updateEvaluacionEstado = async (evaluacionId, estado) => {
+  try {
+    // Obtener datos de la evaluación antes de actualizar
+    const [evaluacion] = await pool.execute(
+      'SELECT * FROM EVALUACION WHERE idEvaluacion = ?',
+      [evaluacionId]
+    );
+
+    if (evaluacion.length === 0) {
+      return { success: false, message: 'Evaluación no encontrada' };
+    }
+
+    const evaluacionData = evaluacion[0];
+
+    // Actualizar estado
+    await pool.execute(
+      'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
+      [estado, evaluacionId]
+    );
+
+    // Generar incidencia si corresponde
+    if (estado === 'Cancelada') {
+      await incidenciaService.generarIncidenciaEvaluacionCancelada(evaluacionData);
+    } else if (estado === 'Completada' && evaluacionData.puntajeTotal < 11) {
+      await incidenciaService.generarIncidenciaEvaluacionDesaprobada(evaluacionData);
+    }
+
+    return {
+      success: true,
+      message: 'Estado de evaluación actualizado exitosamente'
+    };
+  } catch (error) {
+    console.error('Error al actualizar estado de evaluación:', error);
+    return { success: false, message: 'Error al actualizar el estado de la evaluación' };
+  }
+};
+
 /**
  * Ejemplo de payload para crear una evaluación:
  * {
@@ -499,5 +538,6 @@ module.exports = {
   getColaboradorByUserId,
   getCriteriosYSubcriteriosPorTipoEvaluacion,
   getEvaluacionesByEvaluadorAndTipoAllStates,
-  cancelarBorradoresVencidos
+  cancelarBorradoresVencidos,
+  updateEvaluacionEstado
 };

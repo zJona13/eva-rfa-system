@@ -12,7 +12,10 @@ const API_BASE_URL = 'http://localhost:3309/api';
 const fetchIncidencias = async (userId: number) => {
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
-    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    }
   });
 
   if (!response.ok) {
@@ -42,14 +45,20 @@ const Incidents = () => {
   const queryClient = useQueryClient();
 
   const userId = user?.id ? parseInt(user.id) : 0;
+  const userRole = user?.role?.toLowerCase() || '';
 
-  console.log('Usuario actual:', user); // Debug log para verificar datos del usuario
+  console.log('Datos del usuario:', { userId, userRole }); // Debug log
 
-  const { data: incidenciasData, isLoading } = useQuery({
-    queryKey: ['incidencias', userId],
+  const { data: incidenciasData, isLoading, error } = useQuery({
+    queryKey: ['incidencias', userId, userRole],
     queryFn: () => fetchIncidencias(userId),
     enabled: !!userId,
   });
+
+  if (error) {
+    console.error('Error al cargar incidencias:', error);
+    return <div className="text-red-500">Error al cargar las incidencias</div>;
+  }
 
   const updateEstadoMutation = useMutation({
     mutationFn: updateIncidenciaEstado,
@@ -68,32 +77,25 @@ const Incidents = () => {
     updateEstadoMutation.mutate({ id: incidenciaId, estado: nuevoEstado });
   };
 
-  // Verificar si el usuario puede modificar el estado (solo evaluadores y administradores)
+  // Verificar si el usuario puede modificar el estado
   const canModifyStatus = () => {
-    if (!user?.role) {
-      console.log('No hay rol de usuario'); // Debug log
-      return false;
-    }
-    
-    const userRole = user.role.toLowerCase();
-    console.log('Rol del usuario (normalizado):', userRole); // Debug log
-    
-    // Verificar múltiples variaciones posibles del rol
-    const allowedRoles = ['evaluador', 'administrador', 'admin', 'evaluator'];
-    const canModify = allowedRoles.includes(userRole);
-    
-    console.log('¿Puede modificar estado?:', canModify); // Debug log
-    
-    return canModify;
+    return ['administrador', 'evaluador'].includes(userRole);
+  };
+
+  // Verificar si el usuario puede modificar esta incidencia específica
+  const canModifyThisIncidencia = (incidencia: any) => {
+    if (userRole === 'administrador') return true;
+    if (userRole === 'evaluador') return true;
+    return false;
   };
 
   const getEstadoColor = (estado: string) => {
     switch (estado) {
-      case 'Resuelto':
+      case 'Completada':
         return 'bg-green-100 text-green-800';
-      case 'En proceso':
-        return 'bg-yellow-100 text-yellow-800';
       case 'Pendiente':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Cancelada':
         return 'bg-red-100 text-red-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -114,30 +116,12 @@ const Incidents = () => {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center p-8">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-      </div>
-    );
+    return <div>Cargando incidencias...</div>;
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Gestión de Incidencias</h1>
-          <p className="text-muted-foreground mt-2">
-            Registre y haga seguimiento a incidencias del sistema o proceso evaluativo.
-          </p>
-        </div>
-      </div>
-
-      {/* Debug info para verificar permisos */}
-      <div className="bg-muted p-3 rounded-lg text-sm">
-        <p><strong>Usuario:</strong> {user?.name}</p>
-        <p><strong>Rol:</strong> {user?.role}</p>
-        <p><strong>Puede modificar estado:</strong> {canModifyStatus() ? 'Sí' : 'No'}</p>
-      </div>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Incidencias</h1>
 
       {incidencias.length === 0 ? (
         <Card>
@@ -163,13 +147,16 @@ const Incidents = () => {
                       <Badge className={getEstadoColor(incidencia.estado)}>
                         {incidencia.estado}
                       </Badge>
+                      <Badge variant="outline">
+                        Área: {incidencia.areaNombre}
+                      </Badge>
                     </div>
                   </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
-                  <p className="text-sm">{incidencia.descripcion}</p>
+                  <p className="text-sm whitespace-pre-line">{incidencia.descripcion}</p>
                   
                   <div className="text-xs text-muted-foreground space-y-1">
                     <p><strong>Reportado por:</strong> {incidencia.reportadorNombre}</p>
@@ -177,7 +164,7 @@ const Incidents = () => {
                   </div>
 
                   <div className="flex justify-between items-center pt-2">
-                    {canModifyStatus() ? (
+                    {canModifyStatus() && canModifyThisIncidencia(incidencia) ? (
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Estado:</span>
                         <Select
@@ -189,8 +176,8 @@ const Incidents = () => {
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="En proceso">En proceso</SelectItem>
-                            <SelectItem value="Resuelto">Resuelto</SelectItem>
+                            <SelectItem value="Pendiente">Pendiente</SelectItem>
+                            <SelectItem value="Completada">Completada</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>
@@ -198,7 +185,6 @@ const Incidents = () => {
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-medium">Estado:</span>
                         <span className="text-sm text-muted-foreground">{incidencia.estado}</span>
-                        <span className="text-xs text-muted-foreground">(Solo evaluadores y administradores pueden modificar)</span>
                       </div>
                     )}
                   </div>
