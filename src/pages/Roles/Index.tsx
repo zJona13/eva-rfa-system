@@ -92,12 +92,10 @@ interface Usuario {
   correo: string;
 }
 
-const API_BASE_URL = import.meta.env.VITE_API_URL;
-
 // Servicios API - Updated port from 5000 to 3309
 const fetchRoles = async (): Promise<Role[]> => {
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/api/roles`, {
+  const response = await fetch('http://localhost:3309/api/roles', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -139,7 +137,7 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/api/tiposcontrato`, {
+  const response = await fetch('http://localhost:3309/api/tiposcontrato', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   

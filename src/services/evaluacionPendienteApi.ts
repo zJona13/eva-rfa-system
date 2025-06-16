@@ -1,6 +1,6 @@
 import { getToken } from '../contexts/AuthContext';
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/evaluaciones`;
+const API_URL = 'http://localhost:3309/api/evaluaciones';
 
 export async function obtenerEvaluacionesPendientes(idUsuario: number, idTipoEvaluacion: number) {
   const token = getToken();

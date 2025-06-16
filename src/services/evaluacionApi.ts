@@ -1,6 +1,6 @@
 // Servicio para consumir los endpoints de evaluaciones y criterios/subcriterios
 
-const API_URL = `${import.meta.env.VITE_API_URL}/api/evaluaciones`;
+const API_URL = '/api/evaluaciones';
 import { getToken } from '../contexts/AuthContext';
 
 // Obtener criterios y subcriterios por tipo de evaluación
