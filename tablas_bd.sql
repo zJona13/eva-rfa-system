@@ -162,8 +162,10 @@ CREATE TABLE INCIDENCIA (
     tipo VARCHAR(50) NOT NULL,
     estado ENUM('Activo','Inactivo','Pendiente'),
     accionTomada VARCHAR(500),
-    idUsuario INT NOT NULL,
-    FOREIGN KEY (idUsuario) REFERENCES USUARIO(idUsuario)
+    idUsuarioReportador INT NOT NULL,
+    idUsuarioAfectado INT NOT NULL,
+    FOREIGN KEY (idUsuarioReportador) REFERENCES USUARIO(idUsuario),
+    FOREIGN KEY (idUsuarioAfectado) REFERENCES USUARIO(idUsuario)
 );
 
 CREATE TABLE NOTIFICACION (
