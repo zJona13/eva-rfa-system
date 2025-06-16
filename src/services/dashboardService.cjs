@@ -16,12 +16,12 @@ const dashboardService = {
         );
         
         const [evaluacionesAprobadas] = await pool.query(
-          'SELECT COUNT(*) as total FROM EVALUACION WHERE idEvaluado = ? AND estado = "Activo"',
+          'SELECT COUNT(*) as total FROM EVALUACION WHERE idEvaluado = ? AND puntajeTotal >= 11 AND (estado = "Activo" OR estado = "Completada")',
           [userId]
         );
         
         const [promedioCalificacion] = await pool.query(
-          'SELECT AVG(puntajeTotal) as promedio FROM EVALUACION WHERE idEvaluado = ? AND estado = "Activo"',
+          'SELECT AVG(puntajeTotal) as promedio FROM EVALUACION WHERE idEvaluado = ? AND (estado = "Activo" OR estado = "Completada")',
           [userId]
         );
         

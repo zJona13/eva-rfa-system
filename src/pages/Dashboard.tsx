@@ -156,7 +156,7 @@ const Dashboard = () => {
                       />
                       <StatCard
                         title={t('dashboard.averageScore')}
-                        value={`${(stats.promedioCalificacion || 0).toFixed(1)}/20`}
+                        value={`${(Number(stats.promedioCalificacion) || 0).toFixed(1)}/20`}
                         icon={<BarChart4 className="h-6 w-6" />}
                         valueClassName="text-primary"
                         className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
