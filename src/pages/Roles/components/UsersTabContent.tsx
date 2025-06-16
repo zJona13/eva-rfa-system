@@ -178,42 +178,42 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
   return (
     <>
       <Card className="border-2 border-muted-foreground/20 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-background to-muted/20">
-        <CardHeader className="bg-gradient-to-r from-muted-foreground/5 to-primary/5 rounded-t-lg border-b-2 border-muted-foreground/10">
-          <div className="flex items-center justify-between">
+        <CardHeader className="bg-gradient-to-r from-muted-foreground/5 to-primary/5 rounded-t-lg border-b-2 border-muted-foreground/10 p-4 sm:p-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-muted-foreground/10 rounded-lg">
-                <UserCog className="h-6 w-6 text-muted-foreground" />
+                <UserCog className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
               </div>
               <div>
-                <CardTitle className="text-xl font-bold text-muted-foreground">
+                <CardTitle className="text-lg sm:text-xl font-bold text-muted-foreground">
                   Gestión de Usuarios
                 </CardTitle>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-xs sm:text-sm text-muted-foreground mt-1">
                   Administra los usuarios del sistema y sus roles asignados
                 </p>
               </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="p-6">
+        <CardContent className="p-3 sm:p-6">
           {isLoading ? (
-            <div className="flex justify-center items-center py-12">
+            <div className="flex justify-center items-center py-8 sm:py-12">
               <div className="relative">
-                <div className="animate-spin h-8 w-8 border-4 border-muted-foreground border-t-transparent rounded-full"></div>
-                <div className="absolute inset-0 animate-ping h-8 w-8 border-4 border-muted-foreground/20 rounded-full"></div>
+                <div className="animate-spin h-6 w-6 sm:h-8 sm:w-8 border-4 border-muted-foreground border-t-transparent rounded-full"></div>
+                <div className="absolute inset-0 animate-ping h-6 w-6 sm:h-8 sm:w-8 border-4 border-muted-foreground/20 rounded-full"></div>
               </div>
-              <span className="ml-3 text-muted-foreground">Cargando usuarios...</span>
+              <span className="ml-3 text-sm sm:text-base text-muted-foreground">Cargando usuarios...</span>
             </div>
           ) : filteredUsers.length === 0 ? (
-            <div className="text-center py-12 space-y-4">
-              <div className="mx-auto w-16 h-16 bg-gradient-to-br from-muted-foreground/20 to-primary/20 rounded-full flex items-center justify-center">
-                <UserCog className="h-8 w-8 text-muted-foreground" />
+            <div className="text-center py-8 sm:py-12 space-y-4 px-4">
+              <div className="mx-auto w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-muted-foreground/20 to-primary/20 rounded-full flex items-center justify-center">
+                <UserCog className="h-6 w-6 sm:h-8 sm:w-8 text-muted-foreground" />
               </div>
               <div className="space-y-2">
-                <h3 className="text-lg font-semibold text-foreground">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground">
                   {searchQuery ? 'No se encontraron usuarios' : 'No hay usuarios registrados'}
                 </h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                <p className="text-xs sm:text-sm text-muted-foreground max-w-md mx-auto">
                   {searchQuery 
                     ? 'Intenta ajustar los términos de búsqueda para encontrar usuarios.'
                     : 'Los usuarios se crean automáticamente al agregar colaboradores o estudiantes.'
@@ -223,9 +223,9 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
             </div>
           ) : (
             <div className="space-y-4">
-              <div className="flex items-center justify-between p-4 bg-gradient-to-r from-muted-foreground/5 to-primary/5 rounded-lg border">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 bg-gradient-to-r from-muted-foreground/5 to-primary/5 rounded-lg border gap-2">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-medium text-muted-foreground">
+                  <span className="text-xs sm:text-sm font-medium text-muted-foreground">
                     {filteredUsers.length} usuario{filteredUsers.length !== 1 ? 's' : ''} encontrado{filteredUsers.length !== 1 ? 's' : ''}
                   </span>
                   {searchQuery && (
@@ -240,13 +240,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                 <Table className="min-w-full">
                   <TableHeader className="bg-gradient-to-r from-muted/50 to-muted/30">
                     <TableRow className="hover:bg-muted/50">
-                      <TableHead className="font-semibold text-muted-foreground">Nombre</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Correo electrónico</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Rol</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Colaborador</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Área</TableHead>
-                      <TableHead className="font-semibold text-muted-foreground">Estado</TableHead>
-                      <TableHead className="text-right font-semibold text-muted-foreground">Acciones</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Nombre</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4 hidden sm:table-cell">Correo</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Rol</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4 hidden lg:table-cell">Colaborador</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4 hidden lg:table-cell">Área</TableHead>
+                      <TableHead className="font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Estado</TableHead>
+                      <TableHead className="text-right font-semibold text-muted-foreground text-xs sm:text-sm px-2 sm:px-4">Acciones</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -257,57 +257,64 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
                           index % 2 === 0 ? 'bg-background' : 'bg-muted/20'
                         }`}
                       >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-gradient-to-br from-muted-foreground/20 to-primary/20 rounded-full flex items-center justify-center">
+                        <TableCell className="font-medium px-2 sm:px-4 py-2 sm:py-3">
+                          <div className="flex items-center gap-2 sm:gap-3">
+                            <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-muted-foreground/20 to-primary/20 rounded-full flex items-center justify-center">
                               <span className="text-xs font-bold text-muted-foreground">
                                 {(user.colaboradorName || user.estudianteName || user.name).charAt(0).toUpperCase()}
                               </span>
                             </div>
-                            <span>{
-                              user.colaboradorName
-                                ? user.colaboradorName
-                                : (user.estudianteName ? user.estudianteName : user.name)
-                            }</span>
+                            <div className="min-w-0">
+                              <div className="text-xs sm:text-sm font-medium truncate">
+                                {user.colaboradorName
+                                  ? user.colaboradorName
+                                  : (user.estudianteName ? user.estudianteName : user.name)
+                                }
+                              </div>
+                              <div className="text-xs text-muted-foreground truncate sm:hidden">
+                                {user.email}
+                              </div>
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell>
-                          <span className="text-sm">{user.email}</span>
+                        <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden sm:table-cell">
+                          <span className="text-xs sm:text-sm">{user.email}</span>
                         </TableCell>
-                        <TableCell>
-                          <Badge variant={user.role === 'Administrador' ? 'destructive' : 'default'}>
+                        <TableCell className="px-2 sm:px-4 py-2 sm:py-3">
+                          <Badge variant={user.role === 'Administrador' ? 'destructive' : 'default'} className="text-xs">
                             {user.role}
                           </Badge>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell">
                           {user.colaboradorName ? (
-                            <span className="text-sm">{user.colaboradorName}</span>
+                            <span className="text-xs sm:text-sm">{user.colaboradorName}</span>
                           ) : (
-                            <span className="text-sm text-muted-foreground">Sin asignar</span>
+                            <span className="text-xs sm:text-sm text-muted-foreground">Sin asignar</span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-2 sm:px-4 py-2 sm:py-3 hidden lg:table-cell">
                           {user.areaName ? (
-                            <span className="text-sm">{user.areaName}</span>
+                            <span className="text-xs sm:text-sm">{user.areaName}</span>
                           ) : (
-                            <span className="text-sm text-muted-foreground">Sin área</span>
+                            <span className="text-xs sm:text-sm text-muted-foreground">Sin área</span>
                           )}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="px-2 sm:px-4 py-2 sm:py-3">
                           <Switch 
                             checked={user.active} 
                             onCheckedChange={() => toggleUserStatus(user)}
+                            size="sm"
                           />
                         </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex justify-end gap-2">
+                        <TableCell className="text-right px-2 sm:px-4 py-2 sm:py-3">
+                          <div className="flex justify-end gap-1 sm:gap-2">
                             <Button 
                               variant="ghost" 
                               size="icon" 
-                              className="hover:bg-muted-foreground/10 hover:text-muted-foreground transition-colors"
+                              className="hover:bg-muted-foreground/10 hover:text-muted-foreground transition-colors h-8 w-8 sm:h-10 sm:w-10"
                               onClick={() => handleEditUser(user)}
                             >
-                              <Pencil className="h-4 w-4" />
+                              <Pencil className="h-3 w-3 sm:h-4 sm:w-4" />
                             </Button>
                           </div>
                         </TableCell>
