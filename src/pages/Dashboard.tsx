@@ -50,7 +50,7 @@ const Dashboard = () => {
     queryFn: async () => {
       console.log('🔄 Fetching dashboard stats...');
       const token = getToken();
-      const response = await fetch('/api/dashboard/stats', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/dashboard/stats`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (!response.ok) {

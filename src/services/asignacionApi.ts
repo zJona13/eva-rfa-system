@@ -1,4 +1,4 @@
-const API_URL = '/api/asignaciones';
+const API_URL = `${import.meta.env.VITE_API_URL}/api/asignaciones`;
 import { getToken } from '../contexts/AuthContext';
 
 export const listarAsignaciones = async (token: string) => {
