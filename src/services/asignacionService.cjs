@@ -37,7 +37,7 @@ const createAsignacion = async (data) => {
     for (const docente of docentes) {
       await conn.execute(
         'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntajeTotal, comentario, estado, idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-        [data.fechaInicio, data.horaInicio, 0, null, 'Pendiente', idAsignacion, docente.idUsuario, docente.idUsuario, 3]
+        [data.fechaInicio, data.horaInicio, null, null, 'Pendiente', idAsignacion, docente.idUsuario, docente.idUsuario, 3]
       );
     }
     // 2. Evaluación Evaluador al Docente (tipo 2)
@@ -45,7 +45,7 @@ const createAsignacion = async (data) => {
       for (const evaluador of evaluadores) {
         await conn.execute(
           'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntajeTotal, comentario, estado, idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [data.fechaInicio, data.horaInicio, 0, null, 'Pendiente', idAsignacion, evaluador.idUsuario, docente.idUsuario, 2]
+          [data.fechaInicio, data.horaInicio, null, null, 'Pendiente', idAsignacion, evaluador.idUsuario, docente.idUsuario, 2]
         );
       }
     }
@@ -54,7 +54,7 @@ const createAsignacion = async (data) => {
       for (const estudiante of estudiantes) {
         await conn.execute(
           'INSERT INTO EVALUACION (fechaEvaluacion, horaEvaluacion, puntajeTotal, comentario, estado, idAsignacion, idEvaluador, idEvaluado, idTipoEvaluacion) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [data.fechaInicio, data.horaInicio, 0, null, 'Pendiente', idAsignacion, estudiante.idUsuario, docente.idUsuario, 1]
+          [data.fechaInicio, data.horaInicio, null, null, 'Pendiente', idAsignacion, estudiante.idUsuario, docente.idUsuario, 1]
         );
       }
     }
