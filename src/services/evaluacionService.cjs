@@ -1,5 +1,65 @@
 const { pool } = require('../utils/dbConnection.cjs');
 
+const UM_APROBACION = 11; // Umbral de aprobación para las evaluaciones (ej. 10 sobre 20)
+
+// Función auxiliar para procesar el estado de una lista de evaluaciones
+const processEvaluationsStatus = async (evaluaciones) => {
+  const now = new Date();
+  const updates = [];
+
+  for (const evalItem of evaluaciones) {
+    const fechaFin = new Date(evalItem.fechaFin);
+    if (evalItem.horaFin) {
+      const [h, m, s] = evalItem.horaFin.split(':');
+      fechaFin.setHours(Number(h), Number(m), Number(s || 0));
+    }
+
+    let newStatus = evalItem.estado; // Mantener el estado actual por defecto
+
+    // Si la evaluación ya está en un estado final, no la modificamos
+    if (['Completada', 'Vencida', 'Aprobado', 'Desaprobado', 'Cancelada'].includes(evalItem.estado)) {
+      continue;
+    }
+
+    if (now > fechaFin) {
+      // Si el puntajeTotal es null o 0, y el período ha pasado, se considera 'Vencida'
+      if (evalItem.puntajeTotal === null || evalItem.puntajeTotal === 0) {
+        newStatus = 'Vencida';
+      } else if (evalItem.puntajeTotal !== null) {
+        // Si tiene puntaje y venció, se marca como 'Completada'.
+        // El Aprobado/Desaprobado se maneja en el frontend.
+        newStatus = 'Completada';
+      }
+    } else if (evalItem.puntajeTotal !== null && evalItem.puntajeTotal > 0 && evalItem.estado === 'Activo') {
+      // Si la evaluación fue completada activamente (con puntaje) y está en 'Activo',
+      // la marcamos como 'Completada'. El Aprobado/Desaprobado se maneja en el frontend.
+      newStatus = 'Completada';
+    }
+
+    if (newStatus !== evalItem.estado) {
+      updates.push({
+        idEvaluacion: evalItem.idEvaluacion,
+        newStatus: newStatus
+      });
+      evalItem.estado = newStatus; // Actualizar el objeto para la respuesta inmediata
+    }
+  }
+
+  // Realizar todas las actualizaciones a la base de datos en una sola transacción si es posible,
+  // o de forma individual si no se soporta batch update fácilmente.
+  // Por simplicidad, se harán individuales por ahora. En un entorno de producción, considerar batch.
+  for (const update of updates) {
+    try {
+      await pool.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', [update.newStatus, update.idEvaluacion]);
+      console.log(`Evaluación ID ${update.idEvaluacion} estado actualizado a ${update.newStatus}`);
+    } catch (error) {
+      console.error(`Error al actualizar el estado de la evaluación ${update.idEvaluacion} a ${update.newStatus}:`, error);
+    }
+  }
+
+  return evaluaciones; // Retornar las evaluaciones con los estados potencialmente actualizados
+};
+
 // Obtener todas las evaluaciones con información relacionada
 const getAllEvaluaciones = async () => {
   try {
@@ -132,7 +192,7 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
     // Obtener la evaluación actual y las fechas de la asignación
     console.log('Obteniendo estado actual de la evaluación y fechas de asignación...');
     const [rows] = await conn.execute(
-      `SELECT e.estado, a.fechaFin, a.horaFin 
+      `SELECT e.estado, e.puntajeTotal, a.fechaFin, a.horaFin 
        FROM EVALUACION e
        JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
        WHERE e.idEvaluacion = ?`,
@@ -149,8 +209,8 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
     console.log('Estado actual de la evaluación:', evaluacion.estado);
     console.log('Fechas de asignación asociadas:', { fechaFin: evaluacion.fechaFin, horaFin: evaluacion.horaFin });
     
-    // Solo restringir si está pendiente
-    if (evaluacion.estado === 'Pendiente' || evaluacion.estado === 'Activo') { // Considerar 'Activo' también para la restricción
+    // Solo restringir si está pendiente o activa
+    if (evaluacion.estado === 'Pendiente' || evaluacion.estado === 'Activo') {
       const ahora = new Date();
       const fechaLimite = new Date(evaluacion.fechaFin);
       if (evaluacion.horaFin) {
@@ -162,12 +222,32 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
       
       if (ahora > fechaLimite) {
         console.warn('Advertencia (updateEvaluacion): Fecha límite excedida para la evaluación ID:', evaluacionId);
-        await conn.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', ['Cancelada', evaluacionId]);
+        let nuevoEstado;
+        // Determinar el nuevo estado si la fecha límite ha sido excedida
+        // Si la evaluación ya tiene un puntaje (lo que implica que fue completada), se marca como 'Completada'.
+        // Si no tiene puntaje o es 0 (y no ha sido marcada como Completada), se marca como 'Vencida'.
+        if (evaluacion.puntajeTotal !== null && evaluacion.puntajeTotal > 0) {
+          nuevoEstado = 'Completada';
+          console.log(`Evaluación ID ${evaluacionId} pasada a estado 'Completada' por fecha límite (con puntaje).`);
+        } else {
+          nuevoEstado = 'Vencida'; // Nuevo estado para evaluaciones no completadas y fuera de plazo
+          console.log(`Evaluación ID ${evaluacionId} pasada a estado 'Vencida' por fecha límite (sin completar).`);
+        }
+        await conn.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', [nuevoEstado, evaluacionId]);
         await conn.commit();
-        return { success: false, message: 'No se puede editar la evaluación porque ha pasado la fecha límite de la asignación y ha sido cancelada.' };
+        // Si la evaluación ya ha pasado la fecha límite y se actualizó su estado, no permitimos más ediciones.
+        return { success: false, message: `No se puede editar la evaluación porque ha pasado la fecha límite de la asignación y ha sido marcada como '${nuevoEstado}'.` };
       }
     }
     
+    // Si la evaluación se está actualizando y se marca como 'Completada' por el frontend,
+    // y tiene un puntaje total, NO actualizamos su estado a Aprobado/Desaprobado aquí.
+    // Solo se actualizará el estado a 'Completada' si se envía así desde el frontend.
+    // El Aprobado/Desaprobado se manejará en el frontend.
+    if (evaluacionData.status === 'Completada' && evaluacionData.puntajeTotal !== undefined && evaluacionData.puntajeTotal !== null) {
+      console.log(`Evaluación ID ${evaluacionId} marcada como 'Completada' por el frontend.`);
+    }
+
     // Actualizar la evaluación principal
     console.log('Actualizando la evaluación principal...');
     const updateQuery = 'UPDATE EVALUACION SET puntajeTotal = ?, comentario = ?, estado = ? WHERE idEvaluacion = ?';
@@ -189,11 +269,10 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
     if (Array.isArray(evaluacionData.detalles)) {
       console.log('Insertando nuevos detalles de subcriterios:', evaluacionData.detalles.length);
       for (const detalle of evaluacionData.detalles) {
-        const insertDetalleQuery = 'INSERT INTO DETALLE_EVALUACION (puntaje, idEvaluacion, idSubCriterio) VALUES (?, ?, ?)';
-        const insertDetalleParams = [detalle.puntaje, evaluacionId, detalle.idSubCriterio];
-        console.log('Query INSERT DETALLE:', insertDetalleQuery);
-        console.log('Params INSERT DETALLE:', insertDetalleParams);
-        await conn.execute(insertDetalleQuery, insertDetalleParams);
+        await conn.execute(
+          'INSERT INTO DETALLE_EVALUACION (puntaje, idEvaluacion, idSubCriterio) VALUES (?, ?, ?)',
+          [detalle.puntaje, evaluacionId, detalle.idSubCriterio]
+        );
       }
     }
     
@@ -278,94 +357,6 @@ const getColaboradorByUserId = async (userId) => {
   }
 };
 
-// Finalizar una evaluación (cambiar estado a Completada)
-const finalizarEvaluacion = async (evaluacionId) => {
-  try {
-    // Obtener la evaluación actual y las fechas de la asignación
-    const [rows] = await pool.execute(
-      `SELECT e.estado, a.fechaFin, a.horaFin 
-       FROM EVALUACION e
-       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
-       WHERE e.idEvaluacion = ?`,
-      [evaluacionId]
-    );
-    
-    if (rows.length === 0) {
-      return { success: false, message: 'Evaluación no encontrada' };
-    }
-    
-    const evaluacion = rows[0];
-    
-    // Solo restringir si está pendiente
-    if (evaluacion.estado === 'Pendiente') {
-      const ahora = new Date();
-      const fechaLimite = new Date(evaluacion.fechaFin);
-      if (evaluacion.horaFin) {
-        const [h, m, s] = evaluacion.horaFin.split(':');
-        fechaLimite.setHours(Number(h), Number(m), Number(s || 0));
-      }
-      
-      if (ahora > fechaLimite) {
-        return { success: false, message: 'No se puede finalizar la evaluación porque ha pasado la fecha límite de la asignación.' };
-      }
-    }
-    
-    await pool.execute(
-      'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
-      ['Completada', evaluacionId]
-    );
-    return {
-      success: true,
-      message: 'Evaluación finalizada exitosamente'
-    };
-  } catch (error) {
-    console.error('Error al finalizar evaluación:', error);
-    return { success: false, message: 'Error al finalizar la evaluación' };
-  }
-};
-
-// Cancelar automáticamente evaluaciones pendientes vencidas
-const cancelarBorradoresVencidos = async () => {
-  try {
-    // Selecciona evaluaciones pendientes y obtiene las fechas de la asignación
-    const [rows] = await pool.execute(
-      `SELECT e.idEvaluacion, e.estado, a.fechaFin, a.horaFin 
-       FROM EVALUACION e
-       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
-       WHERE e.estado = 'Pendiente'`
-    );
-    
-    const ahora = new Date();
-    let canceladas = 0;
-    
-    for (const row of rows) {
-      // Crear fecha límite combinando fechaFin y horaFin
-      const fechaLimite = new Date(row.fechaFin);
-      if (row.horaFin) {
-        const [h, m, s] = row.horaFin.split(':');
-        fechaLimite.setHours(Number(h), Number(m), Number(s || 0));
-      }
-      
-      // Si la fecha actual es posterior a la fecha límite, cancelar la evaluación
-      if (ahora > fechaLimite) {
-        await pool.execute(
-          'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
-          ['Cancelada', row.idEvaluacion]
-        );
-        canceladas++;
-      }
-    }
-    
-    if (canceladas > 0) {
-      console.log(`⏰ Evaluaciones pendientes canceladas automáticamente: ${canceladas}`);
-    }
-    return { success: true, canceladas };
-  } catch (error) {
-    console.error('Error al cancelar borradores vencidos:', error);
-    return { success: false, message: 'Error al cancelar borradores vencidos' };
-  }
-};
-
 // Obtener criterios y subcriterios por tipo de evaluación
 const getCriteriosYSubcriteriosPorTipoEvaluacion = async (idTipoEvaluacion) => {
   try {
@@ -396,10 +387,6 @@ const getCriteriosYSubcriteriosPorTipoEvaluacion = async (idTipoEvaluacion) => {
   }
 };
 
-// Obtener evaluaciones pendientes por usuario y tipo (la antigua)
-// Esta se mantendrá para compatibilidad si otras partes del sistema la usan.
-// Pero la nueva función será para obtener todas los estados.
-
 // Nueva función: Obtener evaluaciones por usuario evaluador y tipo, sin filtro de estado
 const getEvaluacionesByEvaluadorAndTipoAllStates = async (idEvaluador, idTipoEvaluacion) => {
   try {
@@ -428,10 +415,54 @@ const getEvaluacionesByEvaluadorAndTipoAllStates = async (idEvaluador, idTipoEva
       [idEvaluador, idTipoEvaluacion]
     );
     
-    return { success: true, evaluaciones: rows };
+    const processedEvaluations = await processEvaluationsStatus(rows); // Procesa los estados aquí
+
+    return {
+      success: true,
+      evaluaciones: processedEvaluations
+    };
   } catch (error) {
     console.error('Error al obtener evaluaciones por evaluador y tipo (todos los estados):', error);
     return { success: false, message: 'Error al obtener evaluaciones' };
+  }
+};
+
+// NUEVO: Función para cancelar evaluaciones en estado 'Activo' o 'Pendiente' que han excedido su fecha límite y no tienen puntaje
+const cancelarBorradoresVencidos = async () => {
+  console.log('Ejecutando cancelación de evaluaciones vencidas...');
+  const now = new Date();
+  try {
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion, a.fechaFin, a.horaFin, e.puntajeTotal, e.estado
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       WHERE e.estado IN ('Activo', 'Pendiente')` // Incluir 'Pendiente' también
+    );
+
+    for (const evaluacion of rows) {
+      const fechaLimite = new Date(evaluacion.fechaFin);
+      if (evaluacion.horaFin) {
+        const [h, m, s] = evaluacion.horaFin.split(':');
+        fechaLimite.setHours(Number(h), Number(m), Number(s || 0));
+      }
+
+      if (now > fechaLimite) {
+        let newStatus;
+        if (evaluacion.puntajeTotal === null || evaluacion.puntajeTotal === 0) {
+          newStatus = 'Vencida'; // Si no hay puntaje o es 0, y venció, se marca como Vencida
+        } else {
+          newStatus = 'Completada'; // Si hay puntaje, se marca como Completada. El Aprobado/Desaprobado se manejará en frontend.
+        }
+
+        if (newStatus !== evaluacion.estado) {
+          await pool.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', [newStatus, evaluacion.idEvaluacion]);
+          console.log(`Evaluación ID ${evaluacion.idEvaluacion} (estado ${evaluacion.estado}) actualizada a ${newStatus} por fecha de vencimiento.`);
+        }
+      }
+    }
+    console.log('Proceso de cancelación de evaluaciones vencidas finalizado.');
+  } catch (error) {
+    console.error('Error en cancelarBorradoresVencidos:', error);
   }
 };
 
@@ -466,8 +497,7 @@ module.exports = {
   deleteEvaluacion,
   getColaboradoresParaEvaluar,
   getColaboradorByUserId,
-  finalizarEvaluacion,
-  cancelarBorradoresVencidos,
   getCriteriosYSubcriteriosPorTipoEvaluacion,
-  getEvaluacionesByEvaluadorAndTipoAllStates
+  getEvaluacionesByEvaluadorAndTipoAllStates,
+  cancelarBorradoresVencidos
 };

@@ -26,6 +26,7 @@ interface EvaluationCardProps {
     nombreEvaluado: string;
     tipoEvaluacionNombre: string;
     estado: string;
+    puntajeTotal: number | null;
   };
   onStartEvaluation: (idEvaluacion: number) => void;
   colorScheme: 'purple' | 'blue' | 'green';
@@ -74,6 +75,14 @@ const EvaluationCard: React.FC<EvaluationCardProps> = ({
             <Badge variant="outline">
               {evaluacion.estado}
             </Badge>
+            {(evaluacion.estado === 'Completada' || evaluacion.estado === 'Vencida' || evaluacion.estado === 'Aprobado' || evaluacion.estado === 'Desaprobado') && 
+             (evaluacion.puntajeTotal !== null && evaluacion.puntajeTotal !== undefined) && (
+              <Badge 
+                className={`${evaluacion.puntajeTotal >= 11 ? 'bg-emerald-500 hover:bg-emerald-600' : 'bg-red-500 hover:bg-red-600'} text-white`}
+              >
+                {evaluacion.puntajeTotal >= 11 ? 'Aprobado' : 'Desaprobado'}
+              </Badge>
+            )}
           </div>
         </div>
         <CardTitle className="text-lg text-gray-900 dark:text-gray-100">

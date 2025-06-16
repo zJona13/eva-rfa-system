@@ -1350,6 +1350,10 @@ app.get('/api/evaluaciones/:idEvaluacion/info', async (req, res) => {
     
     let evaluacion = evaluacionRows[0];
 
+    // Procesar el estado de la evaluación individual antes de adjuntar detalles y enviar
+    const processedEvaluations = await evaluacionService.processEvaluationsStatus([evaluacion]);
+    evaluacion = processedEvaluations[0]; // Tomar la evaluación procesada
+
     // Obtener detalles de la evaluación (puntajes de subcriterios)
     const [detallesRows] = await pool.execute(
       'SELECT idSubCriterio, puntaje FROM DETALLE_EVALUACION WHERE idEvaluacion = ?',
