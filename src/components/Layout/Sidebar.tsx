@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { cn } from '@/lib/utils';
@@ -17,9 +16,14 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, setIsOpen }) => {
   const userRole = user?.role || 'guest';
   
   // Filter navigation items based on user role
-  const filteredNav = navItems.filter(item => 
+  let filteredNav = navItems.filter(item => 
     !item.roles || item.roles.includes(userRole)
   );
+  // Si el usuario es admin, ocultar las evaluaciones del sidebar
+  if (userRole === 'admin') {
+    const evalRoutes = ['/self-evaluation', '/student-evaluation', '/supervisor-evaluation'];
+    filteredNav = filteredNav.filter(item => !evalRoutes.includes(item.href));
+  }
 
   // Close sidebar on mobile when a link is clicked
   const handleNavClick = () => {
