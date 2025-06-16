@@ -135,6 +135,19 @@ const Reports = () => {
     return allowedRoles.includes(userRole);
   };
 
+  // Filtrar reportTypes según el rol del usuario
+  const getVisibleReportTypes = () => {
+    if (!user?.role) return [];
+    const userRole = user.role.toLowerCase();
+    if (userRole === 'admin' || userRole === 'administrador') {
+      return reportTypes;
+    }
+    // Si es evaluador, ocultar 'evaluaciones-por-area'
+    return reportTypes.filter(r => r.id !== 'evaluaciones-por-area');
+  };
+
+  const visibleReportTypes = getVisibleReportTypes();
+
   if (!canViewReports()) {
     return (
       <div className="space-y-6">
@@ -171,8 +184,8 @@ const Reports = () => {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-            {reportTypes.map((report) => {
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {visibleReportTypes.map((report) => {
               const IconComponent = report.icon;
               return (
                 <Card

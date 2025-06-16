@@ -1,16 +1,19 @@
-
 import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer } from 'recharts';
 import { BarChart4 } from 'lucide-react';
+import { getToken } from '@/contexts/AuthContext';
 
 const EvaluationsChart = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['dashboard-evaluations-chart'],
     queryFn: async () => {
-      const response = await fetch('/dashboard/evaluations-chart');
+      const token = getToken();
+      const response = await fetch('/dashboard/evaluations-chart', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
       return response.json();
     },
   });

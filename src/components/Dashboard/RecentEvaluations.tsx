@@ -3,13 +3,16 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getToken } from '@/contexts/AuthContext';
 import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:3309';
 
 const fetchRecentEvaluations = async () => {
-  const response = await fetch(`${API_BASE_URL}/api/dashboard/recent-evaluations`);
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/api/dashboard/recent-evaluations`, {
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+  });
 
   if (!response.ok) {
     throw new Error(`Error ${response.status}: ${response.statusText}`);

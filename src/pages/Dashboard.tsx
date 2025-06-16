@@ -1,16 +1,36 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { UserSquare2, ClipboardList, AlertCircle, CheckSquare, Users, ShieldCheck, BarChart4 } from 'lucide-react';
-import { useAuth } from '@/contexts/AuthContext';
+import { useAuth, getToken } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { modulesData } from '@/config/navigation';
 import StatCard from '@/components/Dashboard/StatCard';
 import ModuleCard from '@/components/Dashboard/ModuleCard';
 import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
-import EvaluationsChart from '@/components/Dashboard/EvaluationsChart';
 import { Badge } from '@/components/ui/badge';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
+
+interface DashboardStats {
+  evaluacionesRecibidas?: number;
+  evaluacionesAprobadas?: number;
+  promedioCalificacion?: number;
+  incidenciasPersonales?: number;
+  totalEvaluaciones?: number;
+  evaluacionesPendientes?: number;
+  validacionesPendientes?: number;
+  promedioGeneral?: number;
+  incidenciasActivas?: number;
+  totalResultados?: number;
+}
+
+interface DashboardResponse {
+  success: boolean;
+  data: {
+    stats: DashboardStats;
+  };
+}
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -24,13 +44,23 @@ const Dashboard = () => {
   );
 
   // Fetch dashboard statistics using authenticated API
-  const { data: statsData, isLoading: statsLoading } = useQuery({
+  const { data: statsData, isLoading: statsLoading, error: statsError } = useQuery<DashboardResponse>({
     queryKey: ['dashboard-stats'],
     queryFn: async () => {
-      const response = await fetch('/api/dashboard/stats');
-      return response.json();
+      console.log('🔄 Fetching dashboard stats...');
+      const token = getToken();
+      const response = await fetch('/api/dashboard/stats', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!response.ok) {
+        throw new Error('Error fetching dashboard stats');
+      }
+      const data = await response.json();
+      console.log('✅ Dashboard stats fetched successfully:', data);
+      return data;
     },
     refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 3 // Retry failed requests 3 times
   });
 
   const stats = statsData?.data?.stats || {};
@@ -50,6 +80,18 @@ const Dashboard = () => {
   const isEvaluated = userRole === 'evaluated';
   const isAdminOrEvaluator = userRole === 'admin' || userRole === 'evaluator';
 
+  // Loading skeleton for stats
+  const StatsSkeleton = () => (
+    <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+      {[...Array(4)].map((_, i) => (
+        <div key={i} className="p-6 bg-white rounded-lg shadow">
+          <Skeleton className="h-4 w-24 mb-2" />
+          <Skeleton className="h-8 w-16" />
+        </div>
+      ))}
+    </div>
+  );
+
   return (
     <div className="space-y-8">
       <div>
@@ -59,97 +101,83 @@ const Dashboard = () => {
         </p>
       </div>
 
+      {/* Error alert */}
+      {statsError && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            {t('dashboard.errorLoadingStats')}
+          </AlertDescription>
+        </Alert>
+      )}
+
       {/* Stats overview */}
-      <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        {isEvaluated ? (
-          // Estadísticas para docentes evaluados
-          <>
-            <StatCard
-              title={t('dashboard.receivedEvaluations')}
-              value={statsLoading ? '-' : stats.evaluacionesRecibidas || '0'}
-              icon={<ClipboardList className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.approvedEvaluations')}
-              value={statsLoading ? '-' : stats.evaluacionesAprobadas || '0'}
-              icon={<CheckSquare className="h-6 w-6" />}
-              valueClassName="text-green-600"
-            />
-            <StatCard
-              title={t('dashboard.averageScore')}
-              value={statsLoading ? '-' : `${stats.promedioCalificacion || '0'}/20`}
-              icon={<BarChart4 className="h-6 w-6" />}
-              valueClassName="text-blue-600"
-            />
-            <StatCard
-              title={t('dashboard.personalIncidents')}
-              value={statsLoading ? '-' : stats.incidenciasPersonales || '0'}
-              icon={<AlertCircle className="h-6 w-6" />}
-              valueClassName="text-orange-600"
-            />
-          </>
-        ) : isAdminOrEvaluator ? (
-          // Estadísticas para administradores y evaluadores
-          <>
-            <StatCard
-              title={t('dashboard.totalEvaluations')}
-              value={statsLoading ? '-' : stats.totalEvaluaciones || '0'}
-              icon={<ClipboardList className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.pendingEvaluations')}
-              value={statsLoading ? '-' : stats.evaluacionesPendientes || '0'}
-              icon={<AlertCircle className="h-6 w-6" />}
-              valueClassName="text-yellow-600"
-            />
-            <StatCard
-              title={t('dashboard.pendingValidations')}
-              value={statsLoading ? '-' : stats.validacionesPendientes || '0'}
-              icon={<ShieldCheck className="h-6 w-6" />}
-              valueClassName="text-blue-600"
-            />
-            <StatCard
-              title={t('dashboard.generalAverage')}
-              value={statsLoading ? '-' : `${stats.promedioGeneral || '0'}/20`}
-              icon={<BarChart4 className="h-6 w-6" />}
-              valueClassName="text-green-600"
-            />
-          </>
+      {(!isAdminOrEvaluator || userRole === 'evaluator') && (
+        statsLoading ? (
+          <StatsSkeleton />
         ) : (
-          // Estadísticas por defecto para otros roles
-          <>
-            <StatCard
-              title={t('dashboard.pendingEvaluations')}
-              value="0"
-              icon={<ClipboardList className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.activeIncidents')}
-              value="0"
-              icon={<AlertCircle className="h-6 w-6" />}
-              valueClassName="text-orange-600"
-            />
-            <StatCard
-              title={t('dashboard.pendingValidations')}
-              value="0"
-              icon={<ShieldCheck className="h-6 w-6" />}
-            />
-            <StatCard
-              title={t('dashboard.totalResults')}
-              value="0"
-              icon={<BarChart4 className="h-6 w-6" />}
-            />
-          </>
-        )}
-      </div>
+          <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
+            {isEvaluated ? (
+              // Estadísticas para docentes evaluados
+              <>
+                <StatCard
+                  title={t('dashboard.receivedEvaluations')}
+                  value={stats.evaluacionesRecibidas || '0'}
+                  icon={<ClipboardList className="h-6 w-6" />}
+                />
+                <StatCard
+                  title={t('dashboard.approvedEvaluations')}
+                  value={stats.evaluacionesAprobadas || '0'}
+                  icon={<CheckSquare className="h-6 w-6" />}
+                  valueClassName="text-green-600"
+                />
+                <StatCard
+                  title={t('dashboard.averageScore')}
+                  value={`${(stats.promedioCalificacion || 0).toFixed(1)}/20`}
+                  icon={<BarChart4 className="h-6 w-6" />}
+                  valueClassName="text-blue-600"
+                />
+                <StatCard
+                  title={t('dashboard.personalIncidents')}
+                  value={stats.incidenciasPersonales || '0'}
+                  icon={<AlertCircle className="h-6 w-6" />}
+                  valueClassName="text-orange-600"
+                />
+              </>
+            ) : (
+              // Estadísticas para estudiantes y evaluadores
+              <>
+                <StatCard
+                  title={t('dashboard.pendingEvaluations')}
+                  value={stats.evaluacionesPendientes || '0'}
+                  icon={<ClipboardList className="h-6 w-6" />}
+                />
+                <StatCard
+                  title={t('dashboard.activeIncidents')}
+                  value={stats.incidenciasActivas || '0'}
+                  icon={<AlertCircle className="h-6 w-6" />}
+                  valueClassName="text-orange-600"
+                />
+                <StatCard
+                  title={t('dashboard.pendingValidations')}
+                  value={stats.validacionesPendientes || '0'}
+                  icon={<ShieldCheck className="h-6 w-6" />}
+                />
+                <StatCard
+                  title={t('dashboard.totalResults')}
+                  value={stats.totalResultados || '0'}
+                  icon={<BarChart4 className="h-6 w-6" />}
+                />
+              </>
+            )}
+          </div>
+        )
+      )}
 
       {/* Recent evaluations, chart and modules */}
       <div className="grid gap-6 grid-cols-1 lg:grid-cols-2">
         <div className="space-y-6">
           {/* Recent Evaluations */}
           <RecentEvaluations />
-          {/* Evaluations Chart */}
-          <EvaluationsChart />
         </div>
         {/* Module access */}
         <div className="space-y-4">

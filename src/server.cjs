@@ -15,6 +15,7 @@ const reportesService = require('./services/reportesService.cjs');
 const areaService = require('./services/areaService.cjs');
 const estudianteService = require('./services/estudianteService.cjs');
 const asignacionService = require('./services/asignacionService.cjs');
+const dashboardService = require('./services/dashboardService.cjs');
 const { SECRET_KEY } = require('./services/authService.cjs');
 const authenticateToken = require('./middleware/authMiddleware.cjs');
 const { actualizarEstadosEvaluacionesGlobal } = require('./services/evaluacionService.cjs');
@@ -1042,14 +1043,28 @@ app.get('/api/dashboard/evaluations-chart', async (req, res) => {
 // Endpoint para obtener estadísticas del dashboard
 app.get('/api/dashboard/stats', authenticateToken, async (req, res) => {
   try {
-    console.log('GET /api/dashboard/stats');
-  
-    
-    res.json({ success: true, stats: {} });
-    
+    console.log('📊 Obteniendo estadísticas del dashboard para usuario:', req.user.id);
+    const result = await dashboardService.getStats(req.user.id, req.user.role, req.user.idArea);
+    if (!result.success) {
+      console.error('❌ Error obteniendo estadísticas:', result.message);
+      return res.status(500).json({ 
+        success: false, 
+        message: result.message 
+      });
+    }
+    console.log('✅ Estadísticas obtenidas exitosamente');
+    res.json({
+      success: true,
+      data: {
+        stats: result.stats
+      }
+    });
   } catch (error) {
-    console.error('Error al obtener estadísticas del dashboard:', error);
-    res.status(500).json({ success: false, message: 'Error al obtener las estadísticas' });
+    console.error('❌ Error en endpoint de estadísticas:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: 'Error interno del servidor' 
+    });
   }
 });
 
@@ -1061,13 +1076,14 @@ app.get('/api/dashboard/recent-evaluations', authenticateToken, async (req, res)
     // Sin usuario autenticado, se puede devolver evaluaciones generales o vacías
     const [evaluaciones] = await pool.execute(
       `SELECT e.idEvaluacion as id, e.fechaEvaluacion as fecha, 
-              e.puntaje, e.tipo, e.estado,
-              CONCAT(evaluado.nombres, ' ', evaluado.apePat, ' ', evaluado.apeMat) as evaluadoNombre,
-              CONCAT(evaluador.nombres, ' ', evaluador.apePat, ' ', evaluador.apeMat) as evaluadorNombre
+              e.puntajeTotal, e.estado,
+              CONCAT(evaluado.nombreColaborador, ' ', evaluado.apePaColaborador, ' ', evaluado.apeMaColaborador) as evaluadoNombre,
+              CONCAT(evaluador.nombreColaborador, ' ', evaluador.apePaColaborador, ' ', evaluador.apeMaColaborador) as evaluadorNombre
        FROM EVALUACION e
-       JOIN COLABORADOR evaluado ON e.idColaborador = evaluado.idColaborador
-       JOIN USUARIO u_evaluador ON e.idUsuario = u_evaluador.idUsuario
+       JOIN USUARIO u_evaluador ON e.idEvaluador = u_evaluador.idUsuario
        JOIN COLABORADOR evaluador ON u_evaluador.idColaborador = evaluador.idColaborador
+       JOIN USUARIO u_evaluado ON e.idEvaluado = u_evaluado.idUsuario
+       JOIN COLABORADOR evaluado ON u_evaluado.idColaborador = evaluado.idColaborador
        ORDER BY e.fechaEvaluacion DESC
        LIMIT 10`
     );
