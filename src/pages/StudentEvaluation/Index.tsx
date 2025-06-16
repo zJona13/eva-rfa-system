@@ -243,7 +243,7 @@ export default function StudentEvaluationPage() {
         });
         console.log('Evaluación de estudiante enviada exitosamente.', result);
         volverALista();
-        navigate('/student-evaluation'); 
+        navigate('/student-evaluation');
       } else {
         console.error('Error en la respuesta del backend (handleEnviar):', result.message);
         throw new Error(result.message);

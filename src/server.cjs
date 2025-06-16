@@ -1436,4 +1436,20 @@ app.put('/api/evaluaciones/:idEvaluacion', authenticateToken, async (req, res) =
   }
 });
 
+app.put('/api/asignaciones/:id', authenticateToken, async (req, res) => {
+  const { id } = req.params;
+  const data = req.body;
+  try {
+    const result = await asignacionService.updateAsignacion(id, data);
+    if (result.success) {
+      res.json({ success: true, message: 'Asignación actualizada correctamente' });
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    console.error('Error en PUT /api/asignaciones/:id:', error);
+    res.status(500).json({ success: false, message: 'Error al actualizar la asignación' });
+  }
+});
+
 module.exports = app;

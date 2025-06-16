@@ -234,7 +234,6 @@ export default function SupervisorEvaluationPage() {
   const handleEnviar = async () => {
     setEnviando(true);
     setError(null);
-    
     try {
       const totalSubcriterios = criterios.reduce((total, criterio) => total + criterio.subcriterios.length, 0);
       if (Object.keys(puntajes).length !== totalSubcriterios) {
@@ -242,7 +241,6 @@ export default function SupervisorEvaluationPage() {
         console.error('Error de validación frontend (handleEnviar):', errorMessage);
         throw new Error(errorMessage);
       }
-
       const detalles = [];
       criterios.forEach(criterio => {
         criterio.subcriterios.forEach(sub => {
@@ -254,37 +252,35 @@ export default function SupervisorEvaluationPage() {
           }
         });
       });
-      
       const score = detalles.length > 0 ? detalles.reduce((a, b) => a + b.puntaje, 0) / detalles.length : 0;
       const puntaje20 = Math.round(score * 20 * 100) / 100;
-
       const evaluacionDataToSend = {
         puntajeTotal: puntaje20,
         comentario,
         status: 'Activo',
         detalles
       };
-      
       console.log('Enviando evaluación de supervisor - ID de evaluación:', evaluacionActual.idEvaluacion);
       console.log('Datos a enviar:', evaluacionDataToSend);
-
       const result = await actualizarEvaluacion(evaluacionActual.idEvaluacion, evaluacionDataToSend);
-      
       if (result.success) {
-        setEstadoEvaluacion('Activo');
+        // Recargar la evaluación desde el backend para obtener el estado actualizado
+        const infoData = await obtenerInfoEvaluacion(evaluacionActual.idEvaluacion);
+        setEvaluacionActual(infoData.evaluacion);
+        setEstadoEvaluacion(infoData.evaluacion.estado);
         toast.success('Evaluación enviada', {
           description: 'Puedes seguir editando mientras la asignación esté activa.',
         });
-        console.log('Evaluación de supervisor enviada exitosamente.', result);
+        // Redirigir automáticamente al historial/lista de evaluaciones
         volverALista();
         navigate('/supervisor-evaluation');
       } else {
         console.error('Error en la respuesta del backend (handleEnviar):', result.message);
         throw new Error(result.message);
       }
-    } catch (e) {
-      console.error('Error general al enviar evaluación de supervisor (handleEnviar):', e.message);
-      setError(e.message || 'Error al enviar evaluación');
+    } catch (error) {
+      setError(error.message);
+      toast.error('Error al enviar evaluación', { description: error.message });
     } finally {
       setEnviando(false);
     }

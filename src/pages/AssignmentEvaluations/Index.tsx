@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -7,7 +6,7 @@ import { UserCheck, Plus, Calendar, Users, Clock, Filter, Search, Eye, Edit, Tra
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@/components/ui/select';
-import { crearAsignacion, listarAsignaciones } from '@/services/asignacionApi';
+import { crearAsignacion, listarAsignaciones, actualizarAsignacion } from '@/services/asignacionApi';
 import { getToken } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
@@ -45,6 +44,8 @@ const AssignmentEvaluations = () => {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [editMode, setEditMode] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   // Cargar áreas y asignaciones
   useEffect(() => {
@@ -100,14 +101,21 @@ const AssignmentEvaluations = () => {
     setError('');
     try {
       const token = getToken();
-      await crearAsignacion({ ...form, idUsuario: 1 }, token);
+      if (editMode && editId) {
+        await actualizarAsignacion(editId, { ...form, idUsuario: 1, estado: 'Activo' }, token);
+        toast.success('Asignación actualizada exitosamente');
+      } else {
+        await crearAsignacion({ ...form, idUsuario: 1 }, token);
+        toast.success('Asignación creada exitosamente');
+      }
       setModalOpen(false);
       setForm({ idArea: '', periodo: '', fechaInicio: '', fechaFin: '', horaInicio: '', horaFin: '' });
+      setEditMode(false);
+      setEditId(null);
       cargarAsignaciones();
-      toast.success('Asignación creada exitosamente');
     } catch (e) {
-      setError(e.message || 'Error al crear asignación');
-      toast.error('Error al crear asignación');
+      setError(e.message || 'Error al guardar asignación');
+      toast.error('Error al guardar asignación');
     } finally {
       setLoading(false);
     }
@@ -340,23 +348,22 @@ const AssignmentEvaluations = () => {
                         <Button 
                           variant="ghost" 
                           size="sm"
-                          className="text-primary hover:text-primary hover:bg-primary/10"
-                        >
-                          <Eye className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
                           className="text-green-600 hover:text-green-700 hover:bg-green-50 dark:hover:bg-green-950"
+                          onClick={() => {
+                            setForm({
+                              idArea: asignacion.idArea?.toString() || '',
+                              periodo: asignacion.periodo || '',
+                              fechaInicio: asignacion.fechaInicio?.slice(0, 10) || '',
+                              fechaFin: asignacion.fechaFin?.slice(0, 10) || '',
+                              horaInicio: asignacion.horaInicio || '',
+                              horaFin: asignacion.horaFin || ''
+                            });
+                            setEditId(asignacion.idAsignacion);
+                            setEditMode(true);
+                            setModalOpen(true);
+                          }}
                         >
                           <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        >
-                          <Trash2 className="h-4 w-4" />
                         </Button>
                       </div>
                     </div>
@@ -452,11 +459,15 @@ const AssignmentEvaluations = () => {
               )}
 
               <DialogFooter>
-                <Button type="button" variant="outline" onClick={() => setModalOpen(false)}>
+                <Button type="button" variant="outline" onClick={() => {
+                  setModalOpen(false);
+                  setEditMode(false);
+                  setEditId(null);
+                }}>
                   Cancelar
                 </Button>
                 <Button type="submit" disabled={loading}>
-                  {loading ? 'Guardando...' : 'Crear Asignación'}
+                  {loading ? 'Guardando...' : editMode ? 'Actualizar Asignación' : 'Crear Asignación'}
                 </Button>
               </DialogFooter>
             </form>

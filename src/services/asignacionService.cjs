@@ -85,7 +85,29 @@ const getAllAsignaciones = async () => {
   }
 };
 
+// Actualizar una asignación existente
+const updateAsignacion = async (id, data) => {
+  const conn = await pool.getConnection();
+  try {
+    await conn.beginTransaction();
+    // Actualizar la asignación
+    const [result] = await conn.execute(
+      'UPDATE ASIGNACION SET idArea = ?, periodo = ?, fechaInicio = ?, fechaFin = ?, horaInicio = ?, horaFin = ?, estado = ? WHERE idAsignacion = ?',
+      [data.idArea, data.periodo, data.fechaInicio, data.fechaFin, data.horaInicio, data.horaFin, data.estado || 'Activo', id]
+    );
+    await conn.commit();
+    return { success: true };
+  } catch (error) {
+    await conn.rollback();
+    console.error('Error al actualizar asignación:', error);
+    return { success: false, message: 'Error al actualizar la asignación' };
+  } finally {
+    conn.release();
+  }
+};
+
 module.exports = {
   createAsignacion,
-  getAllAsignaciones
+  getAllAsignaciones,
+  updateAsignacion
 }; 

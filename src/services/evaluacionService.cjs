@@ -58,32 +58,6 @@ const processEvaluationsStatus = async (evaluaciones) => {
           });
         }
       }
-    } else if (evalItem.puntajeTotal !== null && evalItem.puntajeTotal > 0 && evalItem.estado === 'Activo') {
-      // Si la evaluación fue completada activamente (con puntaje) y está en 'Activo',
-      // la marcamos como 'Completada'
-      newStatus = 'Completada';
-      // Si está desaprobada, generar incidencia
-      if (evalItem.puntajeTotal < 11) {
-        // Obtener criterios a mejorar
-        const [criterios] = await pool.execute(
-          `SELECT sc.nombre as subCriterio, de.puntaje
-           FROM DETALLE_EVALUACION de
-           JOIN SUB_CRITERIO sc ON de.idSubCriterio = sc.idSubCriterio
-           WHERE de.idEvaluacion = ? AND de.puntaje < 3
-           ORDER BY de.puntaje ASC`,
-          [evalItem.idEvaluacion]
-        );
-
-        const criteriosAMejorar = criterios.map(c => `${c.subCriterio} (${c.puntaje}/5)`).join(', ');
-
-        await incidenciaService.createIncidenciaEvaluacionDesaprobada({
-          idEvaluacion: evalItem.idEvaluacion,
-          idEvaluador: evalItem.idEvaluador,
-          idEvaluado: evalItem.idEvaluado,
-          puntajeTotal: evalItem.puntajeTotal,
-          criteriosAMejorar
-        });
-      }
     }
 
     if (newStatus !== evalItem.estado) {
@@ -269,7 +243,6 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
       }
       console.log('Fecha y hora actuales:', ahora.toISOString());
       console.log('Fecha y hora límite de asignación:', fechaLimite.toISOString());
-      
       if (ahora > fechaLimite) {
         console.warn('Advertencia (updateEvaluacion): Fecha límite excedida para la evaluación ID:', evaluacionId);
         let nuevoEstado;
@@ -289,13 +262,19 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
         return { success: false, message: `No se puede editar la evaluación porque ha pasado la fecha límite de la asignación y ha sido marcada como '${nuevoEstado}'.` };
       }
     }
-    
-    // Si la evaluación se está actualizando y se marca como 'Completada' por el frontend,
-    // y tiene un puntaje total, NO actualizamos su estado a Aprobado/Desaprobado aquí.
-    // Solo se actualizará el estado a 'Completada' si se envía así desde el frontend.
-    // El Aprobado/Desaprobado se manejará en el frontend.
-    if (evaluacionData.status === 'Completada' && evaluacionData.puntajeTotal !== undefined && evaluacionData.puntajeTotal !== null) {
-      console.log(`Evaluación ID ${evaluacionId} marcada como 'Completada' por el frontend.`);
+
+    // Si la evaluación se está completando dentro del periodo, forzar estado 'Activo'
+    let estadoFinal = evaluacionData.status;
+    if ((evaluacion.estado === 'Pendiente' || evaluacion.estado === 'Activo') && evaluacionData.puntajeTotal !== undefined && evaluacionData.puntajeTotal !== null) {
+      const ahora = new Date();
+      const fechaLimite = new Date(evaluacion.fechaFin);
+      if (evaluacion.horaFin) {
+        const [h, m, s] = evaluacion.horaFin.split(':');
+        fechaLimite.setHours(Number(h), Number(m), Number(s || 0));
+      }
+      if (ahora <= fechaLimite) {
+        estadoFinal = 'Activo';
+      }
     }
 
     // Actualizar la evaluación principal
@@ -304,7 +283,7 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
     const updateParams = [
       evaluacionData.puntajeTotal,
       evaluacionData.comentario,
-      evaluacionData.status,
+      estadoFinal,
       evaluacionId
     ];
     console.log('Query UPDATE:', updateQuery);
@@ -579,6 +558,7 @@ const cancelarBorradoresVencidos = async () => {
  */
 
 module.exports = {
+  processEvaluationsStatus,
   getAllEvaluaciones,
   getEvaluacionesByEvaluador,
   getEvaluacionesByColaborador,

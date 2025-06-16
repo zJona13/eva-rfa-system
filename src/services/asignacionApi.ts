@@ -17,4 +17,14 @@ export const crearAsignacion = async (data: any, token: string) => {
   });
   if (!response.ok) throw new Error('Error al crear asignación');
   return response.json();
+};
+
+export const actualizarAsignacion = async (id: number, data: any, token: string) => {
+  const response = await fetch(`${API_URL}/${id}`, {
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
+    body: JSON.stringify(data)
+  });
+  if (!response.ok) throw new Error('Error al actualizar asignación');
+  return response.json();
 }; 
