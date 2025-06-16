@@ -11,6 +11,7 @@ import RecentEvaluations from '@/components/Dashboard/RecentEvaluations';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
+import EvaluationsChart from '@/components/Dashboard/EvaluationsChart';
 
 interface DashboardStats {
   evaluacionesRecibidas?: number;
@@ -214,6 +215,11 @@ const Dashboard = () => {
               <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-hidden">
                 <RecentEvaluations />
               </div>
+              {userRole === 'admin' && (
+                <div className="mt-6">
+                  <EvaluationsChart />
+                </div>
+              )}
             </div>
             
             {/* Module access */}

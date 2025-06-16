@@ -11,14 +11,14 @@ const EvaluationsChart = () => {
     queryKey: ['dashboard-evaluations-chart'],
     queryFn: async () => {
       const token = getToken();
-      const response = await fetch('/dashboard/evaluations-chart', {
+      const response = await fetch('/api/dashboard/evaluations-chart', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       return response.json();
     },
   });
 
-  const chartData = data?.data?.chartData || [
+  const chartData = data?.chartData || [
     { name: 'Completadas', value: 0, color: '#22c55e' },
     { name: 'Pendientes', value: 0, color: '#eab308' },
     { name: 'En Revisión', value: 0, color: '#3b82f6' },
