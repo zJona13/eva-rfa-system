@@ -9,13 +9,10 @@ import { useAuth, getToken } from '@/contexts/AuthContext';
 
 const API_BASE_URL = 'http://localhost:3309/api';
 
-const fetchIncidencias = async (userId: number) => {
+const fetchIncidencias = async (userId: number, userRole: string, userArea: number) => {
   const token = getToken();
   const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
-    headers: {
-      'Authorization': `Bearer ${token}`,
-      'Content-Type': 'application/json'
-    }
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
 
   if (!response.ok) {
@@ -45,20 +42,16 @@ const Incidents = () => {
   const queryClient = useQueryClient();
 
   const userId = user?.id ? parseInt(user.id) : 0;
-  const userRole = user?.role?.toLowerCase() || '';
+  const userRole = user?.role || '';
+  const userArea = user?.idArea || 0;
 
-  console.log('Datos del usuario:', { userId, userRole }); // Debug log
+  console.log('Usuario actual:', user); // Debug log para verificar datos del usuario
 
-  const { data: incidenciasData, isLoading, error } = useQuery({
-    queryKey: ['incidencias', userId, userRole],
-    queryFn: () => fetchIncidencias(userId),
+  const { data: incidenciasData, isLoading } = useQuery({
+    queryKey: ['incidencias', userId, userRole, userArea],
+    queryFn: () => fetchIncidencias(userId, userRole, userArea),
     enabled: !!userId,
   });
-
-  if (error) {
-    console.error('Error al cargar incidencias:', error);
-    return <div className="text-red-500">Error al cargar las incidencias</div>;
-  }
 
   const updateEstadoMutation = useMutation({
     mutationFn: updateIncidenciaEstado,
@@ -79,14 +72,21 @@ const Incidents = () => {
 
   // Verificar si el usuario puede modificar el estado
   const canModifyStatus = () => {
-    return ['administrador', 'evaluador'].includes(userRole);
-  };
-
-  // Verificar si el usuario puede modificar esta incidencia específica
-  const canModifyThisIncidencia = (incidencia: any) => {
-    if (userRole === 'administrador') return true;
-    if (userRole === 'evaluador') return true;
-    return false;
+    if (!user?.role) {
+      console.log('No hay rol de usuario'); // Debug log
+      return false;
+    }
+    
+    const userRole = user.role.toLowerCase();
+    console.log('Rol del usuario (normalizado):', userRole); // Debug log
+    
+    // Solo evaluadores y administradores pueden modificar estados
+    const allowedRoles = ['evaluador', 'administrador', 'admin', 'evaluator'];
+    const canModify = allowedRoles.includes(userRole);
+    
+    console.log('¿Puede modificar estado?:', canModify); // Debug log
+    
+    return canModify;
   };
 
   const getEstadoColor = (estado: string) => {
@@ -122,78 +122,77 @@ const Incidents = () => {
   return (
     <div className="container mx-auto p-4">
       <h1 className="text-2xl font-bold mb-4">Incidencias</h1>
-
-      {incidencias.length === 0 ? (
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">No hay incidencias registradas.</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-4">
-          {incidencias.map((incidencia: any) => (
-            <Card key={incidencia.id}>
-              <CardHeader className="pb-2">
-                <div className="flex justify-between items-start">
-                  <div className="space-y-1">
-                    <CardTitle className="text-lg">Incidencia #{incidencia.id}</CardTitle>
-                    <CardDescription>
-                      Reportado: {new Date(incidencia.fecha).toLocaleDateString()} - {incidencia.hora}
-                    </CardDescription>
-                    <div className="flex gap-2">
-                      <Badge className={getTipoColor(incidencia.tipo)}>
-                        {incidencia.tipo}
-                      </Badge>
-                      <Badge className={getEstadoColor(incidencia.estado)}>
-                        {incidencia.estado}
-                      </Badge>
-                      <Badge variant="outline">
-                        Área: {incidencia.areaNombre}
-                      </Badge>
-                    </div>
+      
+      <div className="grid gap-4">
+        {incidencias.map((incidencia: any) => (
+          <Card key={incidencia.id}>
+            <CardHeader>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle className="text-lg">
+                    Incidencia #{incidencia.id}
+                  </CardTitle>
+                  <CardDescription>
+                    {new Date(incidencia.fecha).toLocaleDateString()} {incidencia.hora}
+                  </CardDescription>
+                </div>
+                <div className="flex gap-2">
+                  <Badge className={getTipoColor(incidencia.tipo)}>
+                    {incidencia.tipo}
+                  </Badge>
+                  <Badge className={getEstadoColor(incidencia.estado)}>
+                    {incidencia.estado}
+                  </Badge>
+                </div>
+              </div>
+            </CardHeader>
+            
+            <CardContent>
+              <div className="space-y-4">
+                <div>
+                  <p className="font-semibold">Descripción:</p>
+                  <p className="text-gray-600">{incidencia.descripcion}</p>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className="font-semibold">Reportado por:</p>
+                    <p className="text-gray-600">{incidencia.reportadorNombre}</p>
+                  </div>
+                  <div>
+                    <p className="font-semibold">Afectado:</p>
+                    <p className="text-gray-600">{incidencia.afectadoNombre}</p>
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3">
-                  <p className="text-sm whitespace-pre-line">{incidencia.descripcion}</p>
-                  
-                  <div className="text-xs text-muted-foreground space-y-1">
-                    <p><strong>Reportado por:</strong> {incidencia.reportadorNombre}</p>
-                    <p><strong>Afectado:</strong> {incidencia.afectadoNombre}</p>
-                  </div>
 
-                  <div className="flex justify-between items-center pt-2">
-                    {canModifyStatus() && canModifyThisIncidencia(incidencia) ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Estado:</span>
-                        <Select
-                          value={incidencia.estado}
-                          onValueChange={(nuevoEstado) => handleEstadoChange(incidencia.id, nuevoEstado)}
-                          disabled={updateEstadoMutation.isPending}
-                        >
-                          <SelectTrigger className="w-32">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Pendiente">Pendiente</SelectItem>
-                            <SelectItem value="Completada">Completada</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">Estado:</span>
-                        <span className="text-sm text-muted-foreground">{incidencia.estado}</span>
-                      </div>
-                    )}
+                {incidencia.accionTomada && (
+                  <div>
+                    <p className="font-semibold">Acción tomada:</p>
+                    <p className="text-gray-600">{incidencia.accionTomada}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
+                )}
+
+                {canModifyStatus() && incidencia.estado === 'Pendiente' && (
+                  <div className="flex gap-2">
+                    <Select
+                      value={incidencia.estado}
+                      onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder="Cambiar estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Completada">Completada</SelectItem>
+                        <SelectItem value="Cancelada">Cancelada</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 };

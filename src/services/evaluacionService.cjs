@@ -25,16 +25,65 @@ const processEvaluationsStatus = async (evaluaciones) => {
     if (now > fechaFin) {
       // Si el puntajeTotal es null o 0, y el período ha pasado, se considera 'Vencida'
       if (evalItem.puntajeTotal === null || evalItem.puntajeTotal === 0) {
-        newStatus = 'Vencida';
+        newStatus = 'Cancelada';
+        // Generar incidencia por evaluación cancelada
+        await incidenciaService.createIncidenciaEvaluacionCancelada({
+          idEvaluacion: evalItem.idEvaluacion,
+          idEvaluador: evalItem.idEvaluador,
+          idEvaluado: evalItem.idEvaluado
+        });
       } else if (evalItem.puntajeTotal !== null) {
-        // Si tiene puntaje y venció, se marca como 'Completada'.
-        // El Aprobado/Desaprobado se maneja en el frontend.
+        // Si tiene puntaje y venció, se marca como 'Completada'
         newStatus = 'Completada';
+        // Si está desaprobada, generar incidencia
+        if (evalItem.puntajeTotal < 11) {
+          // Obtener criterios a mejorar
+          const [criterios] = await pool.execute(
+            `SELECT sc.nombre as subCriterio, de.puntaje
+             FROM DETALLE_EVALUACION de
+             JOIN SUB_CRITERIO sc ON de.idSubCriterio = sc.idSubCriterio
+             WHERE de.idEvaluacion = ? AND de.puntaje < 3
+             ORDER BY de.puntaje ASC`,
+            [evalItem.idEvaluacion]
+          );
+
+          const criteriosAMejorar = criterios.map(c => `${c.subCriterio} (${c.puntaje}/5)`).join(', ');
+
+          await incidenciaService.createIncidenciaEvaluacionDesaprobada({
+            idEvaluacion: evalItem.idEvaluacion,
+            idEvaluador: evalItem.idEvaluador,
+            idEvaluado: evalItem.idEvaluado,
+            puntajeTotal: evalItem.puntajeTotal,
+            criteriosAMejorar
+          });
+        }
       }
     } else if (evalItem.puntajeTotal !== null && evalItem.puntajeTotal > 0 && evalItem.estado === 'Activo') {
       // Si la evaluación fue completada activamente (con puntaje) y está en 'Activo',
-      // la marcamos como 'Completada'. El Aprobado/Desaprobado se maneja en el frontend.
+      // la marcamos como 'Completada'
       newStatus = 'Completada';
+      // Si está desaprobada, generar incidencia
+      if (evalItem.puntajeTotal < 11) {
+        // Obtener criterios a mejorar
+        const [criterios] = await pool.execute(
+          `SELECT sc.nombre as subCriterio, de.puntaje
+           FROM DETALLE_EVALUACION de
+           JOIN SUB_CRITERIO sc ON de.idSubCriterio = sc.idSubCriterio
+           WHERE de.idEvaluacion = ? AND de.puntaje < 3
+           ORDER BY de.puntaje ASC`,
+          [evalItem.idEvaluacion]
+        );
+
+        const criteriosAMejorar = criterios.map(c => `${c.subCriterio} (${c.puntaje}/5)`).join(', ');
+
+        await incidenciaService.createIncidenciaEvaluacionDesaprobada({
+          idEvaluacion: evalItem.idEvaluacion,
+          idEvaluador: evalItem.idEvaluador,
+          idEvaluado: evalItem.idEvaluado,
+          puntajeTotal: evalItem.puntajeTotal,
+          criteriosAMejorar
+        });
+      }
     }
 
     if (newStatus !== evalItem.estado) {
@@ -467,44 +516,6 @@ const cancelarBorradoresVencidos = async () => {
   }
 };
 
-// Actualizar estado de evaluación
-const updateEvaluacionEstado = async (evaluacionId, estado) => {
-  try {
-    // Obtener datos de la evaluación antes de actualizar
-    const [evaluacion] = await pool.execute(
-      'SELECT * FROM EVALUACION WHERE idEvaluacion = ?',
-      [evaluacionId]
-    );
-
-    if (evaluacion.length === 0) {
-      return { success: false, message: 'Evaluación no encontrada' };
-    }
-
-    const evaluacionData = evaluacion[0];
-
-    // Actualizar estado
-    await pool.execute(
-      'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
-      [estado, evaluacionId]
-    );
-
-    // Generar incidencia si corresponde
-    if (estado === 'Cancelada') {
-      await incidenciaService.generarIncidenciaEvaluacionCancelada(evaluacionData);
-    } else if (estado === 'Completada' && evaluacionData.puntajeTotal < 11) {
-      await incidenciaService.generarIncidenciaEvaluacionDesaprobada(evaluacionData);
-    }
-
-    return {
-      success: true,
-      message: 'Estado de evaluación actualizado exitosamente'
-    };
-  } catch (error) {
-    console.error('Error al actualizar estado de evaluación:', error);
-    return { success: false, message: 'Error al actualizar el estado de la evaluación' };
-  }
-};
-
 /**
  * Ejemplo de payload para crear una evaluación:
  * {
@@ -538,6 +549,5 @@ module.exports = {
   getColaboradorByUserId,
   getCriteriosYSubcriteriosPorTipoEvaluacion,
   getEvaluacionesByEvaluadorAndTipoAllStates,
-  cancelarBorradoresVencidos,
-  updateEvaluacionEstado
+  cancelarBorradoresVencidos
 };

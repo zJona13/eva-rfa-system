@@ -729,15 +729,10 @@ app.post('/api/incidencias', authenticateToken, async (req, res) => {
 app.get('/api/incidencias/user/:userId', authenticateToken, async (req, res) => {
   try {
     const { userId } = req.params;
-    const userRole = req.user.role?.toLowerCase() || '';
+    const userRole = req.user.role;
+    const userArea = req.user.idArea;
 
-    console.log('Datos del usuario en el servidor:', { 
-      userId, 
-      userRole,
-      originalRole: req.user.role 
-    }); // Debug log
-
-    const result = await incidenciaService.getIncidenciasByUser(userId, userRole);
+    const result = await incidenciaService.getIncidenciasByUser(userId, userRole, userArea);
     if (result.success) {
       res.json(result);
     } else {
@@ -749,9 +744,14 @@ app.get('/api/incidencias/user/:userId', authenticateToken, async (req, res) => 
   }
 });
 
-// Obtener todas las incidencias
+// Obtener todas las incidencias (solo administradores)
 app.get('/api/incidencias', authenticateToken, async (req, res) => {
   try {
+    // Verificar si es administrador
+    if (req.user.role !== 'Administrador') {
+      return res.status(403).json({ message: 'No tiene permiso para ver todas las incidencias' });
+    }
+
     const result = await incidenciaService.getAllIncidencias();
     if (result.success) {
       res.json(result);
@@ -769,13 +769,15 @@ app.put('/api/incidencias/:id/estado', authenticateToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { estado } = req.body;
+    const userId = req.user.id;
     const userRole = req.user.role;
+    const userArea = req.user.idArea;
     
-    const result = await incidenciaService.updateIncidenciaEstado(id, estado, userRole);
+    const result = await incidenciaService.updateIncidenciaEstado(id, estado, userId, userRole, userArea);
     if (result.success) {
       res.json(result);
     } else {
-      res.status(403).json({ message: result.message });
+      res.status(500).json({ message: result.message });
     }
   } catch (error) {
     console.error('Error in PUT /api/incidencias/estado:', error);

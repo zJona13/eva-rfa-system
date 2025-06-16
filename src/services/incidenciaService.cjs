@@ -4,12 +4,12 @@ const { pool } = require('../utils/dbConnection.cjs');
 const createIncidencia = async (incidenciaData) => {
   try {
     const [result] = await pool.execute(
-      'INSERT INTO INCIDENCIA (fechaIncidencia, horaIncidencia, descripcion, estado, tipo, idUsuarioReportador, idUsuarioAfectado) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      'INSERT INTO INCIDENCIA (fecha, hora, descripcion, estado, tipo, idUsuarioReportador, idUsuarioAfectado) VALUES (?, ?, ?, ?, ?, ?, ?)',
       [
         incidenciaData.fecha,
         incidenciaData.hora,
         incidenciaData.descripcion,
-        'En proceso', // Estado por defecto siempre "En proceso"
+        'Pendiente', // Estado por defecto siempre "Pendiente"
         incidenciaData.tipo,
         incidenciaData.reportadorId,
         incidenciaData.afectadoId
@@ -20,12 +20,12 @@ const createIncidencia = async (incidenciaData) => {
     
     // Crear notificación automáticamente
     await pool.execute(
-      'INSERT INTO NOTIFICACION (fechaNotificacion, horaNotificacion, mensaje, leido, idUsuario, idIncidencia) VALUES (?, ?, ?, ?, ?, ?)',
+      'INSERT INTO NOTIFICACION (descripcion, fechaEnvio, horaEnvio, leido, idUsuario, idIncidencia) VALUES (?, ?, ?, ?, ?, ?)',
       [
+        `Se ha creado una incidencia: ${incidenciaData.descripcion}`,
         incidenciaData.fecha,
         incidenciaData.hora,
-        `Se ha creado una incidencia por evaluación desaprobatoria: ${incidenciaData.descripcion}`,
-        false,
+        'Activo',
         incidenciaData.afectadoId,
         incidenciaId
       ]
@@ -42,123 +42,19 @@ const createIncidencia = async (incidenciaData) => {
   }
 };
 
-// Generar incidencia por evaluación cancelada (fuera de fecha/hora límite)
-const generarIncidenciaEvaluacionCancelada = async (evaluacionData) => {
+// Obtener incidencias por usuario con nombres completos de colaboradores
+const getIncidenciasByUser = async (userId, userRole, userArea) => {
   try {
-    const [result] = await pool.execute(
-      'INSERT INTO INCIDENCIA (fecha, hora, descripcion, tipo, estado, idUsuarioReportador, idUsuarioAfectado) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [
-        new Date().toISOString().split('T')[0],
-        new Date().toTimeString().split(' ')[0],
-        `Evaluación cancelada por superar fecha/hora límite. Asignación: ${evaluacionData.idAsignacion}`,
-        'Administrativa',
-        'Pendiente',
-        evaluacionData.idEvaluador,
-        evaluacionData.idEvaluado
-      ]
-    );
-
-    // Crear notificación
-    await pool.execute(
-      'INSERT INTO NOTIFICACION (descripcion, fechaEnvio, horaEnvio, leido, idUsuario, idIncidencia) VALUES (?, ?, ?, ?, ?, ?)',
-      [
-        'Se ha generado una incidencia por evaluación cancelada por superar fecha/hora límite',
-        new Date().toISOString().split('T')[0],
-        new Date().toTimeString().split(' ')[0],
-        'Activo',
-        evaluacionData.idEvaluado,
-        result.insertId
-      ]
-    );
-
-    return { success: true, incidenciaId: result.insertId };
-  } catch (error) {
-    console.error('Error al generar incidencia por evaluación cancelada:', error);
-    return { success: false, message: 'Error al generar la incidencia' };
-  }
-};
-
-// Generar incidencia por evaluación desaprobada
-const generarIncidenciaEvaluacionDesaprobada = async (evaluacionData) => {
-  try {
-    // Obtener detalles de la evaluación desaprobada
-    const [detalles] = await pool.execute(
-      `SELECT sc.nombre as subCriterio, de.puntaje, c.nombre as criterio
-       FROM DETALLE_EVALUACION de
-       JOIN SUB_CRITERIO sc ON de.idSubCriterio = sc.idSubCriterio
-       JOIN CRITERIO c ON sc.idCriterio = c.idCriterio
-       WHERE de.idEvaluacion = ? AND de.puntaje < 11`,
-      [evaluacionData.idEvaluacion]
-    );
-
-    const criteriosBajos = detalles.map(d => `${d.criterio}: ${d.subCriterio} (${d.puntaje}/20)`).join('\n');
-    
-    const [result] = await pool.execute(
-      'INSERT INTO INCIDENCIA (fecha, hora, descripcion, tipo, estado, idUsuarioReportador, idUsuarioAfectado) VALUES (?, ?, ?, ?, ?, ?, ?)',
-      [
-        new Date().toISOString().split('T')[0],
-        new Date().toTimeString().split(' ')[0],
-        `Evaluación desaprobada (${evaluacionData.puntajeTotal}/20). Criterios a mejorar:\n${criteriosBajos}`,
-        'Académica',
-        'Pendiente',
-        evaluacionData.idEvaluador,
-        evaluacionData.idEvaluado
-      ]
-    );
-
-    // Crear notificación
-    await pool.execute(
-      'INSERT INTO NOTIFICACION (descripcion, fechaEnvio, horaEnvio, leido, idUsuario, idIncidencia) VALUES (?, ?, ?, ?, ?, ?)',
-      [
-        'Se ha generado una incidencia por evaluación desaprobada. Revise los criterios a mejorar.',
-        new Date().toISOString().split('T')[0],
-        new Date().toTimeString().split(' ')[0],
-        'Activo',
-        evaluacionData.idEvaluado,
-        result.insertId
-      ]
-    );
-
-    return { success: true, incidenciaId: result.insertId };
-  } catch (error) {
-    console.error('Error al generar incidencia por evaluación desaprobada:', error);
-    return { success: false, message: 'Error al generar la incidencia' };
-  }
-};
-
-// Obtener el área del usuario
-const getUserArea = async (userId) => {
-  try {
-    const [rows] = await pool.execute(
-      'SELECT u.idArea, a.nombre as areaNombre FROM USUARIO u JOIN AREA a ON u.idArea = a.idArea WHERE u.idUsuario = ?',
-      [userId]
-    );
-    
-    console.log('Datos del área del usuario:', rows[0]); // Debug log
-    
-    if (!rows[0]) {
-      console.error('No se encontró el área para el usuario:', userId);
-      return null;
+    // Validaciones para evitar undefined
+    if (!userId) {
+      throw new Error('El ID de usuario es requerido');
     }
-    
-    return rows[0].idArea;
-  } catch (error) {
-    console.error('Error al obtener área del usuario:', error);
-    return null;
-  }
-};
-
-// Obtener incidencias según el rol del usuario
-const getIncidenciasByUser = async (userId, userRole) => {
-  try {
-    // Obtener el área del usuario
-    const userArea = await getUserArea(userId);
-    
-    if (!userArea && userRole.toLowerCase() !== 'administrador') {
-      return { success: false, message: 'No se pudo determinar el área del usuario' };
+    if (!userRole) {
+      throw new Error('El rol del usuario es requerido');
     }
-
-    console.log('Área del usuario:', userArea); // Debug log
+    if ((userRole === 'Evaluador' || userRole === 'Estudiante') && (userArea === undefined || userArea === null)) {
+      throw new Error('El área del usuario es requerida para este rol');
+    }
 
     let query = `
       SELECT i.idIncidencia as id, i.fecha as fecha, 
@@ -174,50 +70,30 @@ const getIncidenciasByUser = async (userId, userRole) => {
         THEN CONCAT(ca.nombreColaborador, ' ', ca.apePaColaborador, ' ', ca.apeMaColaborador)
         ELSE ua.correo 
       END as afectadoNombre,
-      a.nombre as areaNombre
+      ur.idArea as areaReportador,
+      ua.idArea as areaAfectado
       FROM INCIDENCIA i
       JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario
       JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario
       LEFT JOIN COLABORADOR cr ON ur.idColaborador = cr.idColaborador
       LEFT JOIN COLABORADOR ca ON ua.idColaborador = ca.idColaborador
-      JOIN AREA a ON ua.idArea = a.idArea
     `;
 
-    const params = [];
-    const normalizedRole = userRole.toLowerCase();
+    let params = [];
 
-    // Filtrar según el rol
-    switch (normalizedRole) {
-      case 'administrador':
-        // Los administradores ven todas las incidencias
-        break;
-      case 'evaluador':
-        // Los evaluadores ven las incidencias de su área
-        query += ' WHERE ur.idArea = ?';
-        params.push(userArea);
-        break;
-      case 'estudiante':
-        // Los estudiantes ven las incidencias de su área
-        query += ' WHERE ur.idArea = ?';
-        params.push(userArea);
-        break;
-      case 'evaluado':
-        // Los evaluados ven sus propias incidencias
-        query += ' WHERE i.idUsuarioAfectado = ?';
-        params.push(userId);
-        break;
-      default:
-        // Otros roles solo ven sus propias incidencias
-        query += ' WHERE i.idUsuarioReportador = ? OR i.idUsuarioAfectado = ?';
-        params.push(userId, userId);
+    // Filtrar según el rol del usuario
+    if (userRole === 'Administrador') {
+      // Los administradores ven todas las incidencias
+      query += ' ORDER BY i.fecha DESC, i.hora DESC';
+    } else if (userRole === 'Evaluador' || userRole === 'Estudiante') {
+      // Los evaluadores y estudiantes ven las incidencias de su área
+      query += ' WHERE ur.idArea = ? OR ua.idArea = ? ORDER BY i.fecha DESC, i.hora DESC';
+      params = [userArea, userArea];
+    } else {
+      // Otros roles solo ven sus propias incidencias
+      query += ' WHERE i.idUsuarioReportador = ? OR i.idUsuarioAfectado = ? ORDER BY i.fecha DESC, i.hora DESC';
+      params = [userId, userId];
     }
-
-    query += ' ORDER BY i.fecha DESC, i.hora DESC';
-
-    console.log('Query:', query); // Debug log
-    console.log('Params:', params); // Debug log
-    console.log('User Role:', userRole); // Debug log
-    console.log('Normalized Role:', normalizedRole); // Debug log
 
     const [rows] = await pool.execute(query, params);
     
@@ -227,7 +103,7 @@ const getIncidenciasByUser = async (userId, userRole) => {
     };
   } catch (error) {
     console.error('Error al obtener incidencias:', error);
-    return { success: false, message: 'Error al obtener las incidencias del usuario' };
+    return { success: false, message: error.message || 'Error al obtener las incidencias del usuario' };
   }
 };
 
@@ -267,27 +143,41 @@ const getAllIncidencias = async () => {
 };
 
 // Actualizar estado de incidencia
-const updateIncidenciaEstado = async (incidenciaId, estado, userRole) => {
+const updateIncidenciaEstado = async (incidenciaId, estado, userId, userRole, userArea) => {
   try {
-    // Verificar permisos según el rol
-    if (userRole.toLowerCase() === 'administrador') {
-      // El administrador puede cambiar el estado de cualquier incidencia
-      await pool.execute(
-        'UPDATE INCIDENCIA SET estado = ? WHERE idIncidencia = ?',
-        [estado, incidenciaId]
-      );
-    } else if (userRole.toLowerCase() === 'evaluador') {
-      // El evaluador solo puede cambiar el estado de incidencias en su área
-      await pool.execute(
-        `UPDATE INCIDENCIA i
-         JOIN USUARIO u ON i.idUsuarioAfectado = u.idUsuario
-         SET i.estado = ?
-         WHERE i.idIncidencia = ? AND u.idArea = ?`,
-        [estado, incidenciaId, userArea]
-      );
-    } else {
-      return { success: false, message: 'No tiene permisos para actualizar el estado de la incidencia' };
+    // Verificar permisos
+    const [incidencia] = await pool.execute(
+      `SELECT i.*, ur.idArea as areaReportador, ua.idArea as areaAfectado
+       FROM INCIDENCIA i
+       JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario
+       JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario
+       WHERE i.idIncidencia = ?`,
+      [incidenciaId]
+    );
+
+    if (incidencia.length === 0) {
+      return { success: false, message: 'Incidencia no encontrada' };
     }
+
+    const incidenciaData = incidencia[0];
+
+    // Verificar permisos según rol
+    if (userRole === 'Administrador') {
+      // Los administradores pueden cambiar cualquier incidencia
+    } else if (userRole === 'Evaluador') {
+      // Los evaluadores solo pueden cambiar incidencias de su área
+      if (incidenciaData.areaReportador !== userArea && incidenciaData.areaAfectado !== userArea) {
+        return { success: false, message: 'No tiene permiso para modificar esta incidencia' };
+      }
+    } else {
+      return { success: false, message: 'No tiene permiso para modificar incidencias' };
+    }
+
+    // Actualizar estado
+    await pool.execute(
+      'UPDATE INCIDENCIA SET estado = ? WHERE idIncidencia = ?',
+      [estado, incidenciaId]
+    );
     
     return {
       success: true,
@@ -299,11 +189,51 @@ const updateIncidenciaEstado = async (incidenciaId, estado, userRole) => {
   }
 };
 
+// Crear incidencia por evaluación cancelada
+const createIncidenciaEvaluacionCancelada = async (evaluacionData) => {
+  try {
+    const now = new Date();
+    const incidenciaData = {
+      fecha: now.toISOString().split('T')[0],
+      hora: now.toTimeString().split(' ')[0],
+      descripcion: `Evaluación cancelada por superar fecha/hora límite. Evaluación ID: ${evaluacionData.idEvaluacion}`,
+      tipo: 'Académica',
+      reportadorId: evaluacionData.idEvaluador,
+      afectadoId: evaluacionData.idEvaluado
+    };
+
+    return await createIncidencia(incidenciaData);
+  } catch (error) {
+    console.error('Error al crear incidencia por evaluación cancelada:', error);
+    return { success: false, message: 'Error al crear la incidencia' };
+  }
+};
+
+// Crear incidencia por evaluación desaprobada
+const createIncidenciaEvaluacionDesaprobada = async (evaluacionData) => {
+  try {
+    const now = new Date();
+    const incidenciaData = {
+      fecha: now.toISOString().split('T')[0],
+      hora: now.toTimeString().split(' ')[0],
+      descripcion: `Evaluación desaprobada (${evaluacionData.puntajeTotal}/20). Criterios a mejorar: ${evaluacionData.criteriosAMejorar}`,
+      tipo: 'Académica',
+      reportadorId: evaluacionData.idEvaluador,
+      afectadoId: evaluacionData.idEvaluado
+    };
+
+    return await createIncidencia(incidenciaData);
+  } catch (error) {
+    console.error('Error al crear incidencia por evaluación desaprobada:', error);
+    return { success: false, message: 'Error al crear la incidencia' };
+  }
+};
+
 module.exports = {
   createIncidencia,
-  generarIncidenciaEvaluacionCancelada,
-  generarIncidenciaEvaluacionDesaprobada,
   getIncidenciasByUser,
   getAllIncidencias,
-  updateIncidenciaEstado
+  updateIncidenciaEstado,
+  createIncidenciaEvaluacionCancelada,
+  createIncidenciaEvaluacionDesaprobada
 };
