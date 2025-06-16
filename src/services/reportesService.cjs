@@ -123,8 +123,8 @@ const getPersonalAltaCalificacion = async () => {
       JOIN EVALUACION e ON u.idUsuario = e.idEvaluado
       WHERE c.estado = 'Activo'
       GROUP BY c.idColaborador, c.nombreColaborador, c.apePaColaborador, c.apeMaColaborador, tc.nombre
-      HAVING AVG(e.puntajeTotal) >= 15
-      ORDER BY promedioCalificacion DESC, totalEvaluaciones DESC`
+      ORDER BY promedioCalificacion DESC, totalEvaluaciones DESC
+      LIMIT 1`
     );
     return {
       success: true,

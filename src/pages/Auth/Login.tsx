@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
 import { Sun, Moon } from 'lucide-react';
@@ -13,11 +12,6 @@ const Login = () => {
     return localStorage.getItem('iesrfa-theme') === 'dark' ? 'dark' : 'light';
   });
   
-  // Redirect if already authenticated
-  if (isAuthenticated && !isLoading) {
-    return <Navigate to="/dashboard" replace />;
-  }
-  
   // Effect to handle theme changes
   useEffect(() => {
     // Update the document class when theme changes
@@ -26,6 +20,11 @@ const Login = () => {
     localStorage.setItem('iesrfa-theme', theme);
   }, [theme]);
 
+  // Redirect if already authenticated
+  if (isAuthenticated && !isLoading) {
+    return <Navigate to="/dashboard" replace />;
+  }
+  
   // Toggle between light and dark theme
   const toggleTheme = () => {
     setTheme(theme === 'light' ? 'dark' : 'light');
