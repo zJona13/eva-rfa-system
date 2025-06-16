@@ -37,9 +37,11 @@ interface TipoColaborador {
 }
 
 // Servicios API
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 const createTipoColaborador = async (name: string): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch('http://localhost:3309/api/tiposcolaborador', {
+  const response = await fetch(`${API_URL}/tiposcolaborador`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -53,7 +55,7 @@ const createTipoColaborador = async (name: string): Promise<{ success: boolean, 
 
 const updateTipoColaborador = async ({ id, name }: { id: number; name: string }): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`http://localhost:3309/api/tiposcolaborador/${id}`, {
+  const response = await fetch(`${API_URL}/tiposcolaborador/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -67,7 +69,7 @@ const updateTipoColaborador = async ({ id, name }: { id: number; name: string })
 
 const deleteTipoColaborador = async (id: number): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`http://localhost:3309/api/tiposcolaborador/${id}`, {
+  const response = await fetch(`${API_URL}/tiposcolaborador/${id}`, {
     method: 'DELETE',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });

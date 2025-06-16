@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +8,8 @@ import { toast } from 'sonner';
 interface ForgotPasswordFormProps {
   onBack: () => void;
 }
+
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
   const [email, setEmail] = useState('');
@@ -23,7 +24,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3309/api/auth/forgot-password', {
+      const response = await fetch(`${API_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -51,7 +52,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3309/api/auth/verify-reset-code', {
+      const response = await fetch(`${API_URL}/auth/verify-reset-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -90,7 +91,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:3309/api/auth/reset-password', {
+      const response = await fetch(`${API_URL}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

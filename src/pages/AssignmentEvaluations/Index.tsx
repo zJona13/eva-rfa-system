@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -11,6 +10,8 @@ import { crearAsignacion, listarAsignaciones, actualizarAsignacion } from '@/ser
 import { getToken } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
+
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 // Función para formatear la fecha en formato DD-MM-YY
 const formatDate = (dateString: string) => {
@@ -68,7 +69,7 @@ const AssignmentEvaluations = () => {
   // Cargar áreas y asignaciones
   useEffect(() => {
     const token = getToken();
-    fetch('http://localhost:3309/api/areas', {
+    fetch(`${API_URL}/areas`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     })
       .then(res => res.json())

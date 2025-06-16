@@ -25,6 +25,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { getToken } from '@/contexts/AuthContext';
 
+const API_URL = import.meta.env.VITE_API_URL || '/api';
+
 // Types for the form
 // Actualizar el esquema para permitir valores especiales
 const userFormSchema = z.object({
@@ -110,7 +112,7 @@ const UserDialog: React.FC<UserDialogProps> = ({
       setLoadingColaboradores(true);
       const excludeUserId = userData?.id ? `?excludeUserId=${userData.id}` : '';
       const token = getToken();
-      const response = await fetch(`http://localhost:3309/api/users/available-colaboradores${excludeUserId}`, {
+      const response = await fetch(`${API_URL}/users/available-colaboradores${excludeUserId}`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       

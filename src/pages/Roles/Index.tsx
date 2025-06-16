@@ -111,7 +111,7 @@ const fetchRoles = async (): Promise<Role[]> => {
 
 const createRole = async (name: string): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch('http://localhost:3309/api/roles', {
+  const response = await fetch(`${API_URL}/roles`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
