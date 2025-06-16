@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -80,9 +79,9 @@ const Dashboard = () => {
 
   // Loading skeleton for stats
   const StatsSkeleton = () => (
-    <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+    <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
       {[...Array(4)].map((_, i) => (
-        <div key={i} className="bg-white rounded-2xl border border-gray-100 p-6 shadow-sm">
+        <div key={i} className="bg-card rounded-xl border p-6 shadow-sm">
           <Skeleton className="h-4 w-24 mb-4" />
           <Skeleton className="h-8 w-16 mb-2" />
           <Skeleton className="h-3 w-32" />
@@ -92,47 +91,49 @@ const Dashboard = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
       <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
-        <div className="space-y-8">
+        <div className="space-y-6 md:space-y-8">
           {/* Header Section */}
-          <div className="bg-white rounded-3xl border border-gray-100 p-6 md:p-8 shadow-sm">
-            <div className="flex flex-col md:flex-row md:items-center gap-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 bg-blue-50 rounded-2xl flex items-center justify-center border border-blue-100">
-                  <BarChart4 className="h-8 w-8 text-blue-600" />
+          <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm">
+            <div className="p-6 md:p-8">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                    <BarChart4 className="h-8 w-8 md:h-10 md:w-10 text-primary" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
+                      {getGreeting()}, {displayName}
+                    </h1>
+                    <p className="text-muted-foreground mt-1 text-base md:text-lg">
+                      {t('dashboard.welcome')}
+                    </p>
+                  </div>
                 </div>
-                <div>
-                  <h1 className="text-3xl font-bold text-gray-900 tracking-tight">
-                    {getGreeting()}, {displayName}
-                  </h1>
-                  <p className="text-gray-600 mt-1 text-lg">
-                    {t('dashboard.welcome')}
-                  </p>
+                
+                <div className="lg:ml-auto flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-2 bg-emerald-50 dark:bg-emerald-950/50 px-3 md:px-4 py-2 rounded-full border border-emerald-200 dark:border-emerald-800">
+                    <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300">Sistema Activo</span>
+                  </div>
+                  <Badge variant="outline" className="bg-primary/10 text-primary border-primary/20 whitespace-nowrap">
+                    {userRole === 'admin' ? 'Administrador' : 
+                     userRole === 'evaluator' ? 'Evaluador' : 
+                     userRole === 'evaluated' ? 'Evaluado' : 
+                     userRole === 'student' ? 'Estudiante' : 
+                     userRole === 'validator' ? 'Validador' : 'Invitado'}
+                  </Badge>
                 </div>
-              </div>
-              
-              <div className="md:ml-auto flex items-center gap-3">
-                <div className="flex items-center gap-2 bg-emerald-50 px-4 py-2 rounded-full border border-emerald-200">
-                  <div className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <span className="text-sm font-medium text-emerald-700">Sistema Activo</span>
-                </div>
-                <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
-                  {userRole === 'admin' ? 'Administrador' : 
-                   userRole === 'evaluator' ? 'Evaluador' : 
-                   userRole === 'evaluated' ? 'Evaluado' : 
-                   userRole === 'student' ? 'Estudiante' : 
-                   userRole === 'validator' ? 'Validador' : 'Invitado'}
-                </Badge>
               </div>
             </div>
           </div>
 
           {/* Error alert */}
           {statsError && (
-            <Alert className="border-red-200 bg-red-50 rounded-2xl">
-              <AlertCircle className="h-5 w-5 text-red-600" />
-              <AlertDescription className="text-red-800">
+            <Alert className="border-destructive/50 bg-destructive/10 rounded-xl md:rounded-2xl">
+              <AlertCircle className="h-5 w-5 text-destructive" />
+              <AlertDescription className="text-destructive">
                 {t('dashboard.errorLoadingStats')}
               </AlertDescription>
             </Alert>
@@ -140,45 +141,45 @@ const Dashboard = () => {
 
           {/* Stats overview */}
           {(!isAdminOrEvaluator || userRole === 'evaluator') && (
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-blue-600 rounded-full"></div>
-                <h2 className="text-2xl font-bold text-gray-900">Estadísticas Generales</h2>
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+                <div className="w-1 h-6 md:h-8 bg-primary rounded-full"></div>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">Estadísticas Generales</h2>
+                <TrendingUp className="h-5 w-5 md:h-6 md:w-6 text-primary" />
               </div>
               
               {statsLoading ? (
                 <StatsSkeleton />
               ) : (
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+                <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
                   {isEvaluated ? (
                     <>
                       <StatCard
                         title={t('dashboard.receivedEvaluations')}
                         value={stats.evaluacionesRecibidas || '0'}
                         icon={<ClipboardList className="h-6 w-6" />}
-                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
                       />
                       <StatCard
                         title={t('dashboard.approvedEvaluations')}
                         value={stats.evaluacionesAprobadas || '0'}
                         icon={<CheckSquare className="h-6 w-6" />}
-                        valueClassName="text-emerald-600"
-                        className="bg-white border-gray-100 hover:border-emerald-200 hover:shadow-md transition-all duration-300"
+                        valueClassName="text-emerald-600 dark:text-emerald-400"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-emerald-300 hover:shadow-lg transition-all duration-300"
                       />
                       <StatCard
                         title={t('dashboard.averageScore')}
                         value={`${(stats.promedioCalificacion || 0).toFixed(1)}/20`}
                         icon={<BarChart4 className="h-6 w-6" />}
-                        valueClassName="text-blue-600"
-                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                        valueClassName="text-primary"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
                       />
                       <StatCard
                         title={t('dashboard.personalIncidents')}
                         value={stats.incidenciasPersonales || '0'}
                         icon={<AlertCircle className="h-6 w-6" />}
-                        valueClassName="text-amber-600"
-                        className="bg-white border-gray-100 hover:border-amber-200 hover:shadow-md transition-all duration-300"
+                        valueClassName="text-amber-600 dark:text-amber-400"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-amber-300 hover:shadow-lg transition-all duration-300"
                       />
                     </>
                   ) : (
@@ -187,26 +188,26 @@ const Dashboard = () => {
                         title={t('dashboard.pendingEvaluations')}
                         value={stats.evaluacionesPendientes || '0'}
                         icon={<ClipboardList className="h-6 w-6" />}
-                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
                       />
                       <StatCard
                         title={t('dashboard.activeIncidents')}
                         value={stats.incidenciasActivas || '0'}
                         icon={<AlertCircle className="h-6 w-6" />}
-                        valueClassName="text-amber-600"
-                        className="bg-white border-gray-100 hover:border-amber-200 hover:shadow-md transition-all duration-300"
+                        valueClassName="text-amber-600 dark:text-amber-400"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-amber-300 hover:shadow-lg transition-all duration-300"
                       />
                       <StatCard
                         title={t('dashboard.pendingValidations')}
                         value={stats.validacionesPendientes || '0'}
                         icon={<ShieldCheck className="h-6 w-6" />}
-                        className="bg-white border-gray-100 hover:border-purple-200 hover:shadow-md transition-all duration-300"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-purple-300 hover:shadow-lg transition-all duration-300"
                       />
                       <StatCard
                         title={t('dashboard.totalResults')}
                         value={stats.totalResultados || '0'}
                         icon={<BarChart4 className="h-6 w-6" />}
-                        className="bg-white border-gray-100 hover:border-blue-200 hover:shadow-md transition-all duration-300"
+                        className="bg-card/70 backdrop-blur-sm border-border/50 hover:border-primary/30 hover:shadow-lg transition-all duration-300"
                       />
                     </>
                   )}
@@ -216,25 +217,25 @@ const Dashboard = () => {
           )}
 
           {/* Main Content Grid */}
-          <div className="grid gap-8 lg:grid-cols-3">
+          <div className="grid gap-6 md:gap-8 xl:grid-cols-3">
             {/* Recent evaluations */}
-            <div className="lg:col-span-2 space-y-6">
+            <div className="xl:col-span-2 space-y-4 md:space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-purple-600 rounded-full"></div>
-                <h2 className="text-2xl font-bold text-gray-900">Actividad Reciente</h2>
+                <div className="w-1 h-6 md:h-8 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">Actividad Reciente</h2>
               </div>
-              <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+              <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-hidden">
                 <RecentEvaluations />
               </div>
             </div>
             
             {/* Module access */}
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
               <div className="flex items-center gap-3">
-                <div className="w-1 h-8 bg-indigo-600 rounded-full"></div>
-                <h2 className="text-2xl font-bold text-gray-900">Acceso Rápido</h2>
+                <div className="w-1 h-6 md:h-8 bg-indigo-600 dark:bg-indigo-400 rounded-full"></div>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">Acceso Rápido</h2>
               </div>
-              <div className="grid gap-4">
+              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
                 {filteredModules.slice(0, 6).map((module) => (
                   <div key={module.id} className="transform hover:scale-[1.02] transition-all duration-200">
                     <ModuleCard
