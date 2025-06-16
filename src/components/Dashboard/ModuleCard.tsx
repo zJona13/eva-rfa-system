@@ -1,7 +1,9 @@
+
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface ModuleCardProps {
@@ -17,26 +19,35 @@ const ModuleCard: React.FC<ModuleCardProps> = ({
   description,
   href,
   icon,
-  color = "bg-primary/10 text-primary"
+  color = "bg-primary/10 text-primary border-primary/20"
 }) => {
   const navigate = useNavigate();
   
   return (
-    <Card className="h-full overflow-hidden transition-all hover:shadow-md">
-      <CardHeader className="pb-1 sm:pb-2">
-        <div className={cn("p-2 w-fit rounded-lg mb-2 sm:mb-3", color)}>
-          {icon}
+    <Card className="h-full group border-0 shadow-sm bg-card/50 backdrop-blur-sm hover:bg-card hover:shadow-md transition-all duration-300">
+      <CardHeader className="pb-3">
+        <div className="flex items-start justify-between">
+          <div className={cn("flex items-center justify-center w-12 h-12 rounded-xl border group-hover:scale-110 transition-transform duration-300", color)}>
+            {icon}
+          </div>
         </div>
-        <CardTitle className="text-base sm:text-lg">{title}</CardTitle>
-        <CardDescription className="text-xs sm:text-sm">{description}</CardDescription>
+        <div className="space-y-1">
+          <CardTitle className="text-base font-semibold text-foreground group-hover:text-primary transition-colors">
+            {title}
+          </CardTitle>
+          <CardDescription className="text-xs text-muted-foreground line-clamp-2">
+            {description}
+          </CardDescription>
+        </div>
       </CardHeader>
-      <CardFooter className="pt-1 sm:pt-2">
+      <CardFooter className="pt-0">
         <Button 
-          variant="outline" 
+          variant="ghost" 
           onClick={() => navigate(href)}
-          className="w-full justify-start text-xs sm:text-sm"
+          className="w-full justify-between text-xs h-8 px-3 hover:bg-primary/10 group-hover:bg-primary/15 transition-colors"
         >
-          Acceder
+          <span>Acceder</span>
+          <ArrowRight className="h-3 w-3 group-hover:translate-x-1 transition-transform" />
         </Button>
       </CardFooter>
     </Card>
