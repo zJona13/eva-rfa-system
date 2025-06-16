@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -19,16 +18,20 @@ const NotificacionesBadge = () => {
   const { data: notificacionesData } = useQuery({
     queryKey: ['notificaciones', userId],
     queryFn: async () => {
-      const response = await fetch(`/notificaciones/user/${userId}`);
+      const response = await fetch(`/api/notificaciones/user/${userId}`);
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error('Error al obtener notificaciones: ' + errorText);
+      }
       return response.json();
     },
     enabled: !!userId,
-    refetchInterval: 30000, // Refetch cada 30 segundos
+    refetchInterval: 30000,
   });
 
   const markAsReadMutation = useMutation({
     mutationFn: async (notificationId: number) => {
-      const response = await fetch(`/notificaciones/${notificationId}/read`, {
+      const response = await fetch(`/api/notificaciones/${notificationId}/read`, {
         method: 'PUT'
       });
       return response.json();
@@ -41,8 +44,11 @@ const NotificacionesBadge = () => {
     },
   });
 
-  const notificaciones = notificacionesData?.data?.notificaciones || [];
-  const unreadCount = notificaciones.filter((n: any) => !n.leido).length;
+  const notificaciones = notificacionesData?.notificaciones || [];
+  const unreadCount = notificaciones.filter((n: any) => n.leido === 'Activo').length;
+
+  // DEBUG: Verifica el array de notificaciones antes del render
+  console.log('Notificaciones:', notificaciones);
 
   const handleMarkAsRead = (notificationId: number) => {
     markAsReadMutation.mutate(notificationId);
@@ -70,12 +76,12 @@ const NotificacionesBadge = () => {
               <p className="text-sm text-muted-foreground text-center py-4">
                 No hay notificaciones
               </p>
-            ) : (
+            ) :
               <div className="space-y-2">
                 {notificaciones.map((notificacion: any) => (
                   <div 
                     key={notificacion.id}
-                    className={`p-3 rounded-lg border ${notificacion.leido ? 'bg-muted/50' : 'bg-muted'}`}
+                    className={`p-3 rounded-lg border ${notificacion.leido === 'Inactivo' ? 'bg-muted/50' : 'bg-muted'}`}
                   >
                     <div className="flex justify-between items-start gap-2">
                       <div className="flex-1">
@@ -89,7 +95,7 @@ const NotificacionesBadge = () => {
                           </Badge>
                         )}
                       </div>
-                      {!notificacion.leido && (
+                      {notificacion.leido === 'Activo' && (
                         <Button
                           size="sm"
                           variant="ghost"
@@ -103,7 +109,7 @@ const NotificacionesBadge = () => {
                   </div>
                 ))}
               </div>
-            )}
+            }
           </ScrollArea>
         </div>
       </PopoverContent>

@@ -6,8 +6,8 @@ import { componentTagger } from "lovable-tagger";
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => ({
   server: {
-    host: "::",
-    port: 8080,
+    host: "::", // Permite acceso desde cualquier IP (útil para pruebas en red local)
+    port: 8080,  // Cambia el puerto del frontend
     proxy: {
       '/api': 'http://localhost:3309', // Proxy para redirigir API al backend
     },

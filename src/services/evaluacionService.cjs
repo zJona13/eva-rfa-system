@@ -27,6 +27,12 @@ const processEvaluationsStatus = async (evaluaciones) => {
       if (evalItem.puntajeTotal === null || evalItem.puntajeTotal === 0) {
         newStatus = 'Cancelada';
         // Generar incidencia por evaluación cancelada
+        console.log('Generando incidencia por evaluación cancelada:', {
+          idEvaluacion: evalItem.idEvaluacion,
+          idEvaluador: evalItem.idEvaluador,
+          idEvaluado: evalItem.idEvaluado
+        });
+        
         await incidenciaService.createIncidenciaEvaluacionCancelada({
           idEvaluacion: evalItem.idEvaluacion,
           idEvaluador: evalItem.idEvaluador,
@@ -49,6 +55,14 @@ const processEvaluationsStatus = async (evaluaciones) => {
 
           const criteriosAMejorar = criterios.map(c => `${c.subCriterio} (${c.puntaje}/5)`).join(', ');
 
+          console.log('Generando incidencia por evaluación desaprobada:', {
+            idEvaluacion: evalItem.idEvaluacion,
+            idEvaluador: evalItem.idEvaluador,
+            idEvaluado: evalItem.idEvaluado,
+            puntajeTotal: evalItem.puntajeTotal,
+            criteriosAMejorar
+          });
+
           await incidenciaService.createIncidenciaEvaluacionDesaprobada({
             idEvaluacion: evalItem.idEvaluacion,
             idEvaluador: evalItem.idEvaluador,
@@ -69,19 +83,16 @@ const processEvaluationsStatus = async (evaluaciones) => {
     }
   }
 
-  // Realizar todas las actualizaciones a la base de datos en una sola transacción si es posible,
-  // o de forma individual si no se soporta batch update fácilmente.
-  // Por simplicidad, se harán individuales por ahora. En un entorno de producción, considerar batch.
+  // Actualizar estados en la base de datos
   for (const update of updates) {
-    try {
-      await pool.execute('UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?', [update.newStatus, update.idEvaluacion]);
-      console.log(`Evaluación ID ${update.idEvaluacion} estado actualizado a ${update.newStatus}`);
-    } catch (error) {
-      console.error(`Error al actualizar el estado de la evaluación ${update.idEvaluacion} a ${update.newStatus}:`, error);
-    }
+    await pool.execute(
+      'UPDATE EVALUACION SET estado = ? WHERE idEvaluacion = ?',
+      [update.newStatus, update.idEvaluacion]
+    );
+    console.log(`Evaluación ID ${update.idEvaluacion} estado actualizado a ${update.newStatus}`);
   }
 
-  return evaluaciones; // Retornar las evaluaciones con los estados potencialmente actualizados
+  return evaluaciones;
 };
 
 // Obtener todas las evaluaciones con información relacionada
@@ -535,6 +546,30 @@ const cancelarBorradoresVencidos = async () => {
   }
 };
 
+// Nueva función: Actualizar estados de todas las evaluaciones abiertas (Pendiente/Activo)
+const actualizarEstadosEvaluacionesGlobal = async () => {
+  console.log('Ejecutando actualización global de estados de evaluaciones...');
+  try {
+    const [rows] = await pool.execute(
+      `SELECT e.idEvaluacion, e.fechaEvaluacion, e.horaEvaluacion, e.puntajeTotal, e.comentario, e.estado,
+              a.fechaFin, a.horaFin, e.idEvaluador, e.idEvaluado
+       FROM EVALUACION e
+       JOIN ASIGNACION a ON e.idAsignacion = a.idAsignacion
+       WHERE e.estado IN ('Pendiente', 'Activo')`
+    );
+    if (rows.length === 0) {
+      console.log('No hay evaluaciones abiertas para actualizar.');
+      return { success: true, message: 'No hay evaluaciones abiertas para actualizar.' };
+    }
+    await processEvaluationsStatus(rows);
+    console.log('Actualización global de estados de evaluaciones completada.');
+    return { success: true, message: 'Estados de evaluaciones actualizados correctamente.' };
+  } catch (error) {
+    console.error('Error en actualizarEstadosEvaluacionesGlobal:', error);
+    return { success: false, message: 'Error al actualizar estados de evaluaciones.' };
+  }
+};
+
 /**
  * Ejemplo de payload para crear una evaluación:
  * {
@@ -570,5 +605,6 @@ module.exports = {
   getCriteriosYSubcriteriosPorTipoEvaluacion,
   getEvaluacionesByEvaluadorAndTipoAllStates,
   getEvaluacionesByEvaluadoAndTipoAllStates,
-  cancelarBorradoresVencidos
+  cancelarBorradoresVencidos,
+  actualizarEstadosEvaluacionesGlobal
 };

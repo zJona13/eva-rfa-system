@@ -212,6 +212,12 @@ const updateIncidenciaEstado = async (incidenciaId, estado, userId, userRole, us
 // Crear incidencia por evaluación cancelada
 const createIncidenciaEvaluacionCancelada = async (evaluacionData) => {
   try {
+    // Validar datos requeridos
+    if (!evaluacionData || !evaluacionData.idEvaluacion || !evaluacionData.idEvaluador || !evaluacionData.idEvaluado) {
+      console.error('Datos incompletos para crear incidencia:', evaluacionData);
+      return { success: false, message: 'Datos incompletos para crear la incidencia' };
+    }
+
     const now = new Date();
     const incidenciaData = {
       fecha: now.toISOString().split('T')[0],
@@ -222,6 +228,7 @@ const createIncidenciaEvaluacionCancelada = async (evaluacionData) => {
       afectadoId: evaluacionData.idEvaluado
     };
 
+    console.log('Creando incidencia por evaluación cancelada:', incidenciaData);
     return await createIncidencia(incidenciaData);
   } catch (error) {
     console.error('Error al crear incidencia por evaluación cancelada:', error);

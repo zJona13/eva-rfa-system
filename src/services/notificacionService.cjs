@@ -1,17 +1,16 @@
-
 const { pool } = require('../utils/dbConnection.cjs');
 
 // Obtener notificaciones por usuario
 const getNotificacionesByUser = async (userId) => {
   try {
     const [rows] = await pool.execute(
-      `SELECT n.idNotificacion as id, n.fechaNotificacion as fecha, 
-      n.horaNotificacion as hora, n.mensaje, n.leido,
+      `SELECT n.idNotificacion as id, n.fechaEnvio as fecha, 
+      n.horaEnvio as hora, n.descripcion as mensaje, n.leido,
       i.descripcion as incidenciaDescripcion, i.tipo as incidenciaTipo
       FROM NOTIFICACION n
       LEFT JOIN INCIDENCIA i ON n.idIncidencia = i.idIncidencia
       WHERE n.idUsuario = ?
-      ORDER BY n.fechaNotificacion DESC, n.horaNotificacion DESC`,
+      ORDER BY n.fechaEnvio DESC, n.horaEnvio DESC`,
       [userId]
     );
     
@@ -28,11 +27,12 @@ const getNotificacionesByUser = async (userId) => {
 // Marcar notificación como leída
 const markNotificacionAsRead = async (notificacionId) => {
   try {
-    await pool.execute(
-      'UPDATE NOTIFICACION SET leido = true WHERE idNotificacion = ?',
+    console.log('Intentando actualizar notificación en BD, id:', notificacionId);
+    const [result] = await pool.execute(
+      "UPDATE NOTIFICACION SET leido = 'Inactivo' WHERE idNotificacion = ?",
       [notificacionId]
     );
-    
+    console.log('Resultado de UPDATE:', result);
     return {
       success: true,
       message: 'Notificación marcada como leída'
