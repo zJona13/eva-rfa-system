@@ -59,7 +59,7 @@ const Dashboard = () => {
       console.log('✅ Dashboard stats fetched successfully:', data);
       return data;
     },
-    refetchInterval: 30000,
+    refetchInterval: 5000,
     retry: 3
   });
 

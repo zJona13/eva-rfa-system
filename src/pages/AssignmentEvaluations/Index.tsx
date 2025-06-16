@@ -9,6 +9,7 @@ import { Select, SelectTrigger, SelectContent, SelectItem, SelectValue } from '@
 import { crearAsignacion, listarAsignaciones, actualizarAsignacion } from '@/services/asignacionApi';
 import { getToken } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { useQueryClient } from '@tanstack/react-query';
 
 // Función para formatear la fecha en formato DD-MM-YY
 const formatDate = (dateString: string) => {
@@ -46,6 +47,7 @@ const AssignmentEvaluations = () => {
   const [error, setError] = useState('');
   const [editMode, setEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
+  const queryClient = useQueryClient();
 
   // Cargar áreas y asignaciones
   useEffect(() => {
@@ -113,6 +115,8 @@ const AssignmentEvaluations = () => {
       setEditMode(false);
       setEditId(null);
       cargarAsignaciones();
+      queryClient.invalidateQueries(['dashboard-stats']);
+      queryClient.invalidateQueries({ queryKey: ['report'] });
     } catch (e) {
       setError(e.message || 'Error al guardar asignación');
       toast.error('Error al guardar asignación');

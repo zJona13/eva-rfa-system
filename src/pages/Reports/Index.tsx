@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -116,6 +115,7 @@ const Reports = () => {
     queryKey: ['report', selectedReportType],
     queryFn: () => fetchReportData(selectedReport?.endpoint || ''),
     enabled: !!selectedReport,
+    refetchInterval: 5000,
   });
 
   const handleGeneratePDF = async () => {
