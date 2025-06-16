@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -159,105 +160,107 @@ const AssignmentEvaluations = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto space-y-8">
-        {/* Header con diseño mejorado */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950/20 dark:via-background dark:to-blue-950/20">
+      <div className="container mx-auto p-4 md:p-6 lg:p-8 space-y-6 md:space-y-8">
+        {/* Header con diseño responsivo */}
         <Card className="relative overflow-hidden border-0 shadow-lg">
           <div className="absolute inset-0 bg-gradient-to-r from-primary via-primary/80 to-secondary"></div>
-          <div className="relative z-10 p-8 text-primary-foreground">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-4xl font-bold mb-2">Asignación de Evaluaciones</h1>
-                <p className="text-primary-foreground/80 text-lg">
+          <div className="relative z-10 p-4 md:p-6 lg:p-8 text-primary-foreground">
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
+              <div className="space-y-2">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold leading-tight">
+                  Asignación de Evaluaciones
+                </h1>
+                <p className="text-primary-foreground/80 text-sm md:text-base lg:text-lg">
                   Administra y asigna evaluaciones a los colaboradores del instituto
                 </p>
               </div>
               <Button 
-                className="bg-background text-foreground hover:bg-accent shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105" 
+                className="bg-background text-foreground hover:bg-accent shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 w-full sm:w-auto" 
                 size="lg"
                 onClick={() => setModalOpen(true)}
               >
-                <Plus className="h-5 w-5 mr-2" />
+                <Plus className="h-4 w-4 md:h-5 md:w-5 mr-2" />
                 Nueva Asignación
               </Button>
             </div>
           </div>
         </Card>
 
-        {/* Stats Cards mejoradas */}
-        <div className="grid gap-6 md:grid-cols-4">
-          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+        {/* Stats Cards responsivas */}
+        <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Total Asignaciones</CardTitle>
-              <UserCheck className="h-6 w-6 opacity-80" />
+              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Total Asignaciones</CardTitle>
+              <UserCheck className="h-4 w-4 md:h-6 md:w-6 opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{asignaciones.length}</div>
+              <div className="text-2xl md:text-3xl font-bold">{asignaciones.length}</div>
               <p className="text-xs opacity-80 mt-1">Registradas en total</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+          <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Activas</CardTitle>
-              <Calendar className="h-6 w-6 opacity-80" />
+              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Activas</CardTitle>
+              <Calendar className="h-4 w-4 md:h-6 md:w-6 opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{asignaciones.filter(a => a.estado === 'Activo').length}</div>
+              <div className="text-2xl md:text-3xl font-bold">{asignaciones.filter(a => a.estado === 'Activo').length}</div>
               <p className="text-xs opacity-80 mt-1">En curso</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+          <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Áreas Cubiertas</CardTitle>
-              <Users className="h-6 w-6 opacity-80" />
+              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Áreas Cubiertas</CardTitle>
+              <Users className="h-4 w-4 md:h-6 md:w-6 opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{new Set(asignaciones.map(a => a.idArea)).size}</div>
+              <div className="text-2xl md:text-3xl font-bold">{new Set(asignaciones.map(a => a.idArea)).size}</div>
               <p className="text-xs opacity-80 mt-1">Diferentes áreas</p>
             </CardContent>
           </Card>
 
-          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105">
+          <Card className="bg-gradient-to-br from-orange-500 to-orange-600 text-white border-0 shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium opacity-90">Pendientes</CardTitle>
-              <Clock className="h-6 w-6 opacity-80" />
+              <CardTitle className="text-xs md:text-sm font-medium opacity-90">Pendientes</CardTitle>
+              <Clock className="h-4 w-4 md:h-6 md:w-6 opacity-80" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold">{asignaciones.filter(a => a.estado === 'Pendiente').length}</div>
+              <div className="text-2xl md:text-3xl font-bold">{asignaciones.filter(a => a.estado === 'Pendiente').length}</div>
               <p className="text-xs opacity-80 mt-1">Por completar</p>
             </CardContent>
           </Card>
         </div>
 
-        {/* Filtros y búsqueda */}
-        <Card className="shadow-lg">
-          <CardHeader>
+        {/* Filtros y búsqueda responsivos */}
+        <Card className="shadow-lg bg-white/70 dark:bg-card/70 backdrop-blur-sm">
+          <CardHeader className="pb-4">
             <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="h-5 w-5 text-primary" />
+                <CardTitle className="flex items-center gap-2 text-lg md:text-xl">
+                  <Filter className="h-4 w-4 md:h-5 md:w-5 text-primary" />
                   Filtros y Búsqueda
                 </CardTitle>
-                <CardDescription>Encuentra asignaciones rápidamente</CardDescription>
+                <CardDescription className="text-sm">Encuentra asignaciones rápidamente</CardDescription>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-4 md:grid-cols-4">
+            <div className="grid gap-3 md:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
               <div className="relative">
                 <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                 <Input
                   placeholder="Buscar por área o periodo..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
+                  className="pl-10 bg-background/50 border-border/50"
                 />
               </div>
               
               <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background/50 border-border/50">
                   <SelectValue placeholder="Estado" />
                 </SelectTrigger>
                 <SelectContent>
@@ -269,7 +272,7 @@ const AssignmentEvaluations = () => {
               </Select>
 
               <Select value={areaFilter} onValueChange={setAreaFilter}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-background/50 border-border/50">
                   <SelectValue placeholder="Área" />
                 </SelectTrigger>
                 <SelectContent>
@@ -287,6 +290,7 @@ const AssignmentEvaluations = () => {
                   setStatusFilter('all');
                   setAreaFilter('all');
                 }}
+                className="w-full sm:w-auto bg-background/50 border-border/50"
               >
                 Limpiar filtros
               </Button>
@@ -294,28 +298,28 @@ const AssignmentEvaluations = () => {
           </CardContent>
         </Card>
 
-        {/* Lista de asignaciones */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle className="text-2xl">Asignaciones Recientes</CardTitle>
-            <CardDescription>
+        {/* Lista de asignaciones responsiva */}
+        <Card className="shadow-lg bg-white/70 dark:bg-card/70 backdrop-blur-sm">
+          <CardHeader className="pb-4">
+            <CardTitle className="text-xl md:text-2xl">Asignaciones Recientes</CardTitle>
+            <CardDescription className="text-sm">
               Lista de evaluaciones asignadas y su estado actual ({filteredAsignaciones.length} de {asignaciones.length})
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {filteredAsignaciones.length === 0 && (
-                <div className="text-center py-12">
-                  <UserCheck className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-                  <h3 className="text-lg font-medium text-foreground mb-2">No hay asignaciones</h3>
-                  <p className="text-muted-foreground mb-4">
+                <div className="text-center py-8 md:py-12">
+                  <UserCheck className="h-12 w-12 md:h-16 md:w-16 text-muted-foreground mx-auto mb-4" />
+                  <h3 className="text-base md:text-lg font-medium text-foreground mb-2">No hay asignaciones</h3>
+                  <p className="text-sm text-muted-foreground mb-4 px-4">
                     {asignaciones.length === 0 
                       ? 'No hay asignaciones registradas.' 
                       : 'No se encontraron asignaciones con los filtros aplicados.'
                     }
                   </p>
                   {asignaciones.length === 0 && (
-                    <Button onClick={() => setModalOpen(true)}>
+                    <Button onClick={() => setModalOpen(true)} className="w-full sm:w-auto">
                       <Plus className="h-4 w-4 mr-2" />
                       Crear primera asignación
                     </Button>
@@ -324,46 +328,48 @@ const AssignmentEvaluations = () => {
               )}
               
               {filteredAsignaciones.map(asignacion => (
-                <Card key={asignacion.idAsignacion} className="transition-all duration-300 hover:shadow-md hover:scale-[1.02]">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
+                <Card key={asignacion.idAsignacion} className="transition-all duration-300 hover:shadow-md hover:scale-[1.01] bg-background/50 border-border/50">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
                       <div className="flex-1 space-y-3">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-primary/10 rounded-lg">
-                            {getEvaluationIcon('general')}
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-lg">{asignacion.areaNombre}</h4>
-                            <div className="flex items-center gap-2 mt-1">
-                              <Badge variant="outline" className="bg-primary/10 text-primary">
-                                Periodo: {asignacion.periodo}
-                              </Badge>
-                              <Badge 
-                                className={`text-white ${getStatusColor(mostrarEstado(asignacion))}`}
-                              >
-                                {mostrarEstado(asignacion)}
-                              </Badge>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-primary/10 rounded-lg">
+                              {getEvaluationIcon('general')}
                             </div>
+                            <div className="min-w-0 flex-1">
+                              <h4 className="font-semibold text-base md:text-lg truncate">{asignacion.areaNombre}</h4>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <Badge variant="outline" className="bg-primary/10 text-primary text-xs">
+                              Periodo: {asignacion.periodo}
+                            </Badge>
+                            <Badge 
+                              className={`text-white text-xs ${getStatusColor(mostrarEstado(asignacion))}`}
+                            >
+                              {mostrarEstado(asignacion)}
+                            </Badge>
                           </div>
                         </div>
                         
-                        <div className="grid md:grid-cols-2 gap-4 text-sm text-muted-foreground">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs md:text-sm text-muted-foreground">
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4" />
-                            <span>
+                            <Calendar className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                            <span className="truncate">
                               <strong>Fechas:</strong> {formatDate(asignacion.fechaInicio)} - {formatDate(asignacion.fechaFin)}
                             </span>
                           </div>
                           <div className="flex items-center gap-2">
-                            <Clock className="h-4 w-4" />
-                            <span>
+                            <Clock className="h-3 w-3 md:h-4 md:w-4 flex-shrink-0" />
+                            <span className="truncate">
                               <strong>Horario:</strong> {formatTime(asignacion.horaInicio)} - {formatTime(asignacion.horaFin)}
                             </span>
                           </div>
                         </div>
                       </div>
                       
-                      <div className="flex items-center gap-2">
+                      <div className="flex justify-end lg:justify-center">
                         <Button 
                           variant="ghost" 
                           size="sm"
@@ -393,11 +399,13 @@ const AssignmentEvaluations = () => {
           </CardContent>
         </Card>
 
-        {/* Modal */}
+        {/* Modal responsivo */}
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>
-          <DialogContent className="sm:max-w-md">
+          <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle className="text-2xl font-bold">Nueva Asignación</DialogTitle>
+              <DialogTitle className="text-xl md:text-2xl font-bold">
+                {editMode ? 'Editar Asignación' : 'Nueva Asignación'}
+              </DialogTitle>
             </DialogHeader>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -425,7 +433,7 @@ const AssignmentEvaluations = () => {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Fecha Inicio</label>
                   <Input 
@@ -448,7 +456,7 @@ const AssignmentEvaluations = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Hora Inicio</label>
                   <Input 
@@ -477,15 +485,15 @@ const AssignmentEvaluations = () => {
                 </div>
               )}
 
-              <DialogFooter>
+              <DialogFooter className="flex flex-col sm:flex-row gap-2">
                 <Button type="button" variant="outline" onClick={() => {
                   setModalOpen(false);
                   setEditMode(false);
                   setEditId(null);
-                }}>
+                }} className="w-full sm:w-auto">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading}>
+                <Button type="submit" disabled={loading} className="w-full sm:w-auto">
                   {loading ? 'Guardando...' : editMode ? 'Actualizar Asignación' : 'Crear Asignación'}
                 </Button>
               </DialogFooter>

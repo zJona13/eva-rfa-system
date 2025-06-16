@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -205,36 +206,36 @@ const Incidents = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-blue-950/20 dark:via-background dark:to-indigo-950/20">
-      {/* Header Section */}
+      {/* Header Section Responsivo */}
       <div className="bg-white/80 dark:bg-background/80 backdrop-blur-sm border-b border-border/50 sticky top-0 z-10">
-        <div className="container mx-auto p-6">
-          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+        <div className="container mx-auto p-4 md:p-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 lg:gap-6">
             <div className="space-y-2">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
-                  <AlertTriangle className="h-6 w-6" />
+                  <AlertTriangle className="h-5 w-5 md:h-6 md:w-6" />
                 </div>
                 <div>
-                  <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                  <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 dark:from-blue-400 dark:to-indigo-400 bg-clip-text text-transparent">
                     Gestión de Incidencias
                   </h1>
-                  <p className="text-muted-foreground">Administra y supervisa las incidencias del sistema</p>
+                  <p className="text-muted-foreground text-sm md:text-base">Administra y supervisa las incidencias del sistema</p>
                 </div>
               </div>
             </div>
 
-            {/* Quick Stats */}
-            <div className="flex gap-4">
-              <div className="bg-gradient-to-br from-emerald-500 to-green-600 text-white px-4 py-2 rounded-lg text-center shadow-lg">
-                <div className="text-2xl font-bold">{stats.completadas}</div>
+            {/* Quick Stats Responsivas */}
+            <div className="flex flex-wrap gap-2 md:gap-4 justify-center lg:justify-end">
+              <div className="bg-gradient-to-br from-emerald-500 to-green-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-center shadow-lg">
+                <div className="text-lg md:text-2xl font-bold">{stats.completadas}</div>
                 <div className="text-xs opacity-90">Completadas</div>
               </div>
-              <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white px-4 py-2 rounded-lg text-center shadow-lg">
-                <div className="text-2xl font-bold">{stats.pendientes}</div>
+              <div className="bg-gradient-to-br from-amber-500 to-orange-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-center shadow-lg">
+                <div className="text-lg md:text-2xl font-bold">{stats.pendientes}</div>
                 <div className="text-xs opacity-90">Pendientes</div>
               </div>
-              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white px-4 py-2 rounded-lg text-center shadow-lg">
-                <div className="text-2xl font-bold">{stats.total}</div>
+              <div className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white px-3 py-2 md:px-4 md:py-2 rounded-lg text-center shadow-lg">
+                <div className="text-lg md:text-2xl font-bold">{stats.total}</div>
                 <div className="text-xs opacity-90">Total</div>
               </div>
             </div>
@@ -242,11 +243,11 @@ const Incidents = () => {
         </div>
       </div>
 
-      <div className="container mx-auto p-6">
-        {/* Filters Section */}
+      <div className="container mx-auto p-4 md:p-6">
+        {/* Filters Section Responsiva */}
         <Card className="mb-6 shadow-lg border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm">
-          <CardContent className="p-6">
-            <div className="flex flex-col lg:flex-row gap-4">
+          <CardContent className="p-4 md:p-6">
+            <div className="flex flex-col gap-4">
               <div className="flex-1">
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -259,11 +260,11 @@ const Incidents = () => {
                 </div>
               </div>
               
-              <div className="flex gap-3">
-                <div className="flex items-center gap-2">
-                  <Filter className="h-4 w-4 text-muted-foreground" />
+              <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex items-center gap-2 flex-1">
+                  <Filter className="h-4 w-4 text-muted-foreground flex-shrink-0" />
                   <Select value={filterEstado} onValueChange={setFilterEstado}>
-                    <SelectTrigger className="w-[180px] bg-background/50 border-border/50">
+                    <SelectTrigger className="bg-background/50 border-border/50">
                       <SelectValue placeholder="Estado" />
                     </SelectTrigger>
                     <SelectContent>
@@ -275,7 +276,7 @@ const Incidents = () => {
                 </div>
 
                 <Select value={filterTipo} onValueChange={setFilterTipo}>
-                  <SelectTrigger className="w-[180px] bg-background/50 border-border/50">
+                  <SelectTrigger className="bg-background/50 border-border/50 flex-1">
                     <SelectValue placeholder="Tipo" />
                   </SelectTrigger>
                   <SelectContent>
@@ -290,18 +291,18 @@ const Incidents = () => {
           </CardContent>
         </Card>
         
-        {/* Incidents Grid */}
+        {/* Incidents Grid Responsiva */}
         <div className="space-y-4">
           {filteredIncidencias.length === 0 ? (
             <Card className="shadow-lg border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm">
-              <CardContent className="py-12">
+              <CardContent className="py-8 md:py-12">
                 <div className="text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center">
-                    <AlertTriangle className="h-8 w-8 text-muted-foreground" />
+                  <div className="mx-auto w-12 h-12 md:w-16 md:h-16 bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 rounded-full flex items-center justify-center">
+                    <AlertTriangle className="h-6 w-6 md:h-8 md:w-8 text-muted-foreground" />
                   </div>
                   <div>
-                    <h3 className="text-lg font-semibold">No se encontraron incidencias</h3>
-                    <p className="text-muted-foreground">No hay incidencias que coincidan con los filtros seleccionados</p>
+                    <h3 className="text-base md:text-lg font-semibold">No se encontraron incidencias</h3>
+                    <p className="text-muted-foreground text-sm">No hay incidencias que coincidan con los filtros seleccionados</p>
                   </div>
                 </div>
               </CardContent>
@@ -310,85 +311,91 @@ const Incidents = () => {
             filteredIncidencias.map((incidencia: any) => (
               <Card key={incidencia.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-card/90">
                 <CardHeader className="pb-4">
-                  <div className="flex justify-between items-start">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
-                          <FileText className="h-4 w-4" />
-                        </div>
-                        <div>
-                          <CardTitle className="text-xl font-bold text-foreground">
-                            Incidencia #{incidencia.id}
-                          </CardTitle>
-                          <CardDescription className="flex items-center gap-2 text-muted-foreground">
-                            <Calendar className="h-4 w-4" />
-                            {new Date(incidencia.fecha).toLocaleDateString('es-ES', { 
-                              year: 'numeric', 
-                              month: 'long', 
-                              day: 'numeric' 
-                            })}
-                            <Clock className="h-4 w-4 ml-2" />
-                            {incidencia.hora}
-                          </CardDescription>
+                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                    <div className="space-y-2 flex-1">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <CardTitle className="text-lg md:text-xl font-bold text-foreground truncate">
+                              Incidencia #{incidencia.id}
+                            </CardTitle>
+                            <CardDescription className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-muted-foreground text-xs md:text-sm">
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                                {new Date(incidencia.fecha).toLocaleDateString('es-ES', { 
+                                  year: 'numeric', 
+                                  month: 'long', 
+                                  day: 'numeric' 
+                                })}
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                                {incidencia.hora}
+                              </div>
+                            </CardDescription>
+                          </div>
                         </div>
                       </div>
                     </div>
-                    <div className="flex gap-2 flex-wrap">
-                      <Badge className={`${getTipoColor(incidencia.tipo)} border font-medium`}>
+                    <div className="flex flex-wrap gap-2 justify-end lg:justify-start">
+                      <Badge className={`${getTipoColor(incidencia.tipo)} border font-medium text-xs`}>
                         {incidencia.tipo}
                       </Badge>
-                      <Badge className={`${getEstadoColor(incidencia.estado)} border font-medium flex items-center gap-1`}>
+                      <Badge className={`${getEstadoColor(incidencia.estado)} border font-medium flex items-center gap-1 text-xs`}>
                         {getEstadoIcon(incidencia.estado)}
                         {incidencia.estado}
                       </Badge>
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent className="space-y-6">
-                  <div className="bg-muted/50 p-4 rounded-lg border border-border/50">
-                    <p className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                <CardContent className="space-y-4 md:space-y-6">
+                  <div className="bg-muted/50 p-3 md:p-4 rounded-lg border border-border/50">
+                    <p className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm md:text-base">
                       <FileText className="h-4 w-4" />
                       Descripción:
                     </p>
-                    <p className="text-muted-foreground leading-relaxed">{incidencia.descripcion}</p>
+                    <p className="text-muted-foreground leading-relaxed text-sm md:text-base">{incidencia.descripcion}</p>
                   </div>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-blue-50 dark:bg-blue-950/20 p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p className="font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <div className="bg-blue-50 dark:bg-blue-950/20 p-3 md:p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                      <p className="font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2 text-sm md:text-base">
                         <User className="h-4 w-4" />
                         Reportado por:
                       </p>
-                      <p className="text-blue-600 dark:text-blue-300 font-medium">{incidencia.reportadorNombre}</p>
+                      <p className="text-blue-600 dark:text-blue-300 font-medium text-sm md:text-base truncate">{incidencia.reportadorNombre}</p>
                     </div>
-                    <div className="bg-purple-50 dark:bg-purple-950/20 p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                      <p className="font-semibold text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-2">
+                    <div className="bg-purple-50 dark:bg-purple-950/20 p-3 md:p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                      <p className="font-semibold text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-2 text-sm md:text-base">
                         <Users className="h-4 w-4" />
                         Afectado:
                       </p>
-                      <p className="text-purple-600 dark:text-purple-300 font-medium">{incidencia.afectadoNombre}</p>
+                      <p className="text-purple-600 dark:text-purple-300 font-medium text-sm md:text-base truncate">{incidencia.afectadoNombre}</p>
                     </div>
                   </div>
 
                   {incidencia.accionTomada && (
-                    <div className="bg-emerald-50 dark:bg-emerald-950/20 p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                      <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-2">
+                    <div className="bg-emerald-50 dark:bg-emerald-950/20 p-3 md:p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                      <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-2 text-sm md:text-base">
                         <CheckCircle className="h-4 w-4" />
                         Acción tomada:
                       </p>
-                      <p className="text-emerald-600 dark:text-emerald-300">{incidencia.accionTomada}</p>
+                      <p className="text-emerald-600 dark:text-emerald-300 text-sm md:text-base">{incidencia.accionTomada}</p>
                     </div>
                   )}
 
                   {canModifyStatus() && incidencia.estado === 'Pendiente' && (
                     <div className="pt-4 border-t border-border/50">
-                      <div className="flex items-center gap-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                         <span className="text-sm font-medium text-muted-foreground">Cambiar estado:</span>
                         <Select
                           value={incidencia.estado}
                           onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
                         >
-                          <SelectTrigger className="w-[180px] bg-background border-border">
+                          <SelectTrigger className="w-full sm:w-[180px] bg-background border-border">
                             <SelectValue placeholder="Cambiar estado" />
                           </SelectTrigger>
                           <SelectContent>
