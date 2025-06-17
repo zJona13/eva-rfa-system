@@ -444,7 +444,7 @@ const Incidents = () => {
                       </div>
                     )}
 
-                    {canModifyStatus() && incidencia.estado === 'Pendiente' && (
+                    {canModifyStatus() && incidencia.estado === 'Pendiente' && !esDesaprobada && (
                       <div className="pt-4 border-t border-border/50">
                         <div className="flex flex-col sm:flex-row sm:items-center gap-3">
                           <span className="text-sm font-medium text-muted-foreground">Cambiar estado:</span>
