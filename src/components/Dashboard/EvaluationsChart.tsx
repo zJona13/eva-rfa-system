@@ -11,7 +11,7 @@ const EvaluationsChart = () => {
     queryKey: ['dashboard-evaluations-chart'],
     queryFn: async () => {
       const token = getToken();
-      const response = await fetch('/api/dashboard/evaluations-chart', {
+      const response = await fetch('/dashboard/evaluations-chart', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       return response.json();

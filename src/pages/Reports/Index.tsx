@@ -6,11 +6,11 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { useAuth, getToken } from '@/contexts/AuthContext';
-import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calendar, Building2, Sparkles, Target, Award } from 'lucide-react';
+import { FileText, Download, BarChart3, TrendingUp, TrendingDown, AlertTriangle, AlertCircle, Users, Calendar, Building2, Sparkles, Target, Award } from 'lucide-react';
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3309';
 
 interface ReportType {
   id: string;
@@ -26,54 +26,54 @@ const reportTypes: ReportType[] = [
   {
     id: 'evaluaciones-aprobadas',
     title: 'Evaluaciones Aprobadas',
-    description: 'Listado de evaluaciones con puntaje ≥ 11',
-    icon: Award,
-    endpoint: '/api/reportes/evaluaciones-aprobadas',
-    color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400',
-    gradient: 'from-emerald-500 to-green-600'
+    description: 'Lista de evaluaciones con puntaje aprobatorio',
+    icon: TrendingUp,
+    endpoint: '/reportes/evaluaciones-aprobadas',
+    color: 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-400',
+    gradient: 'from-green-500 to-emerald-600'
   },
   {
     id: 'evaluaciones-desaprobadas',
     title: 'Evaluaciones Desaprobadas',
-    description: 'Listado de evaluaciones con puntaje < 11',
-    icon: AlertTriangle,
-    endpoint: '/api/reportes/evaluaciones-desaprobadas',
+    description: 'Lista de evaluaciones con puntaje desaprobatorio',
+    icon: TrendingDown,
+    endpoint: '/reportes/evaluaciones-desaprobadas',
     color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
     gradient: 'from-red-500 to-rose-600'
   },
   {
-    id: 'evaluados-con-incidencias',
-    title: 'Evaluados con Incidencias',
-    description: 'Personal que tiene incidencias registradas',
+    id: 'personal-de-baja',
+    title: 'Personal de Baja',
+    description: 'Lista de personal con evaluaciones desaprobatorias',
     icon: AlertTriangle,
-    endpoint: '/api/reportes/evaluados-con-incidencias',
+    endpoint: '/reportes/personal-de-baja',
     color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
     gradient: 'from-orange-500 to-amber-600'
   },
   {
-    id: 'personal-de-baja',
-    title: 'Personal de Baja',
-    description: 'Colaboradores que ya no están activos',
-    icon: Users,
-    endpoint: '/api/reportes/personal-de-baja',
-    color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
-    gradient: 'from-gray-500 to-slate-600'
+    id: 'personal-alta-calificacion',
+    title: 'Personal de Alta Calificación',
+    description: 'Lista de personal con evaluaciones sobresalientes',
+    icon: Award,
+    endpoint: '/reportes/personal-alta-calificacion',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
+    gradient: 'from-blue-500 to-cyan-600'
   },
   {
-    id: 'personal-alta-calificacion',
-    title: 'Personal con Alta Calificación',
-    description: 'Colaboradores con promedio ≥ 15',
-    icon: Target,
-    endpoint: '/api/reportes/personal-alta-calificacion',
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
-    gradient: 'from-blue-500 to-indigo-600'
+    id: 'evaluados-con-incidencias',
+    title: 'Evaluados con Incidencias',
+    description: 'Lista de evaluados que han tenido incidencias',
+    icon: AlertCircle,
+    endpoint: '/reportes/evaluados-con-incidencias',
+    color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400',
+    gradient: 'from-yellow-500 to-amber-600'
   },
   {
     id: 'evaluaciones-por-semestre',
     title: 'Evaluaciones por Semestre',
     description: 'Estadísticas de evaluaciones agrupadas por semestre',
     icon: Calendar,
-    endpoint: '/api/reportes/evaluaciones-por-semestre',
+    endpoint: '/reportes/evaluaciones-por-semestre',
     color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
     gradient: 'from-purple-500 to-violet-600'
   },
@@ -82,7 +82,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones por Área',
     description: 'Estadísticas de evaluaciones agrupadas por tipo de colaborador',
     icon: Building2,
-    endpoint: '/api/reportes/evaluaciones-por-area',
+    endpoint: '/reportes/evaluaciones-por-area',
     color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400',
     gradient: 'from-indigo-500 to-blue-600'
   }

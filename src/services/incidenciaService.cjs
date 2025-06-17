@@ -240,6 +240,21 @@ const createIncidenciaEvaluacionCancelada = async (evaluacionData) => {
 // Crear incidencia por evaluación desaprobada
 const createIncidenciaEvaluacionDesaprobada = async (evaluacionData) => {
   try {
+    // Validar datos requeridos
+    if (!evaluacionData || !evaluacionData.idEvaluador || !evaluacionData.idEvaluado) {
+      console.error('Datos incompletos para crear incidencia de evaluación desaprobada:', evaluacionData);
+      return { success: false, message: 'Datos incompletos para crear la incidencia' };
+    }
+
+    // Validar que puntajeTotal y criteriosAMejorar existan
+    if (evaluacionData.puntajeTotal === undefined || evaluacionData.criteriosAMejorar === undefined) {
+      console.error('Faltan datos de evaluación:', { 
+        puntajeTotal: evaluacionData.puntajeTotal, 
+        criteriosAMejorar: evaluacionData.criteriosAMejorar 
+      });
+      return { success: false, message: 'Faltan datos de la evaluación' };
+    }
+
     const now = new Date();
     const incidenciaData = {
       fecha: now.toISOString().split('T')[0],
@@ -250,6 +265,7 @@ const createIncidenciaEvaluacionDesaprobada = async (evaluacionData) => {
       afectadoId: evaluacionData.idEvaluado
     };
 
+    console.log('Creando incidencia por evaluación desaprobada:', incidenciaData);
     return await createIncidencia(incidenciaData);
   } catch (error) {
     console.error('Error al crear incidencia por evaluación desaprobada:', error);

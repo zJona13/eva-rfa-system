@@ -6,11 +6,11 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth, getToken } from '@/contexts/AuthContext';
 import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3309';
 
 const fetchRecentEvaluations = async () => {
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/api/dashboard/recent-evaluations`, {
+  const response = await fetch(`${API_BASE_URL}/dashboard/recent-evaluations`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
 
