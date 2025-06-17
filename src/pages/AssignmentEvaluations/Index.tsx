@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -131,7 +130,7 @@ const AssignmentEvaluations = () => {
       setEditMode(false);
       setEditId(null);
       cargarAsignaciones();
-      queryClient.invalidateQueries(['dashboard-stats']);
+      queryClient.invalidateQueries({ queryKey: ['dashboard-stats'] });
       queryClient.invalidateQueries({ queryKey: ['report'] });
     } catch (e) {
       setError(e.message || 'Error al guardar asignación');
@@ -158,6 +157,9 @@ const AssignmentEvaluations = () => {
       default: return <UserCheck className="h-4 w-4" />;
     }
   };
+
+  // Validación de fechas
+  const fechaInicioValida = form.fechaInicio && form.fechaFin && new Date(form.fechaFin) >= new Date(form.fechaInicio);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-slate-950/20 dark:via-background dark:to-blue-950/20">
@@ -452,9 +454,16 @@ const AssignmentEvaluations = () => {
                     value={form.fechaFin} 
                     onChange={handleInput} 
                     required 
+                    min={form.fechaInicio || undefined}
                   />
                 </div>
               </div>
+
+              {!fechaInicioValida && (
+                <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+                  La fecha de fin no puede ser anterior a la fecha de inicio.
+                </div>
+              )}
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-2">
@@ -493,7 +502,7 @@ const AssignmentEvaluations = () => {
                 }} className="w-full sm:w-auto">
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={loading} className="w-full sm:w-auto">
+                <Button type="submit" disabled={loading || !fechaInicioValida} className="w-full sm:w-auto">
                   {loading ? 'Guardando...' : editMode ? 'Actualizar Asignación' : 'Crear Asignación'}
                 </Button>
               </DialogFooter>

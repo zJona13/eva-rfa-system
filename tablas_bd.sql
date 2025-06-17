@@ -112,7 +112,7 @@ CREATE TABLE EVALUACION (
     horaEvaluacion TIME,
     puntajeTotal DECIMAL(5,2),
     comentario VARCHAR(500),
-    estado ENUM('Activo','Inactivo','Pendiente', 'Cancelada'),
+    estado ENUM('Activo', 'Completada', 'Pendiente', 'Cancelada') DEFAULT 'Pendiente',
     idAsignacion INT NOT NULL,
     idEvaluador INT NOT NULL,
     idEvaluado INT NOT NULL,

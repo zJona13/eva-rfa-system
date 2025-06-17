@@ -23,21 +23,22 @@ const processEvaluationsStatus = async (evaluaciones) => {
     }
 
     if (now > fechaFin) {
-      // Si el puntajeTotal es null o 0, y el período ha pasado, se considera 'Vencida'
+      // Si el puntajeTotal es null o 0, y el período ha pasado, se considera 'Cancelada'
       if (evalItem.puntajeTotal === null || evalItem.puntajeTotal === 0) {
-        newStatus = 'Cancelada';
-        // Generar incidencia por evaluación cancelada
-        console.log('Generando incidencia por evaluación cancelada:', {
-          idEvaluacion: evalItem.idEvaluacion,
-          idEvaluador: evalItem.idEvaluador,
-          idEvaluado: evalItem.idEvaluado
-        });
-        
-        await incidenciaService.createIncidenciaEvaluacionCancelada({
-          idEvaluacion: evalItem.idEvaluacion,
-          idEvaluador: evalItem.idEvaluador,
-          idEvaluado: evalItem.idEvaluado
-        });
+        if (evalItem.estado !== 'Cancelada') { // Solo si el estado realmente cambia a Cancelada
+          newStatus = 'Cancelada';
+          // Generar incidencia por evaluación cancelada SOLO si el estado cambia
+          console.log('Generando incidencia por evaluación cancelada:', {
+            idEvaluacion: evalItem.idEvaluacion,
+            idEvaluador: evalItem.idEvaluador,
+            idEvaluado: evalItem.idEvaluado
+          });
+          await incidenciaService.createIncidenciaEvaluacionCancelada({
+            idEvaluacion: evalItem.idEvaluacion,
+            idEvaluador: evalItem.idEvaluador,
+            idEvaluado: evalItem.idEvaluado
+          });
+        }
       } else if (evalItem.puntajeTotal !== null) {
         // Si tiene puntaje y venció, se marca como 'Completada'
         newStatus = 'Completada';
@@ -300,6 +301,15 @@ const updateEvaluacion = async (evaluacionId, evaluacionData) => {
     console.log('Query UPDATE:', updateQuery);
     console.log('Params UPDATE:', updateParams);
     await conn.execute(updateQuery, updateParams);
+
+    // Generar incidencia si el estado pasa a Cancelada y antes no lo era
+    if (estadoFinal === 'Cancelada' && evaluacion.estado !== 'Cancelada') {
+      await incidenciaService.createIncidenciaEvaluacionCancelada({
+        idEvaluacion: evaluacionId,
+        idEvaluador: evaluacionData.idEvaluador || null,
+        idEvaluado: evaluacionData.idEvaluado || null
+      });
+    }
 
     // Eliminar detalles anteriores de la evaluación
     console.log('Eliminando detalles anteriores para evaluacion ID:', evaluacionId);

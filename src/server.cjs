@@ -1187,6 +1187,16 @@ app.post('/api/evaluaciones/actualizar-estados-global', authenticateToken, async
   }
 });
 
+// === AUTO: Actualización periódica de evaluaciones cada 5 segundos ===
+setInterval(async () => {
+  try {
+    const result = await actualizarEstadosEvaluacionesGlobal();
+    console.log('[AUTO] Actualización periódica de evaluaciones:', result.message);
+  } catch (error) {
+    console.error('[AUTO] Error en actualización periódica de evaluaciones:', error);
+  }
+}, 5000); // 5000 ms = 5 segundos
+
 // Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`🚀 Servidor ejecutándose en el puerto ${PORT}`);
