@@ -164,12 +164,6 @@ const verifyPasswordResetCode = async (email, code) => {
       console.log('❌ Código expirado');
       return { success: false, message: 'El código ha expirado. Solicita uno nuevo.' };
     }
-    
-    // Marcar código como usado para evitar reutilización
-    await pool.execute(
-      'UPDATE PASSWORD_RESET_CODES SET used = TRUE WHERE id = ?',
-      [resetData.id]
-    );
 
     console.log('✅ Código verificado correctamente para:', email);
 

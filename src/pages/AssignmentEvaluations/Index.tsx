@@ -402,7 +402,15 @@ const AssignmentEvaluations = () => {
         </Card>
 
         {/* Modal responsivo */}
-        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <Dialog open={modalOpen} onOpenChange={(open) => {
+          setModalOpen(open);
+          if (!open) {
+            setForm({ idArea: '', periodo: '', fechaInicio: '', fechaFin: '', horaInicio: '', horaFin: '' });
+            setEditMode(false);
+            setEditId(null);
+            setError('');
+          }
+        }}>
           <DialogContent className="sm:max-w-md max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-xl md:text-2xl font-bold">

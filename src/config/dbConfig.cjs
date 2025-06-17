@@ -1,9 +1,9 @@
 
 const dbConfig = {
   host: 'sql3.freesqldatabase.com',
-  user: 'sql3781530', 
-  password: 'Y4SJiJsu7x',
-  database: 'sql3781530',
+  user: 'sql3785316', 
+  password: 'uqlCmnEwLh',
+  database: 'sql3785316',
   port: 3306
 };
 

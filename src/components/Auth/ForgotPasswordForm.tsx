@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,11 +16,21 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [step, setStep] = useState<'email' | 'verify' | 'reset'>('email');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+
+  const resetAll = () => {
+    setEmail('');
+    setVerificationCode('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setStep('email');
+    setError('');
+  };
 
   const handleSendCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
+    setError('');
     try {
       const response = await fetch('http://localhost:3309/api/auth/forgot-password', {
         method: 'POST',
@@ -30,16 +39,16 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
         },
         body: JSON.stringify({ email }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         toast.success('Código de verificación enviado a tu correo');
         setStep('verify');
       } else {
+        setError(data.message || 'Error al enviar el código');
         toast.error(data.message || 'Error al enviar el código');
       }
     } catch (error) {
+      setError('Error de conexión con el servidor');
       toast.error('Error de conexión con el servidor');
     } finally {
       setIsLoading(false);
@@ -49,7 +58,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
   const handleVerifyCode = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-
+    setError('');
     try {
       const response = await fetch('http://localhost:3309/api/auth/verify-reset-code', {
         method: 'POST',
@@ -58,16 +67,19 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
         },
         body: JSON.stringify({ email, code: verificationCode }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         toast.success('Código verificado correctamente');
         setStep('reset');
       } else {
-        toast.error(data.message || 'Código de verificación incorrecto');
+        let msg = data.message || 'Código de verificación incorrecto';
+        if (msg.includes('expirado')) msg = 'El código ha expirado. Solicita uno nuevo.';
+        if (msg.includes('utilizado')) msg = 'El código ya ha sido utilizado. Solicita uno nuevo.';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (error) {
+      setError('Error de conexión con el servidor');
       toast.error('Error de conexión con el servidor');
     } finally {
       setIsLoading(false);
@@ -76,19 +88,18 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
 
   const handleResetPassword = async (e: React.FormEvent) => {
     e.preventDefault();
-
+    setError('');
     if (newPassword !== confirmPassword) {
+      setError('Las contraseñas no coinciden');
       toast.error('Las contraseñas no coinciden');
       return;
     }
-
     if (newPassword.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
       toast.error('La contraseña debe tener al menos 6 caracteres');
       return;
     }
-
     setIsLoading(true);
-
     try {
       const response = await fetch('http://localhost:3309/api/auth/reset-password', {
         method: 'POST',
@@ -101,16 +112,20 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
           newPassword 
         }),
       });
-
       const data = await response.json();
-
       if (data.success) {
         toast.success('Contraseña actualizada correctamente');
+        resetAll();
         onBack();
       } else {
-        toast.error(data.message || 'Error al actualizar la contraseña');
+        let msg = data.message || 'Error al actualizar la contraseña';
+        if (msg.includes('código') && msg.includes('utilizado')) msg = 'El código ya ha sido utilizado. Solicita uno nuevo.';
+        if (msg.includes('código') && msg.includes('válido')) msg = 'El código no es válido o ya fue utilizado.';
+        setError(msg);
+        toast.error(msg);
       }
     } catch (error) {
+      setError('Error de conexión con el servidor');
       toast.error('Error de conexión con el servidor');
     } finally {
       setIsLoading(false);
@@ -122,7 +137,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
       <div className="text-center">
         <Button
           variant="ghost"
-          onClick={onBack}
+          onClick={() => { resetAll(); onBack(); }}
           className="mb-4 p-2"
         >
           <ArrowLeft className="h-4 w-4 mr-2" />
@@ -149,6 +164,11 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
               required
             />
           </div>
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Enviando...' : 'Enviar código de verificación'}
           </Button>
@@ -172,6 +192,11 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
               Código enviado a: {email}
             </p>
           </div>
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
             {isLoading ? 'Verificando...' : 'Verificar código'}
           </Button>
@@ -204,8 +229,13 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
               minLength={6}
             />
           </div>
+          {error && (
+            <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg text-sm">
+              {error}
+            </div>
+          )}
           <Button type="submit" className="w-full" disabled={isLoading}>
-            {isLoading ? 'Actualizando...' : 'Actualizar contraseña'}
+            {isLoading ? 'Restableciendo...' : 'Restablecer contraseña'}
           </Button>
         </form>
       )}
