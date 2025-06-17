@@ -26,18 +26,18 @@ const processEvaluationsStatus = async (evaluaciones) => {
       // Si el puntajeTotal es null o 0, y el período ha pasado, se considera 'Cancelada'
       if (evalItem.puntajeTotal === null || evalItem.puntajeTotal === 0) {
         if (evalItem.estado !== 'Cancelada') { // Solo si el estado realmente cambia a Cancelada
-          newStatus = 'Cancelada';
+        newStatus = 'Cancelada';
           // Generar incidencia por evaluación cancelada SOLO si el estado cambia
-          console.log('Generando incidencia por evaluación cancelada:', {
-            idEvaluacion: evalItem.idEvaluacion,
-            idEvaluador: evalItem.idEvaluador,
-            idEvaluado: evalItem.idEvaluado
-          });
-          await incidenciaService.createIncidenciaEvaluacionCancelada({
-            idEvaluacion: evalItem.idEvaluacion,
-            idEvaluador: evalItem.idEvaluador,
-            idEvaluado: evalItem.idEvaluado
-          });
+        console.log('Generando incidencia por evaluación cancelada:', {
+          idEvaluacion: evalItem.idEvaluacion,
+          idEvaluador: evalItem.idEvaluador,
+          idEvaluado: evalItem.idEvaluado
+        });
+        await incidenciaService.createIncidenciaEvaluacionCancelada({
+          idEvaluacion: evalItem.idEvaluacion,
+          idEvaluador: evalItem.idEvaluador,
+          idEvaluado: evalItem.idEvaluado
+        });
         }
       } else if (evalItem.puntajeTotal !== null) {
         // Si tiene puntaje y venció, se marca como 'Completada'

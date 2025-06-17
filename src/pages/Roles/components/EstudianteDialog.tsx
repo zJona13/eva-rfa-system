@@ -55,13 +55,57 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
     }
   });
 
+  // Limpio el formulario al cerrar el modal
+  const handleOpenChange = (openValue: boolean) => {
+    onOpenChange(openValue);
+    if (!openValue) {
+      // Regenerar código y limpiar campos
+      const now = new Date();
+      const year = now.getFullYear();
+      const codigosEsteAnio = usuarios
+        .map(u => u.correo)
+        .filter(c => c && c.startsWith(`EST${year}`));
+      let maxCorrelativo = 0;
+      codigosEsteAnio.forEach(c => {
+        const match = c.match(/^EST\d{4}(\d{2})$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxCorrelativo) maxCorrelativo = num;
+        }
+      });
+      const correlativo = String(maxCorrelativo + 1).padStart(2, '0');
+      const autoCodigo = `EST${year}${correlativo}`;
+      reset({ codigo: autoCodigo, sexo: '', semestre: '', areaId: undefined, nombreEstudiante: '', apePaEstudiante: '', apeMaEstudiante: '', user: { email: '', password: '', confirmPassword: '' } });
+    }
+  };
+
+  // Generar código correlativo para el año actual (al abrir para crear)
   React.useEffect(() => {
     if (estudiante) {
       reset({ ...estudiante, user: { email: '', password: '', confirmPassword: '' } });
-    } else {
-      reset({ codigo: '', sexo: '', semestre: '', areaId: undefined, nombreEstudiante: '', apePaEstudiante: '', apeMaEstudiante: '', user: { email: '', password: '', confirmPassword: '' } });
+    } else if (open) {
+      const now = new Date();
+      const year = now.getFullYear();
+      const codigosEsteAnio = usuarios
+        .map(u => u.correo)
+        .filter(c => c && c.startsWith(`EST${year}`));
+      let maxCorrelativo = 0;
+      codigosEsteAnio.forEach(c => {
+        const match = c.match(/^EST\d{4}(\d{2})$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxCorrelativo) maxCorrelativo = num;
+        }
+      });
+      const correlativo = String(maxCorrelativo + 1).padStart(2, '0');
+      const autoCodigo = `EST${year}${correlativo}`;
+      reset({ codigo: autoCodigo, sexo: '', semestre: '', areaId: undefined, nombreEstudiante: '', apePaEstudiante: '', apeMaEstudiante: '', user: { email: '', password: '', confirmPassword: '' } });
     }
-  }, [estudiante, reset]);
+  }, [estudiante, reset, usuarios, open]);
+
+  // Validación de código único
+  const codigoActual = watch('codigo');
+  const codigoDuplicado = usuarios.some(u => u.correo === codigoActual);
 
   const onSubmit = (data: any) => {
     if (!estudiante) {
@@ -93,7 +137,7 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>{estudiante ? 'Editar Estudiante' : 'Crear Nuevo Estudiante'}</DialogTitle>
@@ -104,6 +148,9 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
               <label className="block mb-1">Código</label>
               <Input {...register('codigo', { required: 'El código es obligatorio' })} />
               {errors.codigo && <span className="text-red-500 text-xs">{errors.codigo.message}</span>}
+              {codigoDuplicado && (
+                <span className="text-red-500 text-xs">El código ya está en uso. No puede repetirse.</span>
+              )}
             </div>
             <div>
               <label className="block mb-1">Nombres</label>
@@ -122,7 +169,15 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
             </div>
             <div>
               <label className="block mb-1">Sexo</label>
-              <Input {...register('sexo', { required: 'El sexo es obligatorio' })} maxLength={1} placeholder="M/F" />
+              <Select value={watch('sexo') || ''} onValueChange={val => setValue('sexo', val)}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleccione sexo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="M">Masculino</SelectItem>
+                  <SelectItem value="F">Femenino</SelectItem>
+                </SelectContent>
+              </Select>
               {errors.sexo && <span className="text-red-500 text-xs">{errors.sexo.message}</span>}
             </div>
             <div>
@@ -169,7 +224,7 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
           )}
           <div className="flex justify-end gap-2 pt-4 border-t mt-4">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancelar</Button>
-            <Button type="submit" variant="default">{estudiante ? 'Actualizar' : 'Crear'}</Button>
+            <Button type="submit" variant="default" disabled={codigoDuplicado}>{estudiante ? 'Actualizar' : 'Crear'}</Button>
           </div>
         </form>
       </DialogContent>

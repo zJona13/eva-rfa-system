@@ -68,6 +68,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   const [selectedColaborador, setSelectedColaborador] = useState<Colaborador | null>(null);
   const [isUserDialogOpen, setIsUserDialogOpen] = useState(false);
   const [createdColaborador, setCreatedColaborador] = useState<Colaborador | null>(null);
+  const [usuarioCreado, setUsuarioCreado] = useState(false);
   const queryClient = useQueryClient();
   
   // Filtrar colaboradores basado en la búsqueda
@@ -221,8 +222,10 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
       const result = await response.json();
       if (!response.ok) throw new Error(result.message || 'Error al crear usuario');
       toast.success('Usuario creado exitosamente');
+      setUsuarioCreado(true);
       setIsUserDialogOpen(false);
       setCreatedColaborador(null);
+      setTimeout(() => setUsuarioCreado(false), 500); // Reset para futuros usos
       queryClient.invalidateQueries({ queryKey: ['users'] });
     } catch (error: any) {
       toast.error(error.message);
@@ -452,15 +455,18 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
         {/* Diálogo de usuario asociado (paso 2) */}
         <UserDialog
           open={isUserDialogOpen}
-          onOpenChange={setIsUserDialogOpen}
-          userData={{
-            name: createdColaborador?.fullName || '',
-            email: '',
-            roleId: '',
-            colaboradorId: createdColaborador?.id,
-            areaId: createdColaborador?.areaId ? String(createdColaborador.areaId) : '',
-            active: true
+          onOpenChange={(open) => {
+            // Solo permitir cerrar si el usuario fue creado
+            if (!open && !usuarioCreado) return;
+            setIsUserDialogOpen(open);
+            if (!open) setUsuarioCreado(false);
           }}
+          userData={createdColaborador ? {
+            colaboradorId: createdColaborador.id,
+            name: createdColaborador.fullName,
+            areaId: createdColaborador.areaId,
+            // ...otros datos por defecto si necesitas
+          } : undefined}
           roles={roles}
           areas={areas}
           onSubmit={handleSaveUser}

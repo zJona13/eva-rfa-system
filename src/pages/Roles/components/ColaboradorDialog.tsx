@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -107,7 +106,8 @@ const ColaboradorDialog = ({
   onSave 
 }: ColaboradorDialogProps) => {
   const isEditing = !!colaborador?.id;
-  
+  const [forceUserDialog, setForceUserDialog] = useState(false);
+
   const form = useForm<ColaboradorFormValues>({
     resolver: zodResolver(colaboradorSchema),
     defaultValues: {
@@ -168,18 +168,44 @@ const ColaboradorDialog = ({
         areaId: 0
       });
     }
-  }, [colaborador, form]);
+  }, [colaborador, form, open]);
+  
+  // Limpio el formulario al cerrar el modal
+  const handleOpenChange = (openValue: boolean) => {
+    onOpenChange(openValue);
+    if (!openValue) {
+      const today = new Date();
+      const nextYear = new Date();
+      nextYear.setFullYear(today.getFullYear() + 1);
+      form.reset({
+        nombres: '',
+        apePat: '',
+        apeMat: '',
+        birthDate: toDateInputValue(today),
+        address: '',
+        phone: '',
+        dni: '',
+        active: true,
+        roleId: 0,
+        startDate: toDateInputValue(today),
+        endDate: toDateInputValue(nextYear),
+        contractActive: true,
+        contractTypeId: 0,
+        areaId: 0
+      });
+    }
+  };
   
   const onSubmit = (values: ColaboradorFormValues) => {
     onSave(values);
+    setForceUserDialog(true); // Fuerza el flujo a crear usuario
   };
   
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{isEditing ? 'Editar Colaborador' : 'Crear Nuevo Colaborador'}</DialogTitle>
-
         </DialogHeader>
         
         <Form {...form}>
