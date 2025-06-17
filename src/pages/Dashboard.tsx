@@ -12,11 +12,6 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import EvaluationsChart from '@/components/Dashboard/EvaluationsChart';
-import AdminMetrics from '@/components/Dashboard/AdminMetrics';
-import EvaluationsByAreaChart from '@/components/Dashboard/EvaluationsByAreaChart';
-import EvaluationStatusChart from '@/components/Dashboard/EvaluationStatusChart';
-import EvaluationTrendsChart from '@/components/Dashboard/EvaluationTrendsChart';
-import TopPerformersTable from '@/components/Dashboard/TopPerformersTable';
 
 interface DashboardStats {
   evaluacionesRecibidas?: number;
@@ -117,6 +112,7 @@ const Dashboard = () => {
                     </p>
                   </div>
                 </div>
+                
               </div>
             </div>
           </div>
@@ -131,32 +127,7 @@ const Dashboard = () => {
             </Alert>
           )}
 
-          {/* Admin Dashboard */}
-          {userRole === 'admin' && (
-            <div className="space-y-6 md:space-y-8">
-              {/* Admin Metrics */}
-              <AdminMetrics />
-
-              {/* Charts Row 1 */}
-              <div className="grid gap-6 md:gap-8 lg:grid-cols-2">
-                <EvaluationsByAreaChart />
-                <EvaluationStatusChart />
-              </div>
-
-              {/* Charts Row 2 */}
-              <div className="grid gap-6 md:gap-8 lg:grid-cols-2">
-                <EvaluationTrendsChart />
-                <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-hidden">
-                  <RecentEvaluations />
-                </div>
-              </div>
-
-              {/* Top Performers Table */}
-              <TopPerformersTable />
-            </div>
-          )}
-
-          {/* Stats overview for non-admin users */}
+          {/* Stats overview */}
           {(!isAdminOrEvaluator || userRole === 'evaluator') && (
             <div className="space-y-4 md:space-y-6">
               <div className="flex items-center gap-3">
@@ -233,26 +204,24 @@ const Dashboard = () => {
             </div>
           )}
 
-          {/* Main Content Grid for non-admin users */}
-          {userRole !== 'admin' && (
-            <div className="grid gap-6 md:gap-8 xl:grid-cols-3">
-              {/* Recent evaluations */}
-              <div className="xl:col-span-2 space-y-4 md:space-y-6">
-                <div className="flex items-center gap-3">
-                  <div className="w-1 h-6 md:h-8 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
-                  <h2 className="text-xl md:text-2xl font-bold text-foreground">Actividad Reciente</h2>
-                </div>
-                <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-hidden">
-                  <RecentEvaluations />
-                </div>
-                {userRole === 'evaluator' && (
-                  <div className="mt-6">
-                    <EvaluationsChart />
-                  </div>
-                )}
+          {/* Main Content Grid */}
+          <div className="grid gap-6 md:gap-8 xl:grid-cols-3">
+            {/* Recent evaluations */}
+            <div className="xl:col-span-2 space-y-4 md:space-y-6">
+              <div className="flex items-center gap-3">
+                <div className="w-1 h-6 md:h-8 bg-purple-600 dark:bg-purple-400 rounded-full"></div>
+                <h2 className="text-xl md:text-2xl font-bold text-foreground">Actividad Reciente</h2>
               </div>
+              <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-hidden">
+                <RecentEvaluations />
+              </div>
+              {userRole === 'admin' && (
+                <div className="mt-6">
+                  <EvaluationsChart />
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
