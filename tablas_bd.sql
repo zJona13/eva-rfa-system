@@ -232,7 +232,7 @@ INSERT INTO COLABORADOR (nombreColaborador, apePaColaborador, apeMaColaborador, 
 VALUES ('Jonatan', 'Ching', 'Ayacila', '2003-05-13', 'Av. La Panamericana Norte', '912663649', '76091348', 'Activo', 1, 1, 1);
 
 INSERT INTO USUARIO (correo, contrasena, estado, idTipoUsuario, idColaborador, idArea) 
-VALUES ('jching@iesrfa.edu', '$2a$12$Iig8qm23xy.8L9E13yc8MOCG6QpOvfWfD/QxCQzVOKCyG1Ffg/zVG', 'Activo', 1, 1, 1);
+VALUES ('jching@iesrfa.edu', '$2a$12$Iig8qm23xy.8L9E13yc8MOCG6QpOvfWfD/QxCQzVOKCyG1Ffg/zVG', 'Activo', 1, 1, 7);
 
 INSERT INTO CRITERIO (nombre) VALUES
 -- Criterios para Evaluación Estudiante al Docente
