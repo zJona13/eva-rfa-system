@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -9,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useAuth, getToken, UserRole } from '@/contexts/AuthContext';
 import { AlertTriangle, Calendar, Clock, Filter, Search, User, FileText, CheckCircle, AlertCircle, Users } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 
 const API_BASE_URL = 'http://localhost:3309/api';
 
@@ -50,12 +50,30 @@ const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: stri
   return response.json();
 };
 
+const completarIncidencia = async ({ id, accionTomada }: { id: number; accionTomada: string }) => {
+  const token = getToken();
+  const response = await fetch(`${API_BASE_URL}/incidencias/${id}/completar`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({ accionTomada })
+  });
+  if (!response.ok) {
+    const errorData = await response.json();
+    throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
+  }
+  return response.json();
+};
+
 const Incidents = () => {
   const { user } = useAuth();
   const queryClient = useQueryClient();
   const [filterEstado, setFilterEstado] = useState<string>('todos');
   const [filterTipo, setFilterTipo] = useState<string>('todos');
   const [searchTerm, setSearchTerm] = useState<string>('');
+  const [comentarios, setComentarios] = useState<{ [key: number]: string }>({});
 
   console.log('Usuario actual desde contexto:', user);
   if (user) {
@@ -101,6 +119,17 @@ const Incidents = () => {
     },
     onError: (error: any) => {
       toast.error(`Error al actualizar: ${error.message}`);
+    },
+  });
+
+  const completarIncidenciaMutation = useMutation({
+    mutationFn: completarIncidencia,
+    onSuccess: () => {
+      toast.success('Comentario guardado y estado actualizado a Completada');
+      queryClient.invalidateQueries({ queryKey: ['incidencias'] });
+    },
+    onError: (error: any) => {
+      toast.error(`Error al guardar comentario: ${error.message}`);
     },
   });
 
@@ -308,111 +337,140 @@ const Incidents = () => {
               </CardContent>
             </Card>
           ) : (
-            filteredIncidencias.map((incidencia: any) => (
-              <Card key={incidencia.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-card/90">
-                <CardHeader className="pb-4">
-                  <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
-                    <div className="space-y-2 flex-1">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
-                            <FileText className="h-4 w-4" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <CardTitle className="text-lg md:text-xl font-bold text-foreground truncate">
-                              Incidencia #{incidencia.id}
-                            </CardTitle>
-                            <CardDescription className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-muted-foreground text-xs md:text-sm">
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3 md:h-4 md:w-4" />
-                                {new Date(incidencia.fecha).toLocaleDateString('es-ES', { 
-                                  year: 'numeric', 
-                                  month: 'long', 
-                                  day: 'numeric' 
-                                })}
-                              </div>
-                              <div className="flex items-center gap-1">
-                                <Clock className="h-3 w-3 md:h-4 md:w-4" />
-                                {incidencia.hora}
-                              </div>
-                            </CardDescription>
+            filteredIncidencias.map((incidencia: any) => {
+              const esDesaprobada = incidencia.descripcion && incidencia.descripcion.toLowerCase().includes('desaprob');
+              return (
+                <Card key={incidencia.id} className="group hover:shadow-xl transition-all duration-300 border-0 bg-white/70 dark:bg-card/70 backdrop-blur-sm hover:bg-white/90 dark:hover:bg-card/90">
+                  <CardHeader className="pb-4">
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="space-y-2 flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <div className="flex items-center gap-3">
+                            <div className="p-2 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg text-white">
+                              <FileText className="h-4 w-4" />
+                            </div>
+                            <div className="min-w-0 flex-1">
+                              <CardTitle className="text-lg md:text-xl font-bold text-foreground truncate">
+                                Incidencia #{incidencia.id}
+                              </CardTitle>
+                              <CardDescription className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 text-muted-foreground text-xs md:text-sm">
+                                <div className="flex items-center gap-1">
+                                  <Calendar className="h-3 w-3 md:h-4 md:w-4" />
+                                  {new Date(incidencia.fecha).toLocaleDateString('es-ES', { 
+                                    year: 'numeric', 
+                                    month: 'long', 
+                                    day: 'numeric' 
+                                  })}
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Clock className="h-3 w-3 md:h-4 md:w-4" />
+                                  {incidencia.hora}
+                                </div>
+                              </CardDescription>
+                            </div>
                           </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-wrap gap-2 justify-end lg:justify-start">
-                      <Badge className={`${getTipoColor(incidencia.tipo)} border font-medium text-xs`}>
-                        {incidencia.tipo}
-                      </Badge>
-                      <Badge className={`${getEstadoColor(incidencia.estado)} border font-medium flex items-center gap-1 text-xs`}>
-                        {getEstadoIcon(incidencia.estado)}
-                        {incidencia.estado}
-                      </Badge>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4 md:space-y-6">
-                  <div className="bg-muted/50 p-3 md:p-4 rounded-lg border border-border/50">
-                    <p className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm md:text-base">
-                      <FileText className="h-4 w-4" />
-                      Descripción:
-                    </p>
-                    <p className="text-muted-foreground leading-relaxed text-sm md:text-base">{incidencia.descripcion}</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                    <div className="bg-blue-50 dark:bg-blue-950/20 p-3 md:p-4 rounded-lg border border-blue-200 dark:border-blue-800">
-                      <p className="font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2 text-sm md:text-base">
-                        <User className="h-4 w-4" />
-                        Reportado por:
-                      </p>
-                      <p className="text-blue-600 dark:text-blue-300 font-medium text-sm md:text-base truncate">{incidencia.reportadorNombre}</p>
-                    </div>
-                    <div className="bg-purple-50 dark:bg-purple-950/20 p-3 md:p-4 rounded-lg border border-purple-200 dark:border-purple-800">
-                      <p className="font-semibold text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-2 text-sm md:text-base">
-                        <Users className="h-4 w-4" />
-                        Afectado:
-                      </p>
-                      <p className="text-purple-600 dark:text-purple-300 font-medium text-sm md:text-base truncate">{incidencia.afectadoNombre}</p>
-                    </div>
-                  </div>
-
-                  {incidencia.accionTomada && (
-                    <div className="bg-emerald-50 dark:bg-emerald-950/20 p-3 md:p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
-                      <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-2 text-sm md:text-base">
-                        <CheckCircle className="h-4 w-4" />
-                        Acción tomada:
-                      </p>
-                      <p className="text-emerald-600 dark:text-emerald-300 text-sm md:text-base">{incidencia.accionTomada}</p>
-                    </div>
-                  )}
-
-                  {canModifyStatus() && incidencia.estado === 'Pendiente' && (
-                    <div className="pt-4 border-t border-border/50">
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                        <span className="text-sm font-medium text-muted-foreground">Cambiar estado:</span>
-                        <Select
-                          value={incidencia.estado}
-                          onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
-                        >
-                          <SelectTrigger className="w-full sm:w-[180px] bg-background border-border">
-                            <SelectValue placeholder="Cambiar estado" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Completada" className="text-emerald-600 dark:text-emerald-400">
-                              <div className="flex items-center gap-2">
-                                <CheckCircle className="h-4 w-4" />
-                                Completada
-                              </div>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
+                      <div className="flex flex-wrap gap-2 justify-end lg:justify-start">
+                        <Badge className={`${getTipoColor(incidencia.tipo)} border font-medium text-xs`}>
+                          {incidencia.tipo}
+                        </Badge>
+                        <Badge className={`${getEstadoColor(incidencia.estado)} border font-medium flex items-center gap-1 text-xs`}>
+                          {getEstadoIcon(incidencia.estado)}
+                          {incidencia.estado}
+                        </Badge>
                       </div>
                     </div>
-                  )}
-                </CardContent>
-              </Card>
-            ))
+                  </CardHeader>
+                  <CardContent className="space-y-4 md:space-y-6">
+                    <div className="bg-muted/50 p-3 md:p-4 rounded-lg border border-border/50">
+                      <p className="font-semibold text-foreground mb-2 flex items-center gap-2 text-sm md:text-base">
+                        <FileText className="h-4 w-4" />
+                        Descripción:
+                      </p>
+                      <p className="text-muted-foreground leading-relaxed text-sm md:text-base">{incidencia.descripcion}</p>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                      <div className="bg-blue-50 dark:bg-blue-950/20 p-3 md:p-4 rounded-lg border border-blue-200 dark:border-blue-800">
+                        <p className="font-semibold text-blue-700 dark:text-blue-400 mb-2 flex items-center gap-2 text-sm md:text-base">
+                          <User className="h-4 w-4" />
+                          Reportado por:
+                        </p>
+                        <p className="text-blue-600 dark:text-blue-300 font-medium text-sm md:text-base truncate">{incidencia.reportadorNombre}</p>
+                      </div>
+                      <div className="bg-purple-50 dark:bg-purple-950/20 p-3 md:p-4 rounded-lg border border-purple-200 dark:border-purple-800">
+                        <p className="font-semibold text-purple-700 dark:text-purple-400 mb-2 flex items-center gap-2 text-sm md:text-base">
+                          <Users className="h-4 w-4" />
+                          Afectado:
+                        </p>
+                        <p className="text-purple-600 dark:text-purple-300 font-medium text-sm md:text-base truncate">{incidencia.afectadoNombre}</p>
+                      </div>
+                    </div>
+
+                    {incidencia.accionTomada && (
+                      <div className="bg-emerald-50 dark:bg-emerald-950/20 p-3 md:p-4 rounded-lg border border-emerald-200 dark:border-emerald-800">
+                        <p className="font-semibold text-emerald-700 dark:text-emerald-400 mb-2 flex items-center gap-2 text-sm md:text-base">
+                          <CheckCircle className="h-4 w-4" />
+                          Acción tomada:
+                        </p>
+                        <p className="text-emerald-600 dark:text-emerald-300 text-sm md:text-base">{incidencia.accionTomada}</p>
+                      </div>
+                    )}
+
+                    {esDesaprobada && incidencia.estado === 'Pendiente' && canModifyStatus() && (
+                      <div className="pt-4 border-t border-border/50">
+                        <form
+                          onSubmit={e => {
+                            e.preventDefault();
+                            completarIncidenciaMutation.mutate({ id: incidencia.id, accionTomada: comentarios[incidencia.id] || '' });
+                          }}
+                          className="space-y-2"
+                        >
+                          <label className="block text-sm font-medium text-muted-foreground mb-1">Comentario / Observación para completar incidencia:</label>
+                          <Textarea
+                            value={comentarios[incidencia.id] || ''}
+                            onChange={e => setComentarios({ ...comentarios, [incidencia.id]: e.target.value })}
+                            placeholder="Ingrese el comentario de la acción tomada..."
+                            required
+                            className="min-h-[80px]"
+                          />
+                          <div className="flex justify-end">
+                            <Button type="submit" disabled={completarIncidenciaMutation.isLoading}>
+                              {completarIncidenciaMutation.isLoading ? 'Guardando...' : 'Guardar y completar'}
+                            </Button>
+                          </div>
+                        </form>
+                      </div>
+                    )}
+
+                    {canModifyStatus() && incidencia.estado === 'Pendiente' && (
+                      <div className="pt-4 border-t border-border/50">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                          <span className="text-sm font-medium text-muted-foreground">Cambiar estado:</span>
+                          <Select
+                            value={incidencia.estado}
+                            onValueChange={(value) => handleEstadoChange(incidencia.id, value)}
+                          >
+                            <SelectTrigger className="w-full sm:w-[180px] bg-background border-border">
+                              <SelectValue placeholder="Cambiar estado" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="Completada" className="text-emerald-600 dark:text-emerald-400">
+                                <div className="flex items-center gap-2">
+                                  <CheckCircle className="h-4 w-4" />
+                                  Completada
+                                </div>
+                              </SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              );
+            })
           )}
         </div>
       </div>

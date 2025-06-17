@@ -792,6 +792,29 @@ app.put('/api/incidencias/:id/estado', authenticateToken, async (req, res) => {
   }
 });
 
+// Actualizar comentario y completar incidencia
+app.put('/api/incidencias/:id/completar', authenticateToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { accionTomada } = req.body;
+    const userId = parseInt(req.user.id);
+    const userRole = req.user.role;
+    const userArea = req.user.idArea ? parseInt(req.user.idArea) : null;
+    if (!accionTomada || !accionTomada.trim()) {
+      return res.status(400).json({ message: 'El comentario es requerido' });
+    }
+    const result = await incidenciaService.completarIncidenciaConComentario(id, accionTomada, userId, userRole, userArea);
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json({ message: result.message });
+    }
+  } catch (error) {
+    console.error('Error en PUT /api/incidencias/:id/completar:', error);
+    res.status(500).json({ message: 'Error interno del servidor' });
+  }
+});
+
 // ========================
 // RUTAS DE NOTIFICACIONES
 // ========================

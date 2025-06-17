@@ -257,11 +257,60 @@ const createIncidenciaEvaluacionDesaprobada = async (evaluacionData) => {
   }
 };
 
+// Completar incidencia con comentario (accionTomada)
+const completarIncidenciaConComentario = async (incidenciaId, accionTomada, userId, userRole, userArea) => {
+  try {
+    // Buscar la incidencia
+    const [rows] = await pool.execute(
+      `SELECT * FROM INCIDENCIA WHERE idIncidencia = ?`,
+      [incidenciaId]
+    );
+    if (rows.length === 0) {
+      return { success: false, message: 'Incidencia no encontrada' };
+    }
+    const incidencia = rows[0];
+    // Solo si está pendiente y es de tipo desaprobada
+    if (incidencia.estado !== 'Pendiente') {
+      return { success: false, message: 'Solo se puede completar incidencias pendientes' };
+    }
+    if (!incidencia.descripcion.toLowerCase().includes('desaprob')) {
+      return { success: false, message: 'Solo se puede comentar incidencias de tipo desaprobada' };
+    }
+    // Permisos: admin o evaluador de área
+    if (userRole !== 'Administrador' && userRole !== 'admin' && userRole !== 'Evaluador' && userRole !== 'evaluator') {
+      return { success: false, message: 'No tiene permiso para completar esta incidencia' };
+    }
+    if ((userRole === 'Evaluador' || userRole === 'evaluator') && userArea !== null) {
+      // Verificar área
+      const [incidenciaArea] = await pool.execute(
+        `SELECT ur.idArea as areaReportador, ua.idArea as areaAfectado FROM INCIDENCIA i JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario WHERE i.idIncidencia = ?`,
+        [incidenciaId]
+      );
+      if (
+        incidenciaArea.length === 0 ||
+        (incidenciaArea[0].areaReportador !== userArea && incidenciaArea[0].areaAfectado !== userArea)
+      ) {
+        return { success: false, message: 'No tiene permiso para completar incidencias fuera de su área' };
+      }
+    }
+    // Actualizar
+    await pool.execute(
+      'UPDATE INCIDENCIA SET accionTomada = ?, estado = ? WHERE idIncidencia = ?',
+      [accionTomada, 'Completada', incidenciaId]
+    );
+    return { success: true, message: 'Incidencia completada con comentario' };
+  } catch (error) {
+    console.error('Error al completar incidencia:', error);
+    return { success: false, message: 'Error al completar la incidencia' };
+  }
+};
+
 module.exports = {
   createIncidencia,
   getIncidenciasByUser,
   getAllIncidencias,
   updateIncidenciaEstado,
   createIncidenciaEvaluacionCancelada,
-  createIncidenciaEvaluacionDesaprobada
+  createIncidenciaEvaluacionDesaprobada,
+  completarIncidenciaConComentario
 };
