@@ -10,7 +10,7 @@ import { FileText, Download, BarChart3, TrendingUp, TrendingDown, AlertTriangle,
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3309';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 interface ReportType {
   id: string;
