@@ -221,27 +221,6 @@ const Dashboard = () => {
                 </div>
               )}
             </div>
-            
-            {/* Module access */}
-            <div className="space-y-4 md:space-y-6">
-              <div className="flex items-center gap-3">
-                <div className="w-1 h-6 md:h-8 bg-indigo-600 dark:bg-indigo-400 rounded-full"></div>
-                <h2 className="text-xl md:text-2xl font-bold text-foreground">Acceso Rápido</h2>
-              </div>
-              <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-1">
-                {filteredModules.slice(0, 6).map((module) => (
-                  <div key={module.id} className="transform hover:scale-[1.02] transition-all duration-200">
-                    <ModuleCard
-                      title={module.title}
-                      description={module.description}
-                      href={module.href}
-                      icon={<module.icon className="h-5 w-5" />}
-                      color={module.color}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
           </div>
         </div>
       </div>
