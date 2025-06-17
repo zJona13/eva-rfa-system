@@ -1,17 +1,26 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart4, AlertTriangle, CheckCircle, XCircle, TrendingUp, Users } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getToken } from '@/contexts/AuthContext';
 
 const AdminMetrics = () => {
-  // Datos de ejemplo - tú implementarás la funcionalidad real
-  const metrics = {
-    totalEvaluaciones: 248,
-    evaluacionesPendientes: 15,
-    evaluacionesAprobadas: 189,
-    evaluacionesDesaprobadas: 44,
-    promedioGeneral: 14.2,
-    incidenciasActivas: 8
-  };
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['dashboard-stats'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/dashboard/stats', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!res.ok) throw new Error('Error al obtener métricas');
+      return res.json();
+    }
+  });
+
+  if (isLoading) return <div className="p-6">Cargando métricas...</div>;
+  if (error) return <div className="p-6 text-red-500">Error al cargar métricas</div>;
+
+  const metrics = data?.data?.stats || {};
 
   const MetricCard = ({ title, value, icon, color, trend }: any) => (
     <Card className="bg-gradient-to-br from-white to-gray-50/50 dark:from-gray-900 dark:to-gray-800/50 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300 group">
@@ -54,42 +63,42 @@ const AdminMetrics = () => {
       <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <MetricCard
           title="Total Evaluaciones"
-          value={metrics.totalEvaluaciones}
+          value={metrics.totalEvaluaciones || 0}
           icon={<BarChart4 className="h-6 w-6 md:h-7 md:w-7" />}
           color="blue"
           trend={12}
         />
         <MetricCard
           title="Pendientes"
-          value={metrics.evaluacionesPendientes}
+          value={metrics.evaluacionesPendientes || 0}
           icon={<AlertTriangle className="h-6 w-6 md:h-7 md:w-7" />}
           color="amber"
           trend={-5}
         />
         <MetricCard
           title="Aprobadas"
-          value={metrics.evaluacionesAprobadas}
+          value={metrics.evaluacionesAprobadas || 0}
           icon={<CheckCircle className="h-6 w-6 md:h-7 md:w-7" />}
           color="green"
           trend={8}
         />
         <MetricCard
           title="Desaprobadas"
-          value={metrics.evaluacionesDesaprobadas}
+          value={metrics.evaluacionesDesaprobadas || 0}
           icon={<XCircle className="h-6 w-6 md:h-7 md:w-7" />}
           color="red"
           trend={-3}
         />
         <MetricCard
           title="Promedio General"
-          value={`${metrics.promedioGeneral}/20`}
+          value={`${metrics.promedioGeneral || 0}/20`}
           icon={<TrendingUp className="h-6 w-6 md:h-7 md:w-7" />}
           color="purple"
           trend={2}
         />
         <MetricCard
           title="Incidencias Activas"
-          value={metrics.incidenciasActivas}
+          value={metrics.incidenciasActivas || 0}
           icon={<Users className="h-6 w-6 md:h-7 md:w-7" />}
           color="orange"
           trend={-15}

@@ -53,6 +53,12 @@ const dashboardService = {
         const [incidenciasActivas] = await pool.query(
           'SELECT COUNT(*) as total FROM INCIDENCIA WHERE estado = "Pendiente"'
         );
+        const [evaluacionesAprobadas] = await pool.query(
+          'SELECT COUNT(*) as total FROM EVALUACION WHERE puntajeTotal >= 11'
+        );
+        const [evaluacionesDesaprobadas] = await pool.query(
+          'SELECT COUNT(*) as total FROM EVALUACION WHERE puntajeTotal < 11'
+        );
         console.log('[ADMIN] Query incidencias activas: SELECT COUNT(*) as total FROM incidencias WHERE estado = "Pendiente"');
         console.log('[ADMIN] Resultado incidencias activas:', incidenciasActivas);
         stats = {
@@ -60,7 +66,9 @@ const dashboardService = {
           evaluacionesPendientes: evaluacionesPendientes[0].total,
           validacionesPendientes: validacionesPendientes[0].total,
           promedioGeneral: promedioGeneral[0].promedio || 0,
-          incidenciasActivas: incidenciasActivas[0].total
+          incidenciasActivas: incidenciasActivas[0].total,
+          evaluacionesAprobadas: evaluacionesAprobadas[0].total,
+          evaluacionesDesaprobadas: evaluacionesDesaprobadas[0].total
         };
       } else if (['evaluator', 'evaluador'].includes(normalizedRole)) {
         // Evaluador: evaluaciones de su área (filtrar por área del evaluado)
