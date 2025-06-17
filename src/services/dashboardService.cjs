@@ -63,18 +63,30 @@ const dashboardService = {
           incidenciasActivas: incidenciasActivas[0].total
         };
       } else if (['evaluator', 'evaluador'].includes(normalizedRole)) {
-        // Evaluador: evaluaciones de su área
+        // Evaluador: evaluaciones de su área (filtrar por área del evaluado)
         const [totalEvaluaciones] = await pool.query(
-          'SELECT COUNT(*) as total FROM EVALUACION'
+          `SELECT COUNT(*) as total FROM EVALUACION e
+           JOIN USUARIO u ON e.idEvaluado = u.idUsuario
+           WHERE u.idArea = ?`,
+          [userArea]
         );
         const [evaluacionesPendientes] = await pool.query(
-          'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "Pendiente"'
+          `SELECT COUNT(*) as total FROM EVALUACION e
+           JOIN USUARIO u ON e.idEvaluado = u.idUsuario
+           WHERE e.estado = 'Pendiente' AND u.idArea = ?`,
+          [userArea]
         );
         const [validacionesPendientes] = await pool.query(
-          'SELECT COUNT(*) as total FROM EVALUACION WHERE estado = "Pendiente"'
+          `SELECT COUNT(*) as total FROM EVALUACION e
+           JOIN USUARIO u ON e.idEvaluado = u.idUsuario
+           WHERE e.estado = 'Pendiente' AND u.idArea = ?`,
+          [userArea]
         );
         const [promedioGeneral] = await pool.query(
-          'SELECT AVG(puntajeTotal) as promedio FROM EVALUACION WHERE estado = "Activo"'
+          `SELECT AVG(e.puntajeTotal) as promedio FROM EVALUACION e
+           JOIN USUARIO u ON e.idEvaluado = u.idUsuario
+           WHERE e.estado = 'Activo' AND u.idArea = ?`,
+          [userArea]
         );
         const query = 'SELECT COUNT(*) as total FROM INCIDENCIA i JOIN USUARIO ur ON i.idUsuarioReportador = ur.idUsuario JOIN USUARIO ua ON i.idUsuarioAfectado = ua.idUsuario WHERE i.estado = "Pendiente" AND (ur.idArea = ? OR ua.idArea = ?)';
         const params = [userArea, userArea];
