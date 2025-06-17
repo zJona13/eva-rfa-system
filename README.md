@@ -7,6 +7,9 @@ Este proyecto es una aplicación web construida con tecnologías modernas del ec
 ## 🛠️ Instalación y ejecución
 
 ```bash
+
+https://github.com/zJona13/eva-rfa-system.git
+
 # Clona el repositorio
 git clone <YOUR_GIT_URL>
 
@@ -17,7 +20,7 @@ cd <YOUR_PROJECT_NAME>
 npm install
 
 # Ejecuta el servidor backend (si aplica)
-node src/server.cjs
+npm run server
 
 # Inicia el entorno de desarrollo
 npm run dev
@@ -32,13 +35,13 @@ Para conectarte a la base de datos, puedes usar cualquier gestor como DBeaver, M
 
 ```bash
 
-Host: sql10.freesqldatabase.com
+Host: sql3.freesqldatabase.com
 
-Usuario: sql10780136
+Usuario: sql3785316
 
-Contraseña: WhVIT2MEuc
+Contraseña: uqlCmnEwLh
 
-Base de datos: sql10780136
+Base de datos: sql3785316
 
 ```
 
