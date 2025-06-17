@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -99,21 +98,21 @@ const Dashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
-      <div className="max-w-7xl mx-auto p-3 sm:p-4 md:p-6 lg:p-8">
-        <div className="space-y-4 sm:space-y-6 md:space-y-8">
+      <div className="max-w-7xl mx-auto p-4 md:p-6 lg:p-8">
+        <div className="space-y-6 md:space-y-8">
           {/* Header Section */}
-          <div className="bg-card/80 backdrop-blur-sm rounded-xl sm:rounded-2xl md:rounded-3xl border shadow-sm">
-            <div className="p-4 sm:p-6 md:p-8">
-              <div className="flex flex-col lg:flex-row lg:items-center gap-4 md:gap-6">
-                <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
-                  <div className="w-12 h-12 sm:w-16 sm:h-16 md:w-20 md:h-20 bg-primary/10 rounded-xl sm:rounded-2xl flex items-center justify-center border border-primary/20">
-                    <BarChart4 className="h-6 w-6 sm:h-8 sm:w-8 md:h-10 md:w-10 text-primary" />
+          <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm">
+            <div className="p-6 md:p-8">
+              <div className="flex flex-col lg:flex-row lg:items-center gap-6">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                  <div className="w-16 h-16 md:w-20 md:h-20 bg-primary/10 rounded-2xl flex items-center justify-center border border-primary/20">
+                    <BarChart4 className="h-8 w-8 md:h-10 md:w-10 text-primary" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <h1 className="text-xl sm:text-2xl md:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
+                    <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-foreground tracking-tight">
                       {getGreeting()}, {displayName}
                     </h1>
-                    <p className="text-muted-foreground mt-1 text-sm sm:text-base md:text-lg">
+                    <p className="text-muted-foreground mt-1 text-base md:text-lg">
                       {t('dashboard.welcome')}
                     </p>
                   </div>
@@ -134,29 +133,21 @@ const Dashboard = () => {
 
           {/* Admin Dashboard */}
           {userRole === 'admin' && (
-            <div className="space-y-4 sm:space-y-6 md:space-y-8">
+            <div className="space-y-6 md:space-y-8">
               {/* Admin Metrics */}
               <AdminMetrics />
 
-              {/* Charts Section */}
-              <div className="space-y-4 sm:space-y-6 md:space-y-8">
-                {/* Charts Row 1 - Stack on mobile, side by side on larger screens */}
-                <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 lg:grid-cols-2">
-                  <EvaluationsByAreaChart />
-                  <EvaluationStatusChart />
-                </div>
+              {/* Charts Row 1 */}
+              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
+                <EvaluationsByAreaChart />
+                <EvaluationStatusChart />
+              </div>
 
-                {/* Charts Row 2 - Stack on mobile, side by side on larger screens */}
-                <div className="grid gap-4 sm:gap-6 md:gap-8 grid-cols-1 lg:grid-cols-2">
-                  <EvaluationTrendsChart />
-                  <div className="bg-card/80 backdrop-blur-sm rounded-xl sm:rounded-2xl md:rounded-3xl border shadow-sm overflow-hidden">
-                    <RecentEvaluations />
-                  </div>
-                </div>
-
-                {/* Top Performers Table - Full width on all screens */}
-                <div className="w-full">
-                  <TopPerformersTable />
+              {/* Charts Row 2 */}
+              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
+                <EvaluationTrendsChart />
+                <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-x-auto">
+                  <RecentEvaluations />
                 </div>
               </div>
             </div>
