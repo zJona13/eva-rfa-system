@@ -1,18 +1,29 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend } from 'recharts';
 import { PieChart as PieChartIcon } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getToken } from '@/contexts/AuthContext';
 
 const EvaluationStatusChart = () => {
-  // Datos de ejemplo - tú implementarás la funcionalidad real
-  const data = [
-    { name: 'Completadas', value: 189, color: '#22c55e' },
-    { name: 'Pendientes', value: 15, color: '#eab308' },
-    { name: 'En Revisión', value: 32, color: '#3b82f6' },
-    { name: 'Canceladas', value: 12, color: '#ef4444' },
-  ];
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['evaluation-status-chart'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/dashboard/evaluations-chart', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!res.ok) throw new Error('Error al obtener estados de evaluaciones');
+      return res.json();
+    }
+  });
+
+  if (isLoading) return <div className="p-6">Cargando gráfico...</div>;
+  if (error) return <div className="p-6 text-red-500">Error al cargar gráfico</div>;
+
+  const chartData = data?.chartData || [];
+  const total = chartData.reduce((sum: number, item: any) => sum + item.value, 0);
 
   const chartConfig = {
     completadas: {
@@ -32,8 +43,6 @@ const EvaluationStatusChart = () => {
       color: "#ef4444",
     },
   };
-
-  const total = data.reduce((sum, item) => sum + item.value, 0);
 
   const RADIAN = Math.PI / 180;
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
@@ -71,7 +80,7 @@ const EvaluationStatusChart = () => {
           <PieChart>
             <ChartTooltip content={<ChartTooltipContent hideLabel />} />
             <Pie
-              data={data}
+              data={chartData}
               cx="50%"
               cy="50%"
               labelLine={false}
@@ -82,7 +91,7 @@ const EvaluationStatusChart = () => {
               strokeWidth={2}
               stroke="#fff"
             >
-              {data.map((entry, index) => (
+              {chartData.map((entry, index) => (
                 <Cell key={`cell-${index}`} fill={entry.color} />
               ))}
             </Pie>

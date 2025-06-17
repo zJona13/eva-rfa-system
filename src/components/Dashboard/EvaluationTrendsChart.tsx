@@ -1,18 +1,32 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { TrendingUp } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getToken } from '@/contexts/AuthContext';
 
 const EvaluationTrendsChart = () => {
-  // Datos de ejemplo - tú implementarás la funcionalidad real
-  const data = [
-    { periodo: '2023-1', evaluaciones: 45, promedio: 13.2 },
-    { periodo: '2023-2', evaluaciones: 52, promedio: 14.1 },
-    { periodo: '2024-1', evaluaciones: 48, promedio: 14.8 },
-    { periodo: '2024-2', evaluaciones: 55, promedio: 15.2 },
-  ];
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['evaluaciones-por-semestre'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/reportes/evaluaciones-por-semestre', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!res.ok) throw new Error('Error al obtener tendencias de evaluaciones');
+      return res.json();
+    }
+  });
+
+  if (isLoading) return <div className="p-6">Cargando gráfico...</div>;
+  if (error) return <div className="p-6 text-red-500">Error al cargar gráfico</div>;
+
+  const chartData = (data?.evaluaciones || []).map((row: any) => ({
+    periodo: row.periodo,
+    evaluaciones: row.totalEvaluaciones,
+    promedio: row.promedioGeneral
+  }));
 
   const chartConfig = {
     evaluaciones: {
@@ -38,7 +52,7 @@ const EvaluationTrendsChart = () => {
       </CardHeader>
       <CardContent className="p-4 md:p-6 pt-0">
         <ChartContainer config={chartConfig} className="h-[300px] md:h-[350px] w-full">
-          <LineChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
+          <LineChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 20 }}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis 
               dataKey="periodo" 

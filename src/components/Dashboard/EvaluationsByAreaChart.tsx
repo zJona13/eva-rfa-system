@@ -1,20 +1,33 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend } from 'recharts';
 import { BarChart4 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getToken } from '@/contexts/AuthContext';
 
 const EvaluationsByAreaChart = () => {
-  // Datos de ejemplo - tú implementarás la funcionalidad real
-  const data = [
-    { area: 'Matemáticas', total: 45, aprobadas: 38, desaprobadas: 7 },
-    { area: 'Lengua', total: 52, aprobadas: 41, desaprobadas: 11 },
-    { area: 'Ciencias', total: 38, aprobadas: 32, desaprobadas: 6 },
-    { area: 'Historia', total: 29, aprobadas: 24, desaprobadas: 5 },
-    { area: 'Inglés', total: 34, aprobadas: 28, desaprobadas: 6 },
-    { area: 'Ed. Física', total: 25, aprobadas: 22, desaprobadas: 3 }
-  ];
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['evaluaciones-por-area'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/reportes/evaluaciones-por-area', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!res.ok) throw new Error('Error al obtener evaluaciones por área');
+      return res.json();
+    }
+  });
+
+  if (isLoading) return <div className="p-6">Cargando gráfico...</div>;
+  if (error) return <div className="p-6 text-red-500">Error al cargar gráfico</div>;
+
+  const chartData = (data?.evaluaciones || []).map((row: any) => ({
+    area: row.area,
+    total: row.totalEvaluaciones,
+    aprobadas: row.aprobadas,
+    desaprobadas: row.desaprobadas
+  }));
 
   const chartConfig = {
     total: {
@@ -44,7 +57,7 @@ const EvaluationsByAreaChart = () => {
       </CardHeader>
       <CardContent className="p-4 md:p-6 pt-0">
         <ChartContainer config={chartConfig} className="h-[300px] md:h-[400px] w-full">
-          <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
+          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 60 }}>
             <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
             <XAxis 
               dataKey="area" 

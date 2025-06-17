@@ -150,11 +150,6 @@ const Dashboard = () => {
                   <RecentEvaluations />
                 </div>
               </div>
-
-              {/* Top Performers Table */}
-              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
-                <TopPerformersTable />
-              </div>
             </div>
           )}
 

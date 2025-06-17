@@ -1,19 +1,28 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Trophy, AlertTriangle, Star, TrendingUp, TrendingDown } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { getToken } from '@/contexts/AuthContext';
 
 const TopPerformersTable = () => {
-  // Datos de ejemplo - tú implementarás la funcionalidad real
-  const topPerformers = [
-    { id: 1, nombre: 'María García López', area: 'Matemáticas', promedio: 18.5, evaluaciones: 12, trend: 'up' },
-    { id: 2, nombre: 'Carlos Rodríguez Silva', area: 'Ciencias', promedio: 17.8, evaluaciones: 10, trend: 'up' },
-    { id: 3, nombre: 'Ana Martínez Torres', area: 'Lengua', promedio: 17.2, evaluaciones: 14, trend: 'stable' },
-    { id: 4, nombre: 'Luis Fernández Ruiz', area: 'Historia', promedio: 16.9, evaluaciones: 8, trend: 'up' },
-    { id: 5, nombre: 'Elena Jiménez Morales', area: 'Inglés', promedio: 16.5, evaluaciones: 11, trend: 'down' },
-  ];
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['top-performers'],
+    queryFn: async () => {
+      const token = getToken();
+      const res = await fetch('/api/reportes/personal-alta-calificacion', {
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
+      });
+      if (!res.ok) throw new Error('Error al obtener mejores promedios');
+      return res.json();
+    }
+  });
+
+  if (isLoading) return <div className="p-6">Cargando tabla...</div>;
+  if (error) return <div className="p-6 text-red-500">Error al cargar tabla</div>;
+
+  const topPerformers = data?.personal || [];
 
   const topIncidents = [
     { id: 1, nombre: 'Pedro Sánchez Díaz', area: 'Ed. Física', incidencias: 5, tipo: 'Tardanzas' },
