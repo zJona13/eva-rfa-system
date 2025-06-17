@@ -138,21 +138,23 @@ const Dashboard = () => {
               <AdminMetrics />
 
               {/* Charts Row 1 */}
-              <div className="grid gap-6 md:gap-8 lg:grid-cols-2">
+              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
                 <EvaluationsByAreaChart />
                 <EvaluationStatusChart />
               </div>
 
               {/* Charts Row 2 */}
-              <div className="grid gap-6 md:gap-8 lg:grid-cols-2">
+              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
                 <EvaluationTrendsChart />
-                <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-hidden">
+                <div className="bg-card/70 backdrop-blur-sm rounded-2xl md:rounded-3xl border shadow-sm overflow-x-auto">
                   <RecentEvaluations />
                 </div>
               </div>
 
               {/* Top Performers Table */}
-              <TopPerformersTable />
+              <div className="grid gap-6 md:gap-8 grid-cols-1 md:grid-cols-2">
+                <TopPerformersTable />
+              </div>
             </div>
           )}
 

@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart4, AlertTriangle, CheckCircle, XCircle, TrendingUp, Users } from 'lucide-react';
@@ -52,46 +51,46 @@ const AdminMetrics = () => {
         <BarChart4 className="h-5 w-5 md:h-6 md:w-6 text-blue-600" />
       </div>
       
-      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+      <div className="grid gap-4 md:gap-6 grid-cols-1 sm:grid-cols-2 md:grid-cols-3">
         <MetricCard
           title="Total Evaluaciones"
           value={metrics.totalEvaluaciones}
-          icon={<BarChart4 className="h-5 w-5 md:h-6 md:w-6" />}
+          icon={<BarChart4 className="h-6 w-6 md:h-7 md:w-7" />}
           color="blue"
           trend={12}
         />
         <MetricCard
           title="Pendientes"
           value={metrics.evaluacionesPendientes}
-          icon={<AlertTriangle className="h-5 w-5 md:h-6 md:w-6" />}
+          icon={<AlertTriangle className="h-6 w-6 md:h-7 md:w-7" />}
           color="amber"
           trend={-5}
         />
         <MetricCard
           title="Aprobadas"
           value={metrics.evaluacionesAprobadas}
-          icon={<CheckCircle className="h-5 w-5 md:h-6 md:w-6" />}
+          icon={<CheckCircle className="h-6 w-6 md:h-7 md:w-7" />}
           color="green"
           trend={8}
         />
         <MetricCard
           title="Desaprobadas"
           value={metrics.evaluacionesDesaprobadas}
-          icon={<XCircle className="h-5 w-5 md:h-6 md:w-6" />}
+          icon={<XCircle className="h-6 w-6 md:h-7 md:w-7" />}
           color="red"
           trend={-3}
         />
         <MetricCard
           title="Promedio General"
           value={`${metrics.promedioGeneral}/20`}
-          icon={<TrendingUp className="h-5 w-5 md:h-6 md:w-6" />}
+          icon={<TrendingUp className="h-6 w-6 md:h-7 md:w-7" />}
           color="purple"
           trend={2}
         />
         <MetricCard
           title="Incidencias Activas"
           value={metrics.incidenciasActivas}
-          icon={<Users className="h-5 w-5 md:h-6 md:w-6" />}
+          icon={<Users className="h-6 w-6 md:h-7 md:w-7" />}
           color="orange"
           trend={-15}
         />
