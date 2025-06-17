@@ -93,11 +93,9 @@ interface Usuario {
 }
 
 // Servicios API - Updated port from 5000 to 3309
-const API_URL = import.meta.env.VITE_API_URL || '/api';
-
 const fetchRoles = async (): Promise<Role[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/roles`, {
+  const response = await fetch('http://localhost:3309/api/roles', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -111,7 +109,7 @@ const fetchRoles = async (): Promise<Role[]> => {
 
 const createRole = async (name: string): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/roles`, {
+  const response = await fetch('http://localhost:3309/api/roles', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -125,7 +123,7 @@ const createRole = async (name: string): Promise<{ success: boolean, message: st
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tiposcolaborador`, {
+  const response = await fetch('http://localhost:3309/api/tiposcolaborador', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -139,7 +137,7 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tiposcontrato`, {
+  const response = await fetch('http://localhost:3309/api/tiposcontrato', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -153,7 +151,7 @@ const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
 
 const fetchUsers = async (): Promise<User[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users`, {
+  const response = await fetch('http://localhost:3309/api/users', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -171,7 +169,7 @@ const fetchUsers = async (): Promise<User[]> => {
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/colaboradores`, {
+  const response = await fetch('http://localhost:3309/api/colaboradores', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -185,7 +183,7 @@ const fetchColaboradores = async (): Promise<Colaborador[]> => {
 
 const fetchAreas = async (): Promise<Area[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/areas`, {
+  const response = await fetch('http://localhost:3309/api/areas', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!response.ok) {
@@ -197,7 +195,7 @@ const fetchAreas = async (): Promise<Area[]> => {
 
 const fetchEstudiantes = async (): Promise<Estudiante[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/estudiantes`, {
+  const response = await fetch('http://localhost:3309/api/estudiantes', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!response.ok) {
@@ -209,7 +207,7 @@ const fetchEstudiantes = async (): Promise<Estudiante[]> => {
 
 const fetchUsuarios = async (): Promise<Usuario[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users`, {
+  const response = await fetch('http://localhost:3309/api/users', {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!response.ok) {

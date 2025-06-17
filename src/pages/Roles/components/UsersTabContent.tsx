@@ -56,11 +56,9 @@ interface UsersTabContentProps {
   areas: Area[];
 }
 
-const API_URL = import.meta.env.VITE_API_URL || '/api';
-
 const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users/${userData.id}`, {
+  const response = await fetch(`http://localhost:3309/api/users/${userData.id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -92,7 +90,7 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
 
 const deleteUser = async (userId: number): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users/${userId}`, {
+  const response = await fetch(`http://localhost:3309/api/users/${userId}`, {
     method: 'DELETE',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
@@ -105,7 +103,7 @@ const deleteUser = async (userId: number): Promise<{ success: boolean, message: 
 
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users`, {
+  const response = await fetch('http://localhost:3309/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify(userData)

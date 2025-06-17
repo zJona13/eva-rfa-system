@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,11 +29,9 @@ interface TipoContrato {
 }
 
 // Servicios API
-const API_URL = import.meta.env.VITE_API_URL || '/api';
-
 const createTipoContrato = async (name: string): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tiposcontrato`, {
+  const response = await fetch('http://localhost:3309/api/tiposcontrato', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -49,7 +48,7 @@ const createTipoContrato = async (name: string): Promise<{ success: boolean, mes
 
 const updateTipoContrato = async ({ id, name }: { id: number, name: string }): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tiposcontrato/${id}`, {
+  const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -63,7 +62,7 @@ const updateTipoContrato = async ({ id, name }: { id: number, name: string }): P
 
 const deleteTipoContrato = async (id: number): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tiposcontrato/${id}`, {
+  const response = await fetch(`http://localhost:3309/api/tiposcontrato/${id}`, {
     method: 'DELETE',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
