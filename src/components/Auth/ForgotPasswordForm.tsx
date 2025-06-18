@@ -4,6 +4,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
+import { API_URL } from '@/config/environment';
+
+const API_BASE_URL = `${API_URL}/api`;
 
 interface ForgotPasswordFormProps {
   onBack: () => void;
@@ -32,7 +35,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:3309/api/auth/forgot-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/forgot-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,7 +63,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     setIsLoading(true);
     setError('');
     try {
-      const response = await fetch('http://localhost:3309/api/auth/verify-reset-code', {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-reset-code`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -101,7 +104,7 @@ const ForgotPasswordForm = ({ onBack }: ForgotPasswordFormProps) => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3309/api/auth/reset-password', {
+      const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

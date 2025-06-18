@@ -9,8 +9,9 @@ import { toast } from 'sonner';
 import { useAuth, getToken, UserRole } from '@/contexts/AuthContext';
 import { AlertTriangle, Calendar, Clock, Filter, Search, User, FileText, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { API_URL } from '@/config/environment';
 
-const API_BASE_URL = 'http://localhost:3309/api';
+const API_BASE_URL = `${API_URL}/api`;
 
 const fetchIncidencias = async (userId: string, userRole: UserRole, userArea?: string) => {
   const token = getToken();

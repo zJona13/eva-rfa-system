@@ -10,8 +10,9 @@ import { useAuth, getToken } from '@/contexts/AuthContext';
 import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calendar, Building2, Sparkles, Target, Award } from 'lucide-react';
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
+import { API_URL } from '@/config/environment';
 
-const API_BASE_URL = 'http://localhost:3309';
+const API_BASE_URL = API_URL;
 
 interface ReportType {
   id: string;

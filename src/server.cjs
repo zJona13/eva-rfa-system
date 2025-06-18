@@ -1,5 +1,6 @@
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const { pool, testConnection } = require('./utils/dbConnection.cjs');
 const authService = require('./services/authService.cjs');
 const userService = require('./services/userService.cjs');
@@ -23,9 +24,16 @@ const { actualizarEstadosEvaluacionesGlobal } = require('./services/evaluacionSe
 const app = express();
 const PORT = process.env.PORT || 3309;
 
+// Configurar CORS dinámicamente según el entorno
+const corsOrigins = process.env.NODE_ENV === 'production' 
+  ? ['http://161.132.53.137:8080', 'http://161.132.53.137:3000', 'http://161.132.53.137']
+  : ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'];
+
+console.log('🌍 CORS configurado para:', corsOrigins);
+
 // Middleware
 app.use(cors({
-  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
+  origin: corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
@@ -50,6 +58,21 @@ testConnection()
   .catch(error => {
     console.error('❌ Error al probar la conexión:', error);
   });
+
+// ========================
+// RUTAS BÁSICAS
+// ========================
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.json({ 
+    success: true, 
+    message: 'EVA RFA System API funcionando correctamente',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT
+  });
+});
 
 // ========================
 // RUTAS DE AUTENTICACIÓN (SIN PROTECCIÓN)
@@ -1525,6 +1548,36 @@ app.put('/api/asignaciones/:id', authenticateToken, async (req, res) => {
   } catch (error) {
     console.error('Error en PUT /api/asignaciones/:id:', error);
     res.status(500).json({ success: false, message: 'Error al actualizar la asignación' });
+  }
+});
+
+// ========================
+// SERVIR ARCHIVOS ESTÁTICOS EN PRODUCCIÓN
+// ========================
+if (process.env.NODE_ENV === 'production') {
+  // Servir archivos estáticos desde la carpeta dist
+  app.use(express.static(path.join(__dirname, '../dist')));
+  
+  // Manejar todas las rutas del frontend (SPA)
+  app.get('*', (req, res) => {
+    // Solo manejar rutas que no sean de la API
+    if (!req.path.startsWith('/api')) {
+      res.sendFile(path.join(__dirname, '../dist/index.html'));
+    } else {
+      res.status(404).json({ success: false, message: 'API route not found' });
+    }
+  });
+}
+
+// ========================
+// INICIAR SERVIDOR
+// ========================
+app.listen(PORT, () => {
+  console.log(`🚀 Servidor corriendo en puerto ${PORT}`);
+  console.log(`🌍 Entorno: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📱 API disponible en: http://localhost:${PORT}/api`);
+  if (process.env.NODE_ENV === 'production') {
+    console.log(`🌐 Frontend disponible en: http://localhost:${PORT}`);
   }
 });
 
