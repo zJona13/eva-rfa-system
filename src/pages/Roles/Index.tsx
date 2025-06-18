@@ -201,7 +201,7 @@ const fetchEstudiantes = async (): Promise<Estudiante[]> => {
 
 const fetchUsuarios = async (): Promise<Usuario[]> => {
   const token = getToken();
-  const res = await fetch(`${API_URL}/usuarios`, {
+  const res = await fetch(`${API_URL}/users`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!res.ok) {
