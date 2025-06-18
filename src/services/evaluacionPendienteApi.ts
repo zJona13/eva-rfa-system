@@ -1,11 +1,10 @@
 import { getToken } from '../contexts/AuthContext';
-import { API_URL } from '../config/environment';
 
-const EVALUACIONES_API_URL = `${API_URL}/api/evaluaciones`;
+const API_URL = 'http://localhost:3309/api/evaluaciones';
 
 export async function obtenerEvaluacionesPendientes(idUsuario: number, idTipoEvaluacion: number) {
   const token = getToken();
-  const res = await fetch(`${EVALUACIONES_API_URL}/pendientes/${idUsuario}/${idTipoEvaluacion}`, {
+  const res = await fetch(`${API_URL}/pendientes/${idUsuario}/${idTipoEvaluacion}`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error('Error al obtener evaluaciones pendientes');

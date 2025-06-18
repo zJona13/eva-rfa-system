@@ -5,9 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth, getToken } from '@/contexts/AuthContext';
 import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
-import { API_URL } from '@/config/environment';
 
-const API_BASE_URL = API_URL;
+const API_BASE_URL = 'http://localhost:3309';
 
 const fetchRecentEvaluations = async () => {
   const token = getToken();
