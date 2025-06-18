@@ -402,7 +402,7 @@ const Roles = () => {
           <TabsContent value="roles" className="space-y-4 mt-4 sm:mt-6">
             <div className="bg-gradient-to-r from-primary/10 to-secondary/10 rounded-lg p-1">
               <RolesTabContent 
-                roles={roles} 
+                roles={Array.isArray(roles) ? roles : []}
                 isLoading={rolesLoading} 
                 searchQuery={searchQuery}
               />
