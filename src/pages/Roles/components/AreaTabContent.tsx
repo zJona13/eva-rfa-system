@@ -151,9 +151,9 @@ const AreaTabContent: React.FC<AreaTabContentProps> = ({ areas, isLoading, searc
     }
   };
 
-  const filteredAreas = areas.filter(
+  const filteredAreas = Array.isArray(areas) ? areas.filter(
     (area) => area.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   return (
     <>

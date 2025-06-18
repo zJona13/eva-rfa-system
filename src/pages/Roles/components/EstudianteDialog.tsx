@@ -62,9 +62,7 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
       // Regenerar código y limpiar campos
       const now = new Date();
       const year = now.getFullYear();
-      const codigosEsteAnio = usuarios
-        .map(u => u.correo)
-        .filter(c => c && c.startsWith(`EST${year}`));
+      const codigosEsteAnio = Array.isArray(usuarios) ? usuarios.map(u => u.correo) : [];
       let maxCorrelativo = 0;
       codigosEsteAnio.forEach(c => {
         const match = c.match(/^EST\d{4}(\d{2})$/);
@@ -86,9 +84,7 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
     } else if (open) {
       const now = new Date();
       const year = now.getFullYear();
-      const codigosEsteAnio = usuarios
-        .map(u => u.correo)
-        .filter(c => c && c.startsWith(`EST${year}`));
+      const codigosEsteAnio = Array.isArray(usuarios) ? usuarios.map(u => u.correo) : [];
       let maxCorrelativo = 0;
       codigosEsteAnio.forEach(c => {
         const match = c.match(/^EST\d{4}(\d{2})$/);
