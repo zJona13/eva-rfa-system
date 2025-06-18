@@ -157,7 +157,8 @@ const fetchUsers = async (): Promise<User[]> => {
     console.error('Error al obtener usuarios:', res.status, errText);
     throw new Error('Error al obtener usuarios');
   }
-  return res.json();
+  const data = await res.json();
+  return data.users;
 };
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
