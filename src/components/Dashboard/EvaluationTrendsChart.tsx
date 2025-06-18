@@ -5,29 +5,22 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Lege
 import { TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getToken } from '@/contexts/AuthContext';
-import { API_URL } from '@/config/api';
 
 const EvaluationTrendsChart = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['evaluaciones-por-semestre'],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/reportes/evaluaciones-por-semestre`, {
+      const res = await fetch('/api/reportes/evaluaciones-por-semestre', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error('Error al obtener tendencias de evaluaciones:', res.status, errText);
-        throw new Error('Error al obtener tendencias de evaluaciones');
-      }
-      const json = await res.json();
-      console.log('Datos de tendencias de evaluaciones:', json);
-      return json;
+      if (!res.ok) throw new Error('Error al obtener tendencias de evaluaciones');
+      return res.json();
     }
   });
 
   if (isLoading) return <div className="p-6">Cargando gráfico...</div>;
-  if (error) return <div className="p-6 text-red-500">Error al cargar gráfico: {String(error)}</div>;
+  if (error) return <div className="p-6 text-red-500">Error al cargar gráfico</div>;
 
   const chartData = (data?.evaluaciones || []).map((row: any) => ({
     periodo: row.periodo,

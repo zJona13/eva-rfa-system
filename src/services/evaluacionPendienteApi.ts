@@ -1,9 +1,10 @@
 import { getToken } from '../contexts/AuthContext';
-import { API_URL } from '@/config/api';
+
+const API_URL = 'http://localhost:3309/api/evaluaciones';
 
 export async function obtenerEvaluacionesPendientes(idUsuario: number, idTipoEvaluacion: number) {
   const token = getToken();
-  const res = await fetch(`${API_URL}/evaluaciones/pendientes/${idUsuario}/${idTipoEvaluacion}`, {
+  const res = await fetch(`${API_URL}/pendientes/${idUsuario}/${idTipoEvaluacion}`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!res.ok) throw new Error('Error al obtener evaluaciones pendientes');
@@ -12,7 +13,7 @@ export async function obtenerEvaluacionesPendientes(idUsuario: number, idTipoEva
 
 export const obtenerInfoEvaluacion = async (idEvaluacion: number) => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/evaluaciones/${idEvaluacion}/info`, {
+  const response = await fetch(`${API_URL}/${idEvaluacion}/info`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!response.ok) throw new Error('Error al obtener información de evaluación');
@@ -23,9 +24,9 @@ export async function obtenerTodasLasEvaluacionesPorUsuarioYTipo(idUsuario: numb
   const token = getToken();
   let url = '';
   if (rol === 'evaluador') {
-    url = `${API_URL}/evaluaciones/byUserAndType/${idUsuario}/${idTipoEvaluacion}`;
+    url = `${API_URL}/byUserAndType/${idUsuario}/${idTipoEvaluacion}`;
   } else {
-    url = `${API_URL}/evaluaciones/byEvaluadoAndType/${idUsuario}/${idTipoEvaluacion}`;
+    url = `${API_URL}/byEvaluadoAndType/${idUsuario}/${idTipoEvaluacion}`;
   }
   const res = await fetch(url, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}

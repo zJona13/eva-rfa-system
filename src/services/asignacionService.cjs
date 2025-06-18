@@ -29,9 +29,9 @@ const createAsignacion = async (data) => {
       [data.idArea]
     );
     // Separar por rol
-    const docentes = Array.isArray(usuarios) ? usuarios.filter(u => u.idTipoUsuario === 3) : [];
-    const evaluadores = Array.isArray(usuarios) ? usuarios.filter(u => u.idTipoUsuario === 2) : [];
-    const estudiantes = Array.isArray(usuarios) ? usuarios.filter(u => u.idTipoUsuario === 4) : [];
+    const docentes = usuarios.filter(u => u.idTipoUsuario === 3);
+    const evaluadores = usuarios.filter(u => u.idTipoUsuario === 2);
+    const estudiantes = usuarios.filter(u => u.idTipoUsuario === 4);
 
     // Crear evaluaciones automáticas
     // 1. Autoevaluación (tipo 3)

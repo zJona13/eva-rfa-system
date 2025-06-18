@@ -5,29 +5,22 @@ import { Badge } from '@/components/ui/badge';
 import { Trophy, AlertTriangle, Star, TrendingUp, TrendingDown } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getToken } from '@/contexts/AuthContext';
-import { API_URL } from '@/config/api';
 
 const TopPerformersTable = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['top-performers'],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch(`${API_URL}/reportes/personal-alta-calificacion`, {
+      const res = await fetch('/api/reportes/personal-alta-calificacion', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error('Error al obtener mejores promedios:', res.status, errText);
-        throw new Error('Error al obtener mejores promedios');
-      }
-      const json = await res.json();
-      console.log('Datos de mejores promedios:', json);
-      return json;
+      if (!res.ok) throw new Error('Error al obtener mejores promedios');
+      return res.json();
     }
   });
 
   if (isLoading) return <div className="p-6">Cargando tabla...</div>;
-  if (error) return <div className="p-6 text-red-500">Error al cargar tabla: {String(error)}</div>;
+  if (error) return <div className="p-6 text-red-500">Error al cargar tabla</div>;
 
   const topPerformers = data?.personal || [];
 

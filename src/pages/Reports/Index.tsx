@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -9,7 +10,8 @@ import { useAuth, getToken } from '@/contexts/AuthContext';
 import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calendar, Building2, Sparkles, Target, Award } from 'lucide-react';
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
-import { API_URL } from '@/config/api';
+
+const API_BASE_URL = 'http://localhost:3309';
 
 interface ReportType {
   id: string;
@@ -27,7 +29,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones Aprobadas',
     description: 'Listado de evaluaciones con puntaje ≥ 11',
     icon: Award,
-    endpoint: '/reportes/evaluaciones-aprobadas',
+    endpoint: '/api/reportes/evaluaciones-aprobadas',
     color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400',
     gradient: 'from-emerald-500 to-green-600'
   },
@@ -36,7 +38,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones Desaprobadas',
     description: 'Listado de evaluaciones con puntaje < 11',
     icon: AlertTriangle,
-    endpoint: '/reportes/evaluaciones-desaprobadas',
+    endpoint: '/api/reportes/evaluaciones-desaprobadas',
     color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
     gradient: 'from-red-500 to-rose-600'
   },
@@ -45,7 +47,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluados con Incidencias',
     description: 'Personal que tiene incidencias registradas',
     icon: AlertTriangle,
-    endpoint: '/reportes/evaluados-con-incidencias',
+    endpoint: '/api/reportes/evaluados-con-incidencias',
     color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
     gradient: 'from-orange-500 to-amber-600'
   },
@@ -54,7 +56,7 @@ const reportTypes: ReportType[] = [
     title: 'Personal de Baja',
     description: 'Colaboradores que ya no están activos',
     icon: Users,
-    endpoint: '/reportes/personal-de-baja',
+    endpoint: '/api/reportes/personal-de-baja',
     color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
     gradient: 'from-gray-500 to-slate-600'
   },
@@ -63,7 +65,7 @@ const reportTypes: ReportType[] = [
     title: 'Personal con Alta Calificación',
     description: 'Colaboradores con promedio ≥ 15',
     icon: Target,
-    endpoint: '/reportes/personal-alta-calificacion',
+    endpoint: '/api/reportes/personal-alta-calificacion',
     color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
     gradient: 'from-blue-500 to-indigo-600'
   },
@@ -72,7 +74,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones por Semestre',
     description: 'Estadísticas de evaluaciones agrupadas por semestre',
     icon: Calendar,
-    endpoint: '/reportes/evaluaciones-por-semestre',
+    endpoint: '/api/reportes/evaluaciones-por-semestre',
     color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
     gradient: 'from-purple-500 to-violet-600'
   },
@@ -81,19 +83,15 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones por Área',
     description: 'Estadísticas de evaluaciones agrupadas por tipo de colaborador',
     icon: Building2,
-    endpoint: '/reportes/evaluaciones-por-area',
+    endpoint: '/api/reportes/evaluaciones-por-area',
     color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400',
     gradient: 'from-indigo-500 to-blue-600'
   }
 ];
 
 const fetchReportData = async (endpoint: string) => {
-  if (!endpoint) throw new Error('Endpoint vacío');
   const token = getToken();
-  // Asegura que no haya doble /api
-  let url = endpoint.startsWith('/') ? `${API_URL}${endpoint}` : `${API_URL}/${endpoint}`;
-  url = url.replace(/\/api\/api\//g, '/api/');
-  const response = await fetch(url, {
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})

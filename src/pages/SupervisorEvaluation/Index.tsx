@@ -20,7 +20,6 @@ import { cn } from '@/lib/utils';
 import { getToken } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
-import { API_URL } from '@/config/api';
 
 export default function SupervisorEvaluationPage() {
   const [historialEvaluaciones, setHistorialEvaluaciones] = useState([]);
@@ -51,7 +50,7 @@ export default function SupervisorEvaluationPage() {
         setError(null);
         setLoading(true);
         const token = getToken();
-        const response = await fetch(`${API_URL}/users/current`, {
+        const response = await fetch('http://localhost:3309/api/users/current', {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) {

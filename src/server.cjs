@@ -22,25 +22,21 @@ const { actualizarEstadosEvaluacionesGlobal } = require('./services/evaluacionSe
 
 const app = express();
 const PORT = process.env.PORT || 3309;
-const isDevelopment = process.env.NODE_ENV === 'development';
 
 // Middleware
 app.use(cors({
-  origin: isDevelopment 
-    ? ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000']
-    : ['http://161.132.53.137:8080', 'http://161.132.53.137'],
+  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
+app.use(express.json());
 
 // Logging middleware
 app.use((req, res, next) => {
-  console.log(`${new Date().toISOString()} - ${req.method} ${req.url}`);
+  console.log(`${req.method} ${req.path} - ${new Date().toISOString()}`);
   next();
 });
-
-app.use(express.json());
 
 // Test database connection on startup
 testConnection()

@@ -10,7 +10,6 @@ import { crearAsignacion, listarAsignaciones, actualizarAsignacion } from '@/ser
 import { getToken } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
-import { API_URL } from '@/config/api';
 
 // Función para formatear la fecha en formato DD-MM-YY
 const formatDate = (dateString: string) => {
@@ -68,15 +67,10 @@ const AssignmentEvaluations = () => {
   // Cargar áreas y asignaciones
   useEffect(() => {
     const token = getToken();
-    fetch(`${API_URL}/areas`, {
+    fetch('http://localhost:3309/api/areas', {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     })
-      .then(res => {
-        if (!res.ok) {
-          console.error('Error al obtener áreas:', res.status, res.statusText);
-        }
-        return res.json();
-      })
+      .then(res => res.json())
       .then(data => setAreas(data.areas || []));
     cargarAsignaciones();
   }, []);

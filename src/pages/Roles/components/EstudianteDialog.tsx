@@ -62,7 +62,9 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
       // Regenerar código y limpiar campos
       const now = new Date();
       const year = now.getFullYear();
-      const codigosEsteAnio = Array.isArray(usuarios) ? usuarios.map(u => u.correo) : [];
+      const codigosEsteAnio = usuarios
+        .map(u => u.correo)
+        .filter(c => c && c.startsWith(`EST${year}`));
       let maxCorrelativo = 0;
       codigosEsteAnio.forEach(c => {
         const match = c.match(/^EST\d{4}(\d{2})$/);
@@ -84,7 +86,9 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
     } else if (open) {
       const now = new Date();
       const year = now.getFullYear();
-      const codigosEsteAnio = Array.isArray(usuarios) ? usuarios.map(u => u.correo) : [];
+      const codigosEsteAnio = usuarios
+        .map(u => u.correo)
+        .filter(c => c && c.startsWith(`EST${year}`));
       let maxCorrelativo = 0;
       codigosEsteAnio.forEach(c => {
         const match = c.match(/^EST\d{4}(\d{2})$/);
@@ -188,9 +192,9 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
                   <SelectValue placeholder="Seleccione un área" />
                 </SelectTrigger>
                 <SelectContent>
-                  {Array.isArray(areas) ? areas.map(area => (
+                  {areas.map(area => (
                     <SelectItem key={area.id} value={String(area.id)}>{area.name}</SelectItem>
-                  )) : null}
+                  ))}
                 </SelectContent>
               </Select>
               {errors.areaId && <span className="text-red-500 text-xs">El área es obligatoria</span>}

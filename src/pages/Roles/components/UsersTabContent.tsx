@@ -21,7 +21,6 @@ import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog, { UserFormValues } from './UserDialog';
 import { getToken } from '@/contexts/AuthContext';
-import { API_URL } from '@/config/api';
 
 // Tipos
 interface User {
@@ -59,7 +58,7 @@ interface UsersTabContentProps {
 
 const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users/${userData.id}`, {
+  const response = await fetch(`http://localhost:3309/api/users/${userData.id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -91,7 +90,7 @@ const updateUser = async (userData: UserFormValues & { id?: number }): Promise<{
 
 const deleteUser = async (userId: number): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users/${userId}`, {
+  const response = await fetch(`http://localhost:3309/api/users/${userId}`, {
     method: 'DELETE',
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
@@ -104,7 +103,7 @@ const deleteUser = async (userId: number): Promise<{ success: boolean, message: 
 
 const createUser = async (userData: UserFormValues): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users`, {
+  const response = await fetch('http://localhost:3309/api/users', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify(userData)
@@ -168,13 +167,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
   };
 
   // Filtrado
-  const filteredUsers = Array.isArray(users) ? users.filter(
+  const filteredUsers = users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.colaboradorName && user.colaboradorName.toLowerCase().includes(searchQuery.toLowerCase()))
-  ) : [];
+  );
 
   return (
     <>

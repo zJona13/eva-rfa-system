@@ -10,7 +10,6 @@ import EstudianteDialog from './EstudianteDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog from './UserDialog';
 import { getToken } from '@/contexts/AuthContext';
-import { API_URL } from '@/config/api';
 
 interface Estudiante {
   id: number;
@@ -58,14 +57,15 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   const queryClient = useQueryClient();
 
   // Filtrar estudiantes basado en la búsqueda
-  const filteredEstudiantes = Array.isArray(estudiantes) ? estudiantes.filter(est => {
+  const filteredEstudiantes = estudiantes.filter(est => {
     const nombreCompleto = `${est.nombreEstudiante} ${est.apePaEstudiante} ${est.apeMaEstudiante}`.toLowerCase();
     return (
-      nombreCompleto.includes(searchQuery.toLowerCase()) ||
       est.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      nombreCompleto.includes(searchQuery.toLowerCase()) ||
+      est.usuarioCorreo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       est.areaName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }) : [];
+  });
 
   // Abrir diálogo para crear nuevo estudiante
   const handleCreateEstudiante = () => {
@@ -82,7 +82,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   // Crear estudiante
   const createEstudiante = async (estudianteData: any): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch(`${API_URL}/estudiantes`, {
+    const response = await fetch('http://localhost:3309/api/estudiantes', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify(estudianteData)
@@ -97,7 +97,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   // Actualizar estudiante
   const updateEstudiante = async (estudianteData: any): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch(`${API_URL}/estudiantes/${estudianteData.id}`, {
+    const response = await fetch(`http://localhost:3309/api/estudiantes/${estudianteData.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify(estudianteData)
@@ -112,7 +112,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   // Eliminar estudiante
   const deleteEstudiante = async (id: number): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch(`${API_URL}/estudiantes/${id}`, {
+    const response = await fetch(`http://localhost:3309/api/estudiantes/${id}`, {
       method: 'DELETE',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
