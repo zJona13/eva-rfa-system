@@ -210,7 +210,8 @@ const fetchUsuarios = async (): Promise<Usuario[]> => {
     console.error('Error al obtener usuarios:', res.status, errText);
     throw new Error('Error al obtener usuarios');
   }
-  return res.json();
+  const data = await res.json();
+  return data.users;
 };
 
 // Componente principal
