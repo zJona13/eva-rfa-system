@@ -256,6 +256,7 @@ const Roles = () => {
     queryKey: ['users'],
     queryFn: fetchUsers
   });
+  console.log('DEBUG users:', users);
   
   const { 
     data: colaboradores = [], 
@@ -292,6 +293,7 @@ const Roles = () => {
     queryKey: ['usuarios'],
     queryFn: fetchUsuarios
   });
+  console.log('DEBUG usuarios:', usuarios);
   
   // Manejo de errores
   if (rolesError && activeTab === 'roles') {
