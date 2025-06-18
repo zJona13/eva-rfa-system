@@ -96,7 +96,7 @@ interface Usuario {
 // Servicios API - Updated port from 5000 to 3309
 const fetchRoles = async (): Promise<Role[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/roles`, {
+  const response = await fetch(`${API_URL}/roles`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -110,7 +110,7 @@ const fetchRoles = async (): Promise<Role[]> => {
 
 const createRole = async (name: string): Promise<{ success: boolean, message: string }> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/roles`, {
+  const response = await fetch(`${API_URL}/roles`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
     body: JSON.stringify({ name })
@@ -124,7 +124,7 @@ const createRole = async (name: string): Promise<{ success: boolean, message: st
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/tiposcolaborador`, {
+  const response = await fetch(`${API_URL}/tiposcolaborador`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -138,7 +138,7 @@ const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/tiposcontrato`, {
+  const response = await fetch(`${API_URL}/tiposcontrato`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -152,7 +152,7 @@ const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
 
 const fetchUsers = async (): Promise<User[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/users`, {
+  const response = await fetch(`${API_URL}/users`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -170,7 +170,7 @@ const fetchUsers = async (): Promise<User[]> => {
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/colaboradores`, {
+  const response = await fetch(`${API_URL}/colaboradores`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   
@@ -184,7 +184,7 @@ const fetchColaboradores = async (): Promise<Colaborador[]> => {
 
 const fetchAreas = async (): Promise<Area[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/areas`, {
+  const response = await fetch(`${API_URL}/areas`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!response.ok) {
@@ -196,7 +196,7 @@ const fetchAreas = async (): Promise<Area[]> => {
 
 const fetchEstudiantes = async (): Promise<Estudiante[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/estudiantes`, {
+  const response = await fetch(`${API_URL}/estudiantes`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!response.ok) {
@@ -208,7 +208,7 @@ const fetchEstudiantes = async (): Promise<Estudiante[]> => {
 
 const fetchUsuarios = async (): Promise<Usuario[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/users`, {
+  const response = await fetch(`${API_URL}/users`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
   if (!response.ok) {

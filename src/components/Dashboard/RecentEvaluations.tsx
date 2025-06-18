@@ -9,7 +9,7 @@ import { API_URL } from '@/config/api';
 
 const fetchRecentEvaluations = async () => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/api/dashboard/recent-evaluations`, {
+  const response = await fetch(`${API_URL}/dashboard/recent-evaluations`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
 
