@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { config } from '../config/env';
+import { API_ENDPOINTS } from '../config/api';
 
 // These would normally come from your API
 export type UserRole = 'admin' | 'evaluator' | 'evaluated' | 'student' | 'validator' | 'guest';
@@ -34,8 +36,11 @@ export const useAuth = () => {
   return context;
 };
 
-// API URL
-const API_URL = 'http://localhost:3309/api';
+// API URL from config
+const API_URL = config.API_URL;
+
+// Add debug logging
+console.log('🔐 AuthContext initialized with API URL:', API_URL);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -63,7 +68,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
-      fetch(`${API_URL}/users/current`, {
+      fetch(API_ENDPOINTS.USERS.CURRENT, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
         .then(res => res.json())
@@ -96,7 +101,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       console.log('🔐 Intentando login para:', email);
-      const response = await fetch(`${API_URL}/auth/login`, {
+      const response = await fetch(API_ENDPOINTS.AUTH.LOGIN, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

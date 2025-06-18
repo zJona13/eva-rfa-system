@@ -17,6 +17,7 @@ import EvaluationsByAreaChart from '@/components/Dashboard/EvaluationsByAreaChar
 import EvaluationStatusChart from '@/components/Dashboard/EvaluationStatusChart';
 import EvaluationTrendsChart from '@/components/Dashboard/EvaluationTrendsChart';
 import TopPerformersTable from '@/components/Dashboard/TopPerformersTable';
+import { API_ENDPOINTS, api } from '@/config/api';
 
 interface DashboardStats {
   evaluacionesRecibidas?: number;
@@ -55,13 +56,7 @@ const Dashboard = () => {
     queryFn: async () => {
       console.log('🔄 Fetching dashboard stats...');
       const token = getToken();
-      const response = await fetch('/api/dashboard/stats', {
-        headers: token ? { 'Authorization': `Bearer ${token}` } : {}
-      });
-      if (!response.ok) {
-        throw new Error('Error fetching dashboard stats');
-      }
-      const data = await response.json();
+      const data = await api.get(API_ENDPOINTS.DASHBOARD.STATS, token);
       console.log('✅ Dashboard stats fetched successfully:', data);
       return data;
     },
