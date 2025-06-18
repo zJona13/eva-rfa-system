@@ -27,7 +27,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones Aprobadas',
     description: 'Listado de evaluaciones con puntaje ≥ 11',
     icon: Award,
-    endpoint: '/api/reportes/evaluaciones-aprobadas',
+    endpoint: '/reportes/evaluaciones-aprobadas',
     color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/20 dark:text-emerald-400',
     gradient: 'from-emerald-500 to-green-600'
   },
@@ -36,7 +36,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones Desaprobadas',
     description: 'Listado de evaluaciones con puntaje < 11',
     icon: AlertTriangle,
-    endpoint: '/api/reportes/evaluaciones-desaprobadas',
+    endpoint: '/reportes/evaluaciones-desaprobadas',
     color: 'bg-red-100 text-red-800 dark:bg-red-900/20 dark:text-red-400',
     gradient: 'from-red-500 to-rose-600'
   },
@@ -45,7 +45,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluados con Incidencias',
     description: 'Personal que tiene incidencias registradas',
     icon: AlertTriangle,
-    endpoint: '/api/reportes/evaluados-con-incidencias',
+    endpoint: '/reportes/evaluados-con-incidencias',
     color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/20 dark:text-orange-400',
     gradient: 'from-orange-500 to-amber-600'
   },
@@ -54,7 +54,7 @@ const reportTypes: ReportType[] = [
     title: 'Personal de Baja',
     description: 'Colaboradores que ya no están activos',
     icon: Users,
-    endpoint: '/api/reportes/personal-de-baja',
+    endpoint: '/reportes/personal-de-baja',
     color: 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300',
     gradient: 'from-gray-500 to-slate-600'
   },
@@ -63,7 +63,7 @@ const reportTypes: ReportType[] = [
     title: 'Personal con Alta Calificación',
     description: 'Colaboradores con promedio ≥ 15',
     icon: Target,
-    endpoint: '/api/reportes/personal-alta-calificacion',
+    endpoint: '/reportes/personal-alta-calificacion',
     color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/20 dark:text-blue-400',
     gradient: 'from-blue-500 to-indigo-600'
   },
@@ -72,7 +72,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones por Semestre',
     description: 'Estadísticas de evaluaciones agrupadas por semestre',
     icon: Calendar,
-    endpoint: '/api/reportes/evaluaciones-por-semestre',
+    endpoint: '/reportes/evaluaciones-por-semestre',
     color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/20 dark:text-purple-400',
     gradient: 'from-purple-500 to-violet-600'
   },
@@ -81,7 +81,7 @@ const reportTypes: ReportType[] = [
     title: 'Evaluaciones por Área',
     description: 'Estadísticas de evaluaciones agrupadas por tipo de colaborador',
     icon: Building2,
-    endpoint: '/api/reportes/evaluaciones-por-area',
+    endpoint: '/reportes/evaluaciones-por-area',
     color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/20 dark:text-indigo-400',
     gradient: 'from-indigo-500 to-blue-600'
   }

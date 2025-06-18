@@ -11,7 +11,7 @@ const EvaluationTrendsChart = () => {
     queryKey: ['evaluaciones-por-semestre'],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch('/api/reportes/evaluaciones-por-semestre', {
+      const res = await fetch('/reportes/evaluaciones-por-semestre', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (!res.ok) throw new Error('Error al obtener tendencias de evaluaciones');

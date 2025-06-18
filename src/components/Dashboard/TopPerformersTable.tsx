@@ -11,7 +11,7 @@ const TopPerformersTable = () => {
     queryKey: ['top-performers'],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch('/api/reportes/personal-alta-calificacion', {
+      const res = await fetch('/reportes/personal-alta-calificacion', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (!res.ok) throw new Error('Error al obtener mejores promedios');

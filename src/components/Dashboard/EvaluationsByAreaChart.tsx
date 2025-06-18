@@ -11,7 +11,7 @@ const EvaluationsByAreaChart = () => {
     queryKey: ['evaluaciones-por-area'],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch('/api/reportes/evaluaciones-por-area', {
+      const res = await fetch('/reportes/evaluaciones-por-area', {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (!res.ok) throw new Error('Error al obtener evaluaciones por área');
