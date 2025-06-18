@@ -71,7 +71,12 @@ const AssignmentEvaluations = () => {
     fetch(`${API_URL}/areas`, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          console.error('Error al obtener áreas:', res.status, res.statusText);
+        }
+        return res.json();
+      })
       .then(data => setAreas(data.areas || []));
     cargarAsignaciones();
   }, []);

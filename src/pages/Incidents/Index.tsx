@@ -24,6 +24,7 @@ const fetchIncidencias = async (userId: string, userRole: UserRole, userArea?: s
 
   if (!response.ok) {
     const errorData = await response.json();
+    console.error('Error al obtener incidencias:', response.status, errorData);
     throw new Error(errorData.message || `Error ${response.status}: ${response.statusText}`);
   }
 

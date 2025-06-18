@@ -5,13 +5,14 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, ResponsiveContainer, Legend
 import { BarChart4 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { getToken } from '@/contexts/AuthContext';
+import { API_URL } from '@/config/api';
 
 const EvaluationsByAreaChart = () => {
   const { data, isLoading, error } = useQuery({
     queryKey: ['evaluaciones-por-area'],
     queryFn: async () => {
       const token = getToken();
-      const res = await fetch('/reportes/evaluaciones-por-area', {
+      const res = await fetch(`${API_URL}/reportes/evaluaciones-por-area`, {
         headers: token ? { 'Authorization': `Bearer ${token}` } : {}
       });
       if (!res.ok) throw new Error('Error al obtener evaluaciones por área');

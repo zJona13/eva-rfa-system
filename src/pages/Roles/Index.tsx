@@ -96,16 +96,15 @@ interface Usuario {
 // Servicios API - Updated port from 5000 to 3309
 const fetchRoles = async (): Promise<Role[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/roles`, {
+  const res = await fetch(`${API_URL}/roles`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  
-  if (!response.ok) {
-    throw new Error('Error al cargar roles');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener roles:', res.status, errText);
+    throw new Error('Error al obtener roles');
   }
-  
-  const data = await response.json();
-  return data.roles;
+  return res.json();
 };
 
 const createRole = async (name: string): Promise<{ success: boolean, message: string }> => {
@@ -124,98 +123,93 @@ const createRole = async (name: string): Promise<{ success: boolean, message: st
 
 const fetchTiposColaborador = async (): Promise<TipoColaborador[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tiposcolaborador`, {
+  const res = await fetch(`${API_URL}/tiposcolaborador`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  
-  if (!response.ok) {
-    throw new Error('Error al cargar tipos de colaborador');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener tipos de colaborador:', res.status, errText);
+    throw new Error('Error al obtener tipos de colaborador');
   }
-  
-  const data = await response.json();
-  return data.tiposColaborador;
+  return res.json();
 };
 
 const fetchTiposContrato = async (): Promise<TipoContrato[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/tiposcontrato`, {
+  const res = await fetch(`${API_URL}/tiposcontrato`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  
-  if (!response.ok) {
-    throw new Error('Error al cargar tipos de contrato');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener tipos de contrato:', res.status, errText);
+    throw new Error('Error al obtener tipos de contrato');
   }
-  
-  const data = await response.json();
-  return data.tiposContrato;
+  return res.json();
 };
 
 const fetchUsers = async (): Promise<User[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users`, {
+  const res = await fetch(`${API_URL}/users`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  
-  if (!response.ok) {
-    throw new Error('Error al cargar usuarios');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener usuarios:', res.status, errText);
+    throw new Error('Error al obtener usuarios');
   }
-  
-  const data = await response.json();
-  return data.users.map((user: any) => ({
-    ...user,
-    areaId: user.areaId !== null && user.areaId !== undefined ? Number(user.areaId) : undefined,
-    areaName: user.areaName || undefined
-  }));
+  return res.json();
 };
 
 const fetchColaboradores = async (): Promise<Colaborador[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/colaboradores`, {
+  const res = await fetch(`${API_URL}/colaboradores`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  
-  if (!response.ok) {
-    throw new Error('Error al cargar colaboradores');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener colaboradores:', res.status, errText);
+    throw new Error('Error al obtener colaboradores');
   }
-  
-  const data = await response.json();
-  return data.colaboradores;
+  return res.json();
 };
 
 const fetchAreas = async (): Promise<Area[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/areas`, {
+  const res = await fetch(`${API_URL}/areas`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  if (!response.ok) {
-    throw new Error('Error al cargar áreas');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener áreas:', res.status, errText);
+    throw new Error('Error al obtener áreas');
   }
-  const data = await response.json();
-  return data.areas;
+  return res.json();
 };
 
 const fetchEstudiantes = async (): Promise<Estudiante[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/estudiantes`, {
+  const res = await fetch(`${API_URL}/estudiantes`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  if (!response.ok) {
-    throw new Error('Error al cargar estudiantes');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener estudiantes:', res.status, errText);
+    throw new Error('Error al obtener estudiantes');
   }
-  const data = await response.json();
-  return data.estudiantes;
+  return res.json();
 };
 
 const fetchUsuarios = async (): Promise<Usuario[]> => {
   const token = getToken();
-  const response = await fetch(`${API_URL}/users`, {
+  const res = await fetch(`${API_URL}/usuarios`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
-  if (!response.ok) {
-    throw new Error('Error al cargar usuarios');
+  if (!res.ok) {
+    const errText = await res.text();
+    console.error('Error al obtener usuarios:', res.status, errText);
+    throw new Error('Error al obtener usuarios');
   }
-  const data = await response.json();
-  return data.users.map((user: any) => ({ id: user.id, correo: user.email }));
+  return res.json();
 };
 
 // Componente principal

@@ -88,8 +88,12 @@ const reportTypes: ReportType[] = [
 ];
 
 const fetchReportData = async (endpoint: string) => {
+  if (!endpoint) throw new Error('Endpoint vacío');
   const token = getToken();
-  const response = await fetch(`${API_URL}${endpoint}`, {
+  // Asegura que no haya doble /api
+  let url = endpoint.startsWith('/') ? `${API_URL}${endpoint}` : `${API_URL}/${endpoint}`;
+  url = url.replace(/\/api\/api\//g, '/api/');
+  const response = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})
