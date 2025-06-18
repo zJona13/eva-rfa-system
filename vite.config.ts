@@ -29,17 +29,32 @@ export default defineConfig(({ mode }) => {
       sourcemap: !isProduction,
       minify: isProduction,
       rollupOptions: {
-        output: {
-          manualChunks: {
-            vendor: ['react', 'react-dom', 'react-router-dom'],
-            ui: ['@radix-ui/react-dialog', '@radix-ui/react-dropdown-menu'],
-          },
-        },
         onwarn(warning, warn) {
+          if (warning.code === 'CIRCULAR_DEPENDENCY') return;
           console.log('📦 Build warning:', warning);
           warn(warning);
-        }
-      }
+        },
+        output: {
+          manualChunks: {
+            'react-vendor': ['react', 'react-dom', 'react-router-dom'],
+            'ui-vendor': [
+              '@radix-ui/react-avatar',
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-label',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-select',
+              '@radix-ui/react-separator',
+              '@radix-ui/react-slot',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-toast',
+              '@radix-ui/react-tooltip',
+            ],
+            'chart-vendor': ['recharts', 'd3'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 1000,
     },
     define: {
       'process.env.NODE_ENV': JSON.stringify(mode),

@@ -1,12 +1,12 @@
-
 import React from 'react';
+import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { LogOut, User, Moon, Sun } from 'lucide-react';
+import { LogOut, User, Moon, Sun, Menu } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useTheme } from 'next-themes';
 import { toast } from 'sonner';
-import NotificacionesBadge from '@/components/NotificacionesBadge';
+import { NotificacionesBadge } from '@/components/NotificacionesBadge';
 import LanguageSelector from '@/components/LanguageSelector';
 
 const Header = ({ setSidebarOpen }: { setSidebarOpen: (open: boolean) => void }) => {
