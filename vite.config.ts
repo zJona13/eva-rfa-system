@@ -8,9 +8,9 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::", // Permite acceso desde cualquier IP (útil para pruebas en red local)
     port: 8080,  // Cambia el puerto del frontend
-    proxy: {
+    proxy: mode === 'development' ? {
       '/api': 'http://localhost:3309', // Proxy para redirigir API al backend
-    },
+    } : undefined,
   },
   plugins: [
     react(),
@@ -21,5 +21,9 @@ export default defineConfig(({ mode }) => ({
     alias: {
       "@": path.resolve(__dirname, "./src"),
     },
+  },
+  // Add environment variables
+  define: {
+    'process.env.NODE_ENV': JSON.stringify(mode),
   },
 }));
