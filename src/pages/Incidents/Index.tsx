@@ -9,13 +9,14 @@ import { toast } from 'sonner';
 import { useAuth, getToken, UserRole } from '@/contexts/AuthContext';
 import { AlertTriangle, Calendar, Clock, Filter, Search, User, FileText, CheckCircle, AlertCircle, Users } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
-import { API_ENDPOINTS } from '@/config/api';
+
+const API_BASE_URL = 'http://localhost:3309/api';
 
 const fetchIncidencias = async (userId: string, userRole: UserRole, userArea?: string) => {
   const token = getToken();
   console.log('Fetching incidents with:', { userId, userRole, userArea });
   
-  const response = await fetch(`${API_ENDPOINTS.INCIDENCIAS.BASE}/user/${userId}`, {
+  const response = await fetch(`${API_BASE_URL}/incidencias/user/${userId}`, {
     headers: {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'
@@ -32,7 +33,7 @@ const fetchIncidencias = async (userId: string, userRole: UserRole, userArea?: s
 
 const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: string }) => {
   const token = getToken();
-  const response = await fetch(`${API_ENDPOINTS.INCIDENCIAS.BASE}/${id}/estado`, {
+  const response = await fetch(`${API_BASE_URL}/incidencias/${id}/estado`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -51,7 +52,7 @@ const updateIncidenciaEstado = async ({ id, estado }: { id: number; estado: stri
 
 const completarIncidencia = async ({ id, accionTomada }: { id: number; accionTomada: string }) => {
   const token = getToken();
-  const response = await fetch(`${API_ENDPOINTS.INCIDENCIAS.BASE}/${id}/completar`, {
+  const response = await fetch(`${API_BASE_URL}/incidencias/${id}/completar`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',

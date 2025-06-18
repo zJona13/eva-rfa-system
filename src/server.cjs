@@ -22,51 +22,14 @@ const { actualizarEstadosEvaluacionesGlobal } = require('./services/evaluacionSe
 
 const app = express();
 const PORT = process.env.PORT || 3309;
-const NODE_ENV = process.env.NODE_ENV || 'development';
-
-// Add debug logging
-console.log('🌍 Environment:', NODE_ENV);
-console.log('🔌 Server starting on port:', PORT);
-
-// CORS configuration
-const allowedOrigins = NODE_ENV === 'development' 
-  ? ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000']
-  : ['http://161.132.53.137:8080', 'http://161.132.53.137'];
 
 // Middleware
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
-    
-    if (allowedOrigins.indexOf(origin) === -1) {
-      console.log('⚠️ Blocked CORS request from:', origin);
-      return callback(new Error('Not allowed by CORS'), false);
-    }
-    return callback(null, true);
-  },
+  origin: ['http://localhost:8080', 'http://localhost:5173', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
-
-// Security headers
-app.use((req, res, next) => {
-  res.setHeader('X-Content-Type-Options', 'nosniff');
-  res.setHeader('X-Frame-Options', 'DENY');
-  res.setHeader('X-XSS-Protection', '1; mode=block');
-  next();
-});
-
-// Error handling middleware
-app.use((err, req, res, next) => {
-  console.error('❌ Error:', err);
-  res.status(500).json({
-    success: false,
-    message: NODE_ENV === 'development' ? err.message : 'Internal server error'
-  });
-});
-
 app.use(express.json());
 
 // Logging middleware
