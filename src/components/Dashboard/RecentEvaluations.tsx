@@ -5,12 +5,11 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useAuth, getToken } from '@/contexts/AuthContext';
 import { ClipboardList, TrendingUp, TrendingDown } from 'lucide-react';
-
-const API_BASE_URL = 'http://localhost:3309';
+import { API_URL } from '@/config/api';
 
 const fetchRecentEvaluations = async () => {
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}/api/dashboard/recent-evaluations`, {
+  const response = await fetch(`${API_URL}/api/dashboard/recent-evaluations`, {
     headers: token ? { 'Authorization': `Bearer ${token}` } : {}
   });
 

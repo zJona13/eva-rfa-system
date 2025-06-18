@@ -17,6 +17,7 @@ import EvaluationCard from '../../components/EvaluationCard';
 import { getToken } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { API_URL } from '@/config/api';
 
 export default function SelfEvaluationPage() {
   const [evaluacionesPendientes, setEvaluacionesPendientes] = useState([]);
@@ -46,7 +47,7 @@ export default function SelfEvaluationPage() {
       try {
         const token = getToken();
         // Obtener información del usuario actual
-        const response = await fetch('http://localhost:3309/api/users/current', {
+        const response = await fetch(`${API_URL}/users/current`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         if (!response.ok) {

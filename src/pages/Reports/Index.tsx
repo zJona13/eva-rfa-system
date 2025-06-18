@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -10,8 +9,7 @@ import { useAuth, getToken } from '@/contexts/AuthContext';
 import { FileText, Download, BarChart3, TrendingUp, AlertTriangle, Users, Calendar, Building2, Sparkles, Target, Award } from 'lucide-react';
 import ReportTable from './components/ReportTable';
 import { generatePDF } from './utils/pdfGenerator';
-
-const API_BASE_URL = 'http://localhost:3309';
+import { API_URL } from '@/config/api';
 
 interface ReportType {
   id: string;
@@ -91,7 +89,7 @@ const reportTypes: ReportType[] = [
 
 const fetchReportData = async (endpoint: string) => {
   const token = getToken();
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+  const response = await fetch(`${API_URL}${endpoint}`, {
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { 'Authorization': `Bearer ${token}` } : {})

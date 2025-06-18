@@ -17,6 +17,7 @@ import { obtenerEvaluacionesPendientes, obtenerInfoEvaluacion, obtenerTodasLasEv
 import { getToken } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { toast } from "sonner";
+import { API_URL } from '@/config/api';
 
 export default function StudentEvaluationPage() {
   const [historialEvaluaciones, setHistorialEvaluaciones] = useState([]);
@@ -37,7 +38,7 @@ export default function StudentEvaluationPage() {
       setError(null);
       try {
         const token = getToken();
-        const resUser = await fetch('http://localhost:3309/api/users/current', {
+        const resUser = await fetch(`${API_URL}/users/current`, {
           headers: token ? { 'Authorization': `Bearer ${token}` } : {}
         });
         const userData = await resUser.json();

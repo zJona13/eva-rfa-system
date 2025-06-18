@@ -11,6 +11,7 @@ import ColaboradorDialog from './ColaboradorDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog from './UserDialog';
 import { getToken } from '@/contexts/AuthContext';
+import { API_URL } from '@/config/api';
 
 interface TipoColaborador {
   id: number;
@@ -94,7 +95,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   // Crear colaborador
   const createColaborador = async (colaboradorData: any): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch('http://localhost:3309/api/colaboradores', {
+    const response = await fetch(`${API_URL}/colaboradores`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify(colaboradorData)
@@ -109,7 +110,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   // Actualizar colaborador
   const updateColaborador = async (colaboradorData: any): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch(`http://localhost:3309/api/colaboradores/${colaboradorData.id}`, {
+    const response = await fetch(`${API_URL}/colaboradores/${colaboradorData.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify(colaboradorData)
@@ -124,7 +125,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   // Eliminar colaborador
   const deleteColaborador = async (id: number): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch(`http://localhost:3309/api/colaboradores/${id}`, {
+    const response = await fetch(`${API_URL}/colaboradores/${id}`, {
       method: 'DELETE',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });
@@ -210,7 +211,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   const handleSaveUser = async (userData: any) => {
     try {
       const token = getToken();
-      const response = await fetch('http://localhost:3309/api/users', {
+      const response = await fetch(`${API_URL}/users`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
         body: JSON.stringify({ 

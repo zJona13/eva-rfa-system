@@ -10,6 +10,7 @@ import EstudianteDialog from './EstudianteDialog';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import UserDialog from './UserDialog';
 import { getToken } from '@/contexts/AuthContext';
+import { API_URL } from '@/config/api';
 
 interface Estudiante {
   id: number;
@@ -82,7 +83,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   // Crear estudiante
   const createEstudiante = async (estudianteData: any): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch('http://localhost:3309/api/estudiantes', {
+    const response = await fetch(`${API_URL}/estudiantes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify(estudianteData)
@@ -97,7 +98,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   // Actualizar estudiante
   const updateEstudiante = async (estudianteData: any): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch(`http://localhost:3309/api/estudiantes/${estudianteData.id}`, {
+    const response = await fetch(`${API_URL}/estudiantes/${estudianteData.id}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json', ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
       body: JSON.stringify(estudianteData)
@@ -112,7 +113,7 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   // Eliminar estudiante
   const deleteEstudiante = async (id: number): Promise<{ success: boolean, message: string }> => {
     const token = getToken();
-    const response = await fetch(`http://localhost:3309/api/estudiantes/${id}`, {
+    const response = await fetch(`${API_URL}/estudiantes/${id}`, {
       method: 'DELETE',
       headers: token ? { 'Authorization': `Bearer ${token}` } : {}
     });

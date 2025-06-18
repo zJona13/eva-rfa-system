@@ -1,6 +1,5 @@
 import { getToken } from '../contexts/AuthContext';
-
-const API_URL = 'http://localhost:3309/api/evaluaciones';
+import { API_URL } from '@/config/api';
 
 export async function obtenerEvaluacionesPendientes(idUsuario: number, idTipoEvaluacion: number) {
   const token = getToken();
