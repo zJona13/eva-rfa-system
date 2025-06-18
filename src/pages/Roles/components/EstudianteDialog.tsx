@@ -188,9 +188,9 @@ const EstudianteDialog: React.FC<EstudianteDialogProps> = ({ open, onOpenChange,
                   <SelectValue placeholder="Seleccione un área" />
                 </SelectTrigger>
                 <SelectContent>
-                  {areas.map(area => (
+                  {Array.isArray(areas) ? areas.map(area => (
                     <SelectItem key={area.id} value={String(area.id)}>{area.name}</SelectItem>
-                  ))}
+                  )) : null}
                 </SelectContent>
               </Select>
               {errors.areaId && <span className="text-red-500 text-xs">El área es obligatoria</span>}
