@@ -1,4 +1,4 @@
--- CREAR BASE DE DATOS
+-- CREAR BASE DE DATOS - Correcta
 
 CREATE DATABASE IF NOT EXISTS EvaluacionDesempeno;
 USE EvaluacionDesempeno;
