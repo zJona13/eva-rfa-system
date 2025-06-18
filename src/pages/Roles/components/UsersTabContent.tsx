@@ -168,13 +168,13 @@ const UsersTabContent: React.FC<UsersTabContentProps> = ({ users, isLoading, sea
   };
 
   // Filtrado
-  const filteredUsers = users.filter(
+  const filteredUsers = Array.isArray(users) ? users.filter(
     (user) =>
       user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (user.colaboradorName && user.colaboradorName.toLowerCase().includes(searchQuery.toLowerCase()))
-  );
+  ) : [];
 
   return (
     <>
