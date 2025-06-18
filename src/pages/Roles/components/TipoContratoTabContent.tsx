@@ -154,9 +154,9 @@ const TipoContratoTabContent: React.FC<TipoContratoTabContentProps> = ({
   };
 
   // Filtrado
-  const filteredTiposContrato = tiposContrato.filter(
+  const filteredTiposContrato = Array.isArray(tiposContrato) ? tiposContrato.filter(
     (tipo) => tipo.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   return (
     <>

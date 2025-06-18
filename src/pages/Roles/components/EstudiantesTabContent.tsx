@@ -58,15 +58,14 @@ const EstudiantesTabContent: React.FC<EstudiantesTabContentProps> = ({
   const queryClient = useQueryClient();
 
   // Filtrar estudiantes basado en la búsqueda
-  const filteredEstudiantes = estudiantes.filter(est => {
+  const filteredEstudiantes = Array.isArray(estudiantes) ? estudiantes.filter(est => {
     const nombreCompleto = `${est.nombreEstudiante} ${est.apePaEstudiante} ${est.apeMaEstudiante}`.toLowerCase();
     return (
-      est.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       nombreCompleto.includes(searchQuery.toLowerCase()) ||
-      est.usuarioCorreo.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      est.codigo.toLowerCase().includes(searchQuery.toLowerCase()) ||
       est.areaName.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  });
+  }) : [];
 
   // Abrir diálogo para crear nuevo estudiante
   const handleCreateEstudiante = () => {

@@ -164,9 +164,9 @@ const TipoColaboradorTabContent: React.FC<TipoColaboradorTabContentProps> = ({
   };
 
   // Filtrado
-  const filteredTiposColaborador = tiposColaborador.filter(
+  const filteredTiposColaborador = Array.isArray(tiposColaborador) ? tiposColaborador.filter(
     (tipo) => tipo.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   return (
     <>

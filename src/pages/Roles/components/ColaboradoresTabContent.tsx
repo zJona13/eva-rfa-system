@@ -73,12 +73,12 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
   const queryClient = useQueryClient();
   
   // Filtrar colaboradores basado en la búsqueda
-  const filteredColaboradores = colaboradores.filter(colab => 
+  const filteredColaboradores = Array.isArray(colaboradores) ? colaboradores.filter(colab => 
     colab.fullName.toLowerCase().includes(searchQuery.toLowerCase()) ||
     colab.dni.includes(searchQuery) ||
     colab.phone.includes(searchQuery) ||
     colab.roleName.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
   
   // Abrir diálogo para crear nuevo colaborador
   const handleCreateColaborador = () => {

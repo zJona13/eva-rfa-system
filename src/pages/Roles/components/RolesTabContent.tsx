@@ -169,9 +169,9 @@ const RolesTabContent: React.FC<RolesTabContentProps> = ({ roles, isLoading, sea
   };
 
   // Filtrado
-  const filteredRoles = roles.filter(
+  const filteredRoles = Array.isArray(roles) ? roles.filter(
     (role) => role.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  ) : [];
 
   return (
     <>
