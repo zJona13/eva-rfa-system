@@ -42,6 +42,7 @@ interface Colaborador {
   contractTypeId: number;
   contractType: string;
   areaName: string;
+  test: number;
   areaId: number;
 }
 
@@ -326,6 +327,7 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
                     <TableHead className="font-semibold text-primary">DNI</TableHead>
                     <TableHead className="font-semibold text-primary">Rol</TableHead>
                     <TableHead className="font-semibold text-primary">Área</TableHead>
+                    <TableHead className='font-semibold text-primary'>Prueba</TableHead>
                     <TableHead className="hidden md:table-cell font-semibold text-primary">Contrato</TableHead>
                     <TableHead className="hidden md:table-cell font-semibold text-primary">Estado</TableHead>
                     <TableHead className="text-right font-semibold text-primary">Acciones</TableHead>
@@ -364,6 +366,11 @@ const ColaboradoresTabContent: React.FC<ColaboradoresTabContentProps> = ({
                           {colaborador.areaName || (
                             <span className="text-muted-foreground italic">Sin área asignada</span>
                           )}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm">
+                          {colaborador.test}
                         </span>
                       </TableCell>
                       <TableCell className="hidden md:table-cell">

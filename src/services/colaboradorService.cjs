@@ -16,6 +16,7 @@ const getAllColaboradores = async () => {
       co.fechaFin as endDate, 
       co.estado as contractActive, tco.idTipoContrato as contractTypeId,
       tco.nombre as contractType,
+      c.prueba as test,
       c.idArea as areaId, a.nombre as areaName
       FROM COLABORADOR c
       JOIN TIPO_COLABORADOR tc ON c.idTipoColaborador = tc.idTipoColaborador
