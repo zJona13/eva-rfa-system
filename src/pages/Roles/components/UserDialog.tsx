@@ -29,7 +29,9 @@ import { getToken } from '@/contexts/AuthContext';
 // Actualizar el esquema para permitir valores especiales
 const userFormSchema = z.object({
   name: z.string().min(2, { message: 'El nombre debe tener al menos 2 caracteres' }),
-  email: z.string().email({ message: 'Debe ser un correo electrónico válido' }),
+  email: z.string().email({ message: 'Debe ser un correo electrónico válido' }).refine(email => email.endsWith('@iesrfa.edu'), {
+    message: 'El correo debe ser del dominio @iesrfa.edu'
+  }),
   password: z.string().min(6, { message: 'La contraseña debe tener al menos 6 caracteres' }).optional(),
   confirmPassword: z.string().optional(),
   roleId: z.string().min(1, { message: 'Seleccione un rol' }),
