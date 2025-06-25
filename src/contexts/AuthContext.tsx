@@ -37,6 +37,17 @@ export const useAuth = () => {
 // API URL
 const API_URL = 'http://localhost:3309/api';
 
+// Función para verificar si un token JWT ha expirado
+const isTokenExpired = (token: string): boolean => {
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const currentTime = Date.now() / 1000;
+    return payload.exp < currentTime;
+  } catch (error) {
+    return true; // Si hay error al decodificar, considerar como expirado
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,13 +71,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Función para cerrar sesión automáticamente
+  const autoLogout = () => {
+    localStorage.removeItem('token');
+    setUser(null);
+    toast.error('Sesión expirada. Por favor, inicie sesión nuevamente.');
+    navigate('/login');
+  };
+
+  // Verificar token al cargar la aplicación
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (token) {
+      // Verificar si el token ha expirado
+      if (isTokenExpired(token)) {
+        console.log('Token expirado al cargar la aplicación');
+        autoLogout();
+        setIsLoading(false);
+        return;
+      }
+
       fetch(`${API_URL}/users/current`, {
         headers: { 'Authorization': `Bearer ${token}` }
       })
-        .then(res => res.json())
+        .then(res => {
+          if (!res.ok) {
+            throw new Error('Token inválido');
+          }
+          return res.json();
+        })
         .then(data => {
           console.log('Respuesta cruda de /api/users/current:', data);
           if (data.success && data.user) {
@@ -89,6 +122,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         });
     }
     setIsLoading(false);
+  }, []);
+
+  // Verificación periódica del token (cada 30 segundos)
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) return;
+
+    const checkTokenInterval = setInterval(() => {
+      if (isTokenExpired(token)) {
+        console.log('Token expirado durante la verificación periódica');
+        autoLogout();
+        clearInterval(checkTokenInterval);
+      }
+    }, 30000); // Verificar cada 30 segundos
+
+    return () => clearInterval(checkTokenInterval);
+  }, [user]);
+
+  // Verificar token antes de cada navegación
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      const token = localStorage.getItem('token');
+      if (token && isTokenExpired(token)) {
+        localStorage.removeItem('token');
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, []);
 
   const login = async (email: string, password: string) => {
