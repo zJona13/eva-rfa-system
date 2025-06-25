@@ -60,3 +60,15 @@ Este proyecto fue desarrollado utilizando:
 🎨 shadcn/ui – Componentes de interfaz modernos
 
 💨 Tailwind CSS – Framework de utilidades para estilos
+
+para cambiar minimo de evaluacion - evaluacionService
+
+para iniciar sesion - src/components/auth/loginform
+
+para cambiar tiempo de cierre autómatico - services/authservice
+
+para agregar criterio o sub - en bd
+
+para backup semanal - programador de tareas
+
+para cambiar el correo de verificacion - userdialog
