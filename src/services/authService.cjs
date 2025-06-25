@@ -254,7 +254,7 @@ const login = async (correo, contrasena) => {
 
     if (users.length === 0) {
       console.log('❌ Formato de correo inválido:', correo);
-      return { success: false, message: 'El correo debe ser del dominio @iesrfa.edu' };
+      return { success: false, message: 'El correo debe ser del dominio @iesrfa.edu o usuario no encontrado' };
     }
 
     const user = users[0];
